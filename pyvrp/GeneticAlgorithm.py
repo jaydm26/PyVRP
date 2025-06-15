@@ -201,7 +201,7 @@ class GeneticAlgorithm:
         end = time.perf_counter() - start
         res = Result(self._best, stats, iters, end)
 
-        print_progress.end(res)
+        print_progress.end(res, self._data, self._pm._params)
 
         return res
 
@@ -220,10 +220,7 @@ class GeneticAlgorithm:
 
         # Possibly repair if current solution is infeasible. In that case, we
         # penalise infeasibility more using a penalty booster.
-        if (
-            not sol.is_feasible()
-            and self._rng.rand() < self._params.repair_probability
-        ):
+        if not sol.is_feasible() and self._rng.rand() < self._params.repair_probability:
             sol = self._search(sol, self._pm.booster_cost_evaluator())
 
             if sol.is_feasible():

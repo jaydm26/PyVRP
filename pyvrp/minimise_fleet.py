@@ -73,7 +73,7 @@ def minimise_fleet(
             params=params,
         )
 
-        if stop(res.cost()) or not res.is_feasible():
+        if stop(res.cost(data, params.penalty)) or not res.is_feasible():
             return feas_fleet
 
         feas_fleet = fleet

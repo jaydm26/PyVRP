@@ -239,6 +239,8 @@ PYBIND11_MODULE(_pyvrp, m)
                       std::vector<pyvrp::Load>,
                       std::vector<size_t>,
                       size_t,
+                      double,
+                      double,
                       char const *>(),
              py::arg("num_available") = 1,
              py::arg("capacity") = py::list(),
@@ -258,6 +260,8 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("initial_load") = py::list(),
              py::arg("reload_depots") = py::list(),
              py::arg("max_reloads") = std::numeric_limits<size_t>::max(),
+             py::arg("vehicle_weight") = 0.0,
+             py::arg("power_to_mass_ratio") = 0.0,
              py::kw_only(),
              py::arg("name") = "")
         .def_readonly("num_available", &ProblemData::VehicleType::numAvailable)
@@ -306,6 +310,8 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("initial_load") = py::none(),
              py::arg("reload_depots") = py::none(),
              py::arg("max_reloads") = py::none(),
+             py::arg("vehicle_weight") = py::none(),
+             py::arg("power_to_mass_ratio") = py::none(),
              py::kw_only(),
              py::arg("name") = py::none(),
              DOC(pyvrp, ProblemData, VehicleType, replace))
@@ -328,6 +334,8 @@ PYBIND11_MODULE(_pyvrp, m)
                                       vehicleType.initialLoad,
                                       vehicleType.reloadDepots,
                                       vehicleType.maxReloads,
+                                      vehicleType.vehicleWeight,
+                                      vehicleType.powerToMassRatio,
                                       vehicleType.name);
             },
             [](py::tuple t) {  // __setstate__
@@ -348,7 +356,9 @@ PYBIND11_MODULE(_pyvrp, m)
                     t[13].cast<std::vector<pyvrp::Load>>(),  // initial load
                     t[14].cast<std::vector<size_t>>(),       // reload depots
                     t[15].cast<size_t>(),                    // max reloads
-                    t[16].cast<std::string>());              // name
+                    t[16].cast<double>(),                   // vehicle weight in tons
+                    t[17].cast<double>(),                   // power to mass ratio in kw per tons
+                    t[18].cast<std::string>());              // name
 
                 return vehicleType;
             }))
@@ -941,10 +951,28 @@ PYBIND11_MODULE(_pyvrp, m)
              });
 
     py::class_<CostEvaluator>(m, "CostEvaluator", DOC(pyvrp, CostEvaluator))
-        .def(py::init<std::vector<double>, double, double>(),
+        .def(py::init<std::vector<double>,
+                      double,
+                      double,
+                      pyvrp::ProblemData,
+                      double,
+                      double,
+                      double,
+                      double,
+                      std::vector<std::vector<double>>,
+                      double,
+                      pyvrp::Duration>(),
              py::arg("load_penalties"),
              py::arg("tw_penalty"),
-             py::arg("dist_penalty"))
+             py::arg("dist_penalty"),
+             py::arg("data"),
+             py::arg("unit_fuel_cost") = 0.0,
+             py::arg("unit_emission_cost") = 0.0,
+             py::arg("velocity") = 0.0,
+             py::arg("congestion_factor") = 1.0,
+             py::arg("fuel_costs") = std::vector<std::vector<double>>(),
+             py::arg("wage_per_hour") = 0.0,
+             py::arg("min_hours_paid") = pyvrp::Duration(0))
         .def("load_penalty",
              &CostEvaluator::loadPenalty,
              py::arg("load"),
@@ -964,6 +992,18 @@ PYBIND11_MODULE(_pyvrp, m)
              &CostEvaluator::penalisedCost<Solution>,
              py::arg("solution"),
              DOC(pyvrp, CostEvaluator, penalisedCost))
+        .def(
+            "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
+            &CostEvaluator::
+                fuelAndEmissionCostWithConstantVelocityConstantCongestion,
+            py::arg("distance"),
+            py::arg("vehicle_weight"),
+            py::arg("power_to_mass_ratio"))
+        .def("wage_cost",
+             &CostEvaluator::wageCost,
+             py::arg("hours_worked"),
+             py::arg("wage_per_hour"),
+             py::arg("min_hours_paid"))
         .def("cost",
              &CostEvaluator::cost<Solution>,
              py::arg("solution"),

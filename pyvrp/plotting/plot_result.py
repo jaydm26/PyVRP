@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 
 from pyvrp import ProblemData
+from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp.Result import Result
 from pyvrp.plotting.plot_diversity import plot_diversity
 from pyvrp.plotting.plot_objectives import plot_objectives
@@ -9,7 +10,10 @@ from pyvrp.plotting.plot_solution import plot_solution
 
 
 def plot_result(
-    result: Result, data: ProblemData, fig: plt.Figure | None = None
+    result: Result,
+    data: ProblemData,
+    penalty_params: PenaltyParams = PenaltyParams(),
+    fig: plt.Figure | None = None,
 ):
     """
     Plots the results of a run, including the best solution and detailed
@@ -37,7 +41,12 @@ def plot_result(
 
     ax_div = fig.add_subplot(gs[0, 0])
     plot_diversity(result, ax=ax_div)
-    plot_objectives(result, ax=fig.add_subplot(gs[1, 0], sharex=ax_div))
+    plot_objectives(
+        result,
+        data=data,
+        penalty_params=penalty_params,
+        ax=fig.add_subplot(gs[1, 0], sharex=ax_div),
+    )
     plot_runtimes(result, ax=fig.add_subplot(gs[2, 0], sharex=ax_div))
 
     plot_solution(result.best, data, ax=fig.add_subplot(gs[:, 1]))

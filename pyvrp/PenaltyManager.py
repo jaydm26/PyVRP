@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from statistics import fmean
 from warnings import warn
 
@@ -94,6 +94,13 @@ class PenaltyParams:
     feas_tolerance: float = 0.05
     min_penalty: float = 0.1
     max_penalty: float = 100_000.0
+    unit_fuel_cost: float = 0.0
+    unit_emission_cost: float = 0.0
+    velocity: float = 0.0
+    congestion_factor: float = 1.0
+    fuel_costs: list[list[int]] = field(default_factory=list)
+    wage_per_hour: float = 0.0
+    min_hours_paid: float = 8.0
 
     def __post_init__(self):
         if not self.repair_booster >= 1:
@@ -149,9 +156,11 @@ class PenaltyManager:
     def __init__(
         self,
         initial_penalties: tuple[list[float], float, float],
+        data: ProblemData,
         params: PenaltyParams = PenaltyParams(),
     ):
         self._params = params
+        self._data = data
         self._penalties = np.clip(
             initial_penalties[0] + list(initial_penalties[1:]),
             params.min_penalty,
@@ -159,9 +168,7 @@ class PenaltyManager:
         )
 
         # Tracks recent feasibilities for each penalty dimension.
-        self._feas_lists: list[list[bool]] = [
-            [] for _ in range(len(self._penalties))
-        ]
+        self._feas_lists: list[list[bool]] = [[] for _ in range(len(self._penalties))]
 
     def penalties(self) -> tuple[list[float], float, float]:
         """
@@ -229,7 +236,7 @@ class PenaltyManager:
         init_load = avg_cost / np.maximum(avg_load, 1)
         init_tw = avg_cost / max(avg_duration, 1)
         init_dist = avg_cost / max(avg_distance, 1)
-        return cls((init_load.tolist(), init_tw, init_dist), params)
+        return cls((init_load.tolist(), init_tw, init_dist), data, params)
 
     def _compute(self, penalty: float, feas_percentage: float) -> float:
         # Computes and returns the new penalty value, given the current value
@@ -290,11 +297,35 @@ class PenaltyManager:
         Get a cost evaluator using the current penalty values.
         """
         *loads, tw, dist = self._penalties
-        return CostEvaluator(loads, tw, dist)
+        return CostEvaluator(
+            loads,
+            tw,
+            dist,
+            self._data,
+            self._params.unit_fuel_cost,
+            self._params.unit_emission_cost,
+            self._params.velocity,
+            self._params.congestion_factor,
+            self._params.fuel_costs,
+            self._params.wage_per_hour,
+            self._params.min_hours_paid,
+        )
 
     def booster_cost_evaluator(self) -> CostEvaluator:
         """
         Get a cost evaluator using the boosted current penalty values.
         """
         *loads, tw, dist = self._penalties * self._params.repair_booster
-        return CostEvaluator(loads, tw, dist)
+        return CostEvaluator(
+            loads,
+            tw,
+            dist,
+            self._data,
+            self._params.unit_fuel_cost,
+            self._params.unit_emission_cost,
+            self._params.velocity,
+            self._params.congestion_factor,
+            self._params.fuel_costs,
+            self._params.wage_per_hour,
+            self._params.min_hours_paid,
+        )

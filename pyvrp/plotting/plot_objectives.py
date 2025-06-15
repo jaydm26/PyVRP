@@ -1,11 +1,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp.Result import Result
+from pyvrp._pyvrp import ProblemData
 
 
 def plot_objectives(
     result: Result,
+    data: ProblemData,
+    penalty_params: PenaltyParams = PenaltyParams(),
     num_to_skip: int | None = None,
     ax: plt.Axes | None = None,
     ylim_adjust: tuple[float, float] = (0.95, 1.15),
@@ -52,7 +56,7 @@ def plot_objectives(
 
     # Use best-found solution to set reasonable y-limits, if available.
     if result.is_feasible():
-        best_cost = result.cost()
+        best_cost = result.cost(data, penalty_params)
         ax.set_ylim(best_cost * ylim_adjust[0], best_cost * ylim_adjust[1])
 
     ax.set_title("Objectives")

@@ -1,5 +1,6 @@
 from importlib.metadata import version
 
+from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp._pyvrp import ProblemData
 
 from .Result import Result
@@ -55,9 +56,7 @@ class ProgressPrinter:
         whether a new best solution has been found, and the search duration.
         """
         should_print = (
-            self._print
-            and stats.is_collecting()
-            and stats.num_iterations % 500 == 0
+            self._print and stats.is_collecting() and stats.num_iterations % 500 == 0
         )
 
         if not should_print:
@@ -111,7 +110,12 @@ class ProgressPrinter:
         )
         print(msg)
 
-    def end(self, result: Result):
+    def end(
+        self,
+        result: Result,
+        data: ProblemData,
+        penalty_params: PenaltyParams = PenaltyParams(),
+    ):
         """
         Outputs information about the search duration and the best-found
         solution.
@@ -120,8 +124,8 @@ class ProgressPrinter:
             msg = _END.format(
                 iters=result.num_iterations,
                 runtime=result.runtime,
-                best_cost=round(result.cost(), 2),
-                summary=result.summary(),
+                best_cost=round(result.cost(data, penalty_params), 2),
+                summary=result.summary(data, penalty_params),
             )
             print(msg)
 

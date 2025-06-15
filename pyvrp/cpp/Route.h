@@ -34,7 +34,7 @@ class Route
 
 public:
     /**
-     * Forward iterator through the clients visited by this route.
+     * Forward iterator through the clients visited by this route, in order.
      */
     class Iterator
     {
@@ -63,6 +63,55 @@ public:
         Iterator operator++(int);
         Iterator &operator++();
     };
+
+    /**
+     * Pairwise iterator for traversing consecutive client pairs in the route.
+     * Dereferencing yields std::pair<Client, Client>.
+     */
+    class PairwiseIterator
+    {
+        Iterator current_;
+        Iterator next_;
+    public:
+        PairwiseIterator(Iterator begin, Iterator end)
+            : current_(begin), next_(begin)
+        {
+            if (next_ != end)
+                ++next_;
+        }
+
+        bool operator!=(PairwiseIterator const &other) const
+        {
+            return current_ != other.current_;
+        }
+
+        PairwiseIterator &operator++()
+        {
+            ++current_;
+            ++next_;
+            return *this;
+        }
+
+        std::pair<Client, Client> operator*() const
+        {
+            return {*current_, *next_};
+        }
+    };
+
+    /**
+     * Returns a pair of iterators for pairwise traversal.
+     * Usage:
+     *   for (auto it = route.pairwise_begin(), end = route.pairwise_end(); it != end; ++it) { ... }
+     */
+    PairwiseIterator pairwise_begin() const
+    {
+        return PairwiseIterator(begin(), end());
+    }
+    PairwiseIterator pairwise_end() const
+    {
+        Iterator it = end();
+        return PairwiseIterator(it, it);
+    }
 
     /**
      * Simple object that stores some data about a client or depot visit.

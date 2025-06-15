@@ -35,6 +35,10 @@ dependencies = [
     "vrplib>=1.4.0",
     "tqdm>=4.64.1",
     "tomli>=2.0.1",
+    "meson",
+    "ipykernel>=6.29.5",
+    "pandas>=2.3.0",
+    "scipy>=1.15.3",
 ]
 
 [project.urls]
@@ -83,6 +87,9 @@ examples = [
 [tool.uv]
 default-groups = ["build", "dev"]
 package = true
+
+[tool.uv.sources]
+meson = { git = "https://github.com/mesonbuild/meson" }
 
 
 [tool.ruff]

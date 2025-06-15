@@ -18,11 +18,13 @@ project(
 )
 
 compiler = meson.get_compiler('cpp')
+message('Using C++ compiler: ' + compiler.get_id() + ' ' + compiler.version())
 if compiler.has_argument('-Wno-dangling-reference')
     # This is a new diagnostic in GCC 13 and up, but it is a bit buggy right
     # now and issues false positives for some of our code. See #656 and #657
     # for details.
     add_project_arguments('-Wno-dangling-reference', language: 'cpp')
+    add_project_arguments('-b_ndebug', language: 'cpp')
 endif
 
 # We first compile static libraries that contains all regular, C++ code, one

@@ -6,6 +6,7 @@ import numpy as np
 from tqdm.contrib.concurrent import process_map
 
 from pyvrp import ProblemData, Result, SolveParams, solve
+from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp.read import ROUND_FUNCS, read
 from pyvrp.stop import (
     MaxIterations,
@@ -31,14 +32,17 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
         "  ".join("-" * ln for ln in lens),
     ]
 
-    content = [
-        "  ".join(f"{c!s:>{ln}s}" for ln, c in zip(lens, r)) for r in rows
-    ]
+    content = ["  ".join(f"{c!s:>{ln}s}" for ln, c in zip(lens, r)) for r in rows]
 
     return "\n".join(header + content)
 
 
-def write_solution(where: Path, data: ProblemData, result: Result):
+def write_solution(
+    where: Path,
+    data: ProblemData,
+    result: Result,
+    penalty_params: PenaltyParams = PenaltyParams(),
+):
     with open(where, "w") as fh:
         if data.num_vehicle_types == 1:
             for idx, route in enumerate(result.best.routes(), 1):
@@ -46,7 +50,7 @@ def write_solution(where: Path, data: ProblemData, result: Result):
                 visits = visits[1:-1]  # skip start and end depots
                 fh.write(f"Route #{idx}: {' '.join(visits)}\n")
 
-            fh.write(f"Cost: {round(result.cost(), 2)}\n")
+            fh.write(f"Cost: {round(result.cost(data, penalty_params), 2)}\n")
             return
 
         # Since there are multiple vehicle types, we need to take some care
@@ -66,7 +70,7 @@ def write_solution(where: Path, data: ProblemData, result: Result):
             routes[vehicle] += " " + " ".join(visits)
 
         fh.writelines(route + "\n" for route in routes)
-        fh.write(f"Cost: {round(result.cost(), 2)}\n")
+        fh.write(f"Cost: {round(result.cost(data, penalty_params), 2)}\n")
 
 
 def _solve(
@@ -141,12 +145,12 @@ def _solve(
 
     if sol_dir:
         sol_dir.mkdir(parents=True, exist_ok=True)  # just in case
-        write_solution(sol_dir / (instance_name + ".sol"), data, result)
+        write_solution(sol_dir / (instance_name + ".sol"), data, result, params.penalty)
 
     return (
         instance_name,
         "Y" if result.is_feasible() else "N",
-        round(result.cost(), 2),
+        round(result.cost(data, params.penalty), 2),
         result.num_iterations,
         round(result.runtime, 3),
     )
@@ -237,19 +241,13 @@ def main():
     stop = parser.add_argument_group("Stopping criteria")
 
     msg = "Maximum runtime for each instance, in seconds."
-    stop.add_argument(
-        "--max_runtime", type=float, default=float("inf"), help=msg
-    )
+    stop.add_argument("--max_runtime", type=float, default=float("inf"), help=msg)
 
     msg = "Maximum number of iterations for solving each instance."
-    stop.add_argument(
-        "--max_iterations", type=int, default=float("inf"), help=msg
-    )
+    stop.add_argument("--max_iterations", type=int, default=float("inf"), help=msg)
 
     msg = "Maximum number of iterations without improvement."
-    stop.add_argument(
-        "--no_improvement", type=int, default=float("inf"), help=msg
-    )
+    stop.add_argument("--no_improvement", type=int, default=float("inf"), help=msg)
 
     msg = "Whether to scale stopping criteria values by the number of clients."
     stop.add_argument("--per_client", action="store_true")

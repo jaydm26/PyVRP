@@ -445,6 +445,10 @@ public:
      *     empty and reload.
      * max_reloads
      *     Maximum number of reloads the vehicle may perform on a route.
+     * vehicleWeight
+     *     Weight of the vehicle in tons.
+     * powerToMassRatio
+     *     Power to mass ratio of the vehicle in KW per ton
      * name
      *     Free-form name field for this vehicle type.
      */
@@ -466,7 +470,9 @@ public:
         std::vector<Load> const initialLoad;     // Initially used capacity
         std::vector<size_t> const reloadDepots;  // Reload locations
         size_t const maxReloads;                 // Maximum number of reloads
-        char const *name;                        // Type name (for reference)
+        double const vehicleWeight;              // Vehicle Weight in tons
+        double const powerToMassRatio;  // PowerToMassRatio (KW per ton)
+        char const *name;               // Type name (for reference)
 
         VehicleType(size_t numAvailable = 1,
                     std::vector<Load> capacity = {},
@@ -484,6 +490,8 @@ public:
                     std::vector<Load> initialLoad = {},
                     std::vector<size_t> reloadDepots = {},
                     size_t maxReloads = std::numeric_limits<size_t>::max(),
+                    double vehicleWeight = 0,
+                    double powerToMassRatio = 0,
                     std::string name = "");
 
         bool operator==(VehicleType const &other) const;
@@ -516,6 +524,8 @@ public:
                             std::optional<std::vector<Load>> initialLoad,
                             std::optional<std::vector<size_t>> reloadDepots,
                             std::optional<size_t> maxReloads,
+                            std::optional<double> vehicleWeight,
+                            std::optional<double> powerToMassRatio,
                             std::optional<std::string> name) const;
 
         /**

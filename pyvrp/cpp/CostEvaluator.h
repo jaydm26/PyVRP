@@ -12,10 +12,31 @@
 
 namespace pyvrp
 {
+
+/**
+ * Internal Enumeration to quickly ascertain the cost function to use
+ */
+enum INTERNAL_VelocityBehaviour
+{
+    ConstantNoCongestion,
+    ConstantWithConstantCongestion,
+    ConstantWithConstantInSegmentCongestion,
+    ConstantWithVariableCongestion,
+    ConstantInSegmentNoCongestion,
+    ConstantInSegmentWithConstantCongestion,
+    ConstantInSegmentWithConstantInSegmentCongestion,
+    ConstantInSegmentWithVariableCongestion,
+    VariableNoCongestion,
+    VariableWithConstantCongestion,
+    VariableWithConstantInSegmentCongestion,
+    VariableWithVariableCongestion,
+};
+
 // The following methods must be implemented for a type to be evaluatable by
 // the CostEvaluator.
 template <typename T>
 concept CostEvaluatable = requires(T arg) {
+    // { arg.route() } -> std::same_as<Route>;
     { arg.distanceCost() } -> std::same_as<Cost>;
     { arg.durationCost() } -> std::same_as<Cost>;
     { arg.fixedVehicleCost() } -> std::same_as<Cost>;
@@ -26,9 +47,20 @@ concept CostEvaluatable = requires(T arg) {
     { arg.isFeasible() } -> std::same_as<bool>;
 };
 
-// If, additionally, methods related to optional clients and prize collecting
-// are implemented we can also take that aspect into account. See the
-// CostEvaluator implementation for details.
+// an object that has the routes method available and maps to a vector of routes
+template <typename T>
+concept RoutesEvaluatable = requires(T arg) {
+    { arg.routes() } -> std::same_as<std::vector<Route>>;
+};
+
+template <typename T>
+concept RouteEvaluatable = requires(T arg) {
+    { arg.route } -> std::same_as<Route>;
+};
+
+// If, additionally, methods related to optional clients and prize
+// collecting are implemented we can also take that aspect into account. See
+// the CostEvaluator implementation for details.
 template <typename T>
 concept PrizeCostEvaluatable = CostEvaluatable<T> && requires(T arg) {
     { arg.uncollectedPrizes() } -> std::same_as<Cost>;
@@ -38,7 +70,7 @@ concept PrizeCostEvaluatable = CostEvaluatable<T> && requires(T arg) {
 // evaluated by the CostEvaluator.
 template <typename T>
 concept DeltaCostEvaluatable = requires(T arg, size_t dimension) {
-    { arg.route() };
+    // { arg.route() } -> std::same_as<Route>;
     { arg.distance() } -> std::same_as<Distance>;
     { arg.duration() } -> std::convertible_to<std::pair<Duration, Duration>>;
     { arg.excessLoad(dimension) } -> std::same_as<Load>;
@@ -77,6 +109,14 @@ class CostEvaluator
     std::vector<double> loadPenalties_;  // per load dimension
     double twPenalty_;
     double distPenalty_;
+    ProblemData data_;
+    double unitFuelCost_;
+    double unitEmissionCost_;
+    double velocity_;
+    double congestionFactor_;
+    std::vector<std::vector<double>> fuelCosts_;
+    double wagePerHour_;
+    Duration minHoursPaid_;
 
     /**
      * Computes the cost penalty incurred from the given excess loads. This is
@@ -88,7 +128,15 @@ class CostEvaluator
 public:
     CostEvaluator(std::vector<double> loadPenalties,
                   double twPenalty,
-                  double distPenalty);
+                  double distPenalty,
+                  ProblemData data,
+                  double unitFuelCost = 0.0,
+                  double unitEmissionCost = 0.0,
+                  double velocity = 0.0,
+                  double congestionFactor = 1.0,
+                  std::vector<std::vector<double>> fuelCosts = {},
+                  double wagePerHour = 0.0,
+                  Duration minHoursPaid = Duration(0));
 
     /**
      * Computes the total excess load penalty for the given load and vehicle
@@ -107,6 +155,31 @@ public:
      */
     [[nodiscard]] inline Cost distPenalty(Distance distance,
                                           Distance maxDistance) const;
+
+    /**
+     * Get the emission cost per ton per kilometer for a given vehicle's
+     * power-to-mass ratio and velocity.
+     */
+    [[nodiscard]] inline double
+    emissionCostPerTonPerKilometer(double powerToMassRatio,
+                                   double velocity) const;
+
+    /**
+     * Compute the total fuel cost for the given distance and duration.
+     */
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        double distance, double vehicleWeight, double powerToMassRatio) const;
+
+    [[nodiscard]] inline Cost fuelCost2(ProblemData data, Route route) const;
+
+    /**
+     * Computes the wage cost for the given hours worked, wage per hour, and
+     * minimum hours paid.
+     */
+    [[nodiscard]] inline Cost wageCost(Duration hoursWorked,
+                                       double wagePerHour,
+                                       Duration minHoursPaid) const;
 
     /**
      * Computes a smoothed objective (penalised cost) for a given solution.
@@ -163,8 +236,7 @@ public:
     template <bool exact = false,
               bool skipLoad = false,
               typename... Args,
-              template <typename...>
-              class T>
+              template <typename...> class T>
         requires(DeltaCostEvaluatable<T<Args...>>)
     bool deltaCost(Cost &out, T<Args...> const &proposal) const;
 
@@ -181,8 +253,7 @@ public:
               bool skipLoad = false,
               typename... uArgs,
               typename... vArgs,
-              template <typename...>
-              class T>
+              template <typename...> class T>
         requires(DeltaCostEvaluatable<T<uArgs...>>
                  && DeltaCostEvaluatable<T<vArgs...>>)
     bool deltaCost(Cost &out,
@@ -222,21 +293,109 @@ Cost CostEvaluator::distPenalty(Distance distance, Distance maxDistance) const
     return static_cast<Cost>(excessDistance.get() * distPenalty_);
 }
 
+// Do not attempt to modify velocity here. Consider this as a utility function
+double CostEvaluator::emissionCostPerTonPerKilometer(double powerToMassRatio,
+                                                     double velocity) const
+{
+    double a, b, c, d, e;
+    a = 465.390;
+    b = 48.143 * powerToMassRatio;
+    c = (32.389 + 0.8931 * powerToMassRatio) * velocity;
+    d = (-0.4771 - 0.02559 * powerToMassRatio) * velocity * velocity;
+    e = (0.0008889 + 0.0004055 * powerToMassRatio) * velocity * velocity
+        * velocity;
+
+    return a + b + c + d + e;
+}
+
+Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+    double distance, double vehicleWeight, double powerToMassRatio) const
+{
+    double emissionFactor = emissionCostPerTonPerKilometer(
+                                powerToMassRatio, velocity_ * congestionFactor_)
+                            * distance * vehicleWeight;
+
+    double fuelAndEmissionCost
+        = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+
+    return static_cast<Cost>(fuelAndEmissionCost);
+}
+
+Cost CostEvaluator::fuelCost2(ProblemData data, Route route) const
+{
+    double totalFuelCost = 0.0;
+    pyvrp::Matrix<pyvrp::Distance> distanceMatrix
+        = data.distanceMatrix(data.vehicleType(route.vehicleType()).profile);
+
+    for (auto &subRoute : route.trips())
+    {
+        size_t from, to;
+        from = subRoute.startDepot();
+        for (auto client : subRoute)
+        {
+            to = client;
+            totalFuelCost += static_cast<double>(distanceMatrix(from, to));
+            from = to;
+        }
+        to = subRoute.endDepot();
+        totalFuelCost += static_cast<double>(distanceMatrix(from, to));
+    }
+
+    // for (auto it = route.pairwise_begin(), end = route.pairwise_end();
+    //      it != end;
+    //      ++it)
+    // {
+    //     auto [from, to] = *it;
+    //     std::cout << "Fuel cost from " << from << " to " << to << ": "
+    //               << "Sample Value here" << "\n";
+    //     totalFuelCost += fuelCosts_[from][to];
+    // }
+    return static_cast<Cost>(totalFuelCost);
+}
+
+Cost CostEvaluator::wageCost(Duration hoursWorked,
+                             double wagePerHour,
+                             Duration minHoursPaid) const
+{
+    // If the worked hours are less than the minimum paid hours, we pay the
+    // minimum.
+    auto const paidHours = std::max<Duration>(hoursWorked, minHoursPaid);
+    return static_cast<Cost>(paidHours.get() * wagePerHour);
+}
+
 template <CostEvaluatable T>
 Cost CostEvaluator::penalisedCost(T const &arg) const
 {
     // Standard objective plus infeasibility-related penalty terms.
-    auto const cost = arg.distanceCost() + arg.durationCost()
-                      + (!arg.empty() ? arg.fixedVehicleCost() : 0)
-                      + excessLoadPenalties(arg.excessLoad())
-                      + twPenalty(arg.timeWarp())
-                      + distPenalty(arg.excessDistance(), 0);
+    auto cost = arg.distanceCost() + arg.durationCost()
+                + (!arg.empty() ? arg.fixedVehicleCost() : 0)
+                + excessLoadPenalties(arg.excessLoad())
+                + twPenalty(arg.timeWarp())
+                + distPenalty(arg.excessDistance(), 0);
 
     if constexpr (PrizeCostEvaluatable<T>)
         return cost + arg.uncollectedPrizes();
 
+    if constexpr (RoutesEvaluatable<T>)
+    {
+        for (Route route : arg.routes())
+        {
+            cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                static_cast<double>(arg.distance()),
+                data_.vehicleType(route.vehicleType()).vehicleWeight,
+                data_.vehicleType(route.vehicleType()).powerToMassRatio);
+        }
+    }
+    else if constexpr (RouteEvaluatable<T>)
+    {
+        cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            static_cast<double>(arg.distance()),
+            data_.vehicleType(arg.vehicleType()).vehicleWeight,
+            data_.vehicleType(arg.vehicleType()).powerToMassRatio);
+    }
+
     return cost;
-}
+};
 
 template <CostEvaluatable T> Cost CostEvaluator::cost(T const &arg) const
 {
@@ -249,8 +408,7 @@ template <CostEvaluatable T> Cost CostEvaluator::cost(T const &arg) const
 template <bool exact,
           bool skipLoad,
           typename... Args,
-          template <typename...>
-          class T>
+          template <typename...> class T>
     requires(DeltaCostEvaluatable<T<Args...>>)
 bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
 {
@@ -264,6 +422,10 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
 
     out -= route->durationCost();
     out -= twPenalty(route->timeWarp());
+
+    out -= wageCost(std::ceil<Duration>((route->duration()).get() / 3600),
+                    wagePerHour_,
+                    minHoursPaid_);
 
     auto const distance = proposal.distance();
     out += route->unitDistanceCost() * static_cast<Cost>(distance);
@@ -284,6 +446,10 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
     out += route->unitDurationCost() * static_cast<Cost>(duration);
     out += twPenalty(timeWarp);
 
+    out += wageCost(std::ceil<Duration>(duration.get() / 3600),
+                    wagePerHour_,
+                    minHoursPaid_);
+
     return true;
 }
 
@@ -291,8 +457,7 @@ template <bool exact,
           bool skipLoad,
           typename... uArgs,
           typename... vArgs,
-          template <typename...>
-          class T>
+          template <typename...> class T>
     requires(DeltaCostEvaluatable<T<uArgs...>>
              && DeltaCostEvaluatable<T<vArgs...>>)
 bool CostEvaluator::deltaCost(Cost &out,
@@ -319,6 +484,13 @@ bool CostEvaluator::deltaCost(Cost &out,
 
     out -= vRoute->durationCost();
     out -= twPenalty(vRoute->timeWarp());
+
+    auto const uRouteDuration = uRoute->duration();
+    out -= wageCost(
+        std::ceil(uRouteDuration.get() / 3600), wagePerHour_, minHoursPaid_);
+    auto const vRouteDuration = vRoute->duration();
+    out -= wageCost(
+        std::ceil(vRouteDuration.get() / 3600), wagePerHour_, minHoursPaid_);
 
     auto const uDist = uProposal.distance();
     out += uRoute->unitDistanceCost() * static_cast<Cost>(uDist);
@@ -351,9 +523,17 @@ bool CostEvaluator::deltaCost(Cost &out,
     out += uRoute->unitDurationCost() * static_cast<Cost>(uDuration);
     out += twPenalty(uTimeWarp);
 
+    out += wageCost(std::ceil<Duration>(uDuration.get() / 3600),
+                    wagePerHour_,
+                    minHoursPaid_);
+
     auto const [vDuration, vTimeWarp] = vProposal.duration();
     out += vRoute->unitDurationCost() * static_cast<Cost>(vDuration);
     out += twPenalty(vTimeWarp);
+
+    out += wageCost(std::ceil<Duration>(vDuration.get() / 3600),
+                    wagePerHour_,
+                    minHoursPaid_);
 
     return true;
 }

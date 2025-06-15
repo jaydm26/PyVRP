@@ -1,8 +1,9 @@
 import math
 from dataclasses import dataclass
 
+from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp.Statistics import Statistics
-from pyvrp._pyvrp import CostEvaluator, Solution
+from pyvrp._pyvrp import CostEvaluator, ProblemData, Solution
 
 
 @dataclass
@@ -40,7 +41,11 @@ class Result:
         if self.runtime < 0:
             raise ValueError("Negative runtime not understood.")
 
-    def cost(self) -> float:
+    def cost(
+        self,
+        data: ProblemData,
+        penalty_params: PenaltyParams = PenaltyParams(),
+    ) -> float:
         """
         Returns the cost (objective) value of the best solution. Returns inf
         if the best solution is infeasible.
@@ -49,7 +54,19 @@ class Result:
             return math.inf
 
         num_load_dims = len(self.best.excess_load())
-        return CostEvaluator([0] * num_load_dims, 0, 0).cost(self.best)
+        return CostEvaluator(
+            [0] * num_load_dims,
+            0,
+            0,
+            data,
+            unit_fuel_cost=penalty_params.unit_fuel_cost,
+            unit_emission_cost=penalty_params.unit_emission_cost,
+            velocity=penalty_params.velocity,
+            congestion_factor=penalty_params.congestion_factor,
+            fuel_costs=penalty_params.fuel_costs,
+            wage_per_hour=penalty_params.wage_per_hour,
+            min_hours_paid=penalty_params.wage_per_hour,
+        ).cost(self.best)
 
     def is_feasible(self) -> bool:
         """
@@ -57,11 +74,17 @@ class Result:
         """
         return self.best.is_feasible()
 
-    def summary(self) -> str:
+    def summary(
+        self,
+        data: ProblemData,
+        penalty_params: PenaltyParams = PenaltyParams(),
+    ) -> str:
         """
         Returns a nicely formatted result summary.
         """
-        obj_str = f"{self.cost()}" if self.is_feasible() else "INFEASIBLE"
+        obj_str = (
+            f"{self.cost(data, penalty_params)}" if self.is_feasible() else "INFEASIBLE"
+        )
         summary = [
             "Solution results",
             "================",
@@ -79,7 +102,7 @@ class Result:
 
     def __str__(self) -> str:
         content = [
-            self.summary(),
+            # self.summary(),
             "",
             "Routes",
             "------",

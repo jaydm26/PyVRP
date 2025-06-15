@@ -257,6 +257,8 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
                                       std::vector<Load> initialLoad,
                                       std::vector<size_t> reloadDepots,
                                       size_t maxReloads,
+                                      double vehicleWeight,
+                                      double powerToMassRatio,
                                       std::string name)
     : numAvailable(numAvailable),
       startDepot(startDepot),
@@ -274,6 +276,8 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
       initialLoad(pad(initialLoad, capacity)),
       reloadDepots(reloadDepots),
       maxReloads(maxReloads),
+      vehicleWeight(vehicleWeight),
+      powerToMassRatio(powerToMassRatio),
       name(duplicate(name.data()))
 {
     if (numAvailable == 0)
@@ -331,6 +335,8 @@ ProblemData::VehicleType::VehicleType(VehicleType const &vehicleType)
       initialLoad(vehicleType.initialLoad),
       reloadDepots(vehicleType.reloadDepots),
       maxReloads(vehicleType.maxReloads),
+      vehicleWeight(vehicleType.vehicleWeight),
+      powerToMassRatio(vehicleType.powerToMassRatio),
       name(duplicate(vehicleType.name))
 {
 }
@@ -352,6 +358,8 @@ ProblemData::VehicleType::VehicleType(VehicleType &&vehicleType)
       initialLoad(std::move(vehicleType.initialLoad)),
       reloadDepots(std::move(vehicleType.reloadDepots)),
       maxReloads(vehicleType.maxReloads),
+      vehicleWeight(vehicleType.vehicleWeight),
+      powerToMassRatio(vehicleType.powerToMassRatio),
       name(vehicleType.name)  // we can steal
 {
     vehicleType.name = nullptr;  // stolen
@@ -376,6 +384,8 @@ ProblemData::VehicleType ProblemData::VehicleType::replace(
     std::optional<std::vector<Load>> initialLoad,
     std::optional<std::vector<size_t>> reloadDepots,
     std::optional<size_t> maxReloads,
+    std::optional<double> vehicleWeight,
+    std::optional<double> powerToMassRatio,
     std::optional<std::string> name) const
 {
     return {numAvailable.value_or(this->numAvailable),
@@ -394,6 +404,8 @@ ProblemData::VehicleType ProblemData::VehicleType::replace(
             initialLoad.value_or(this->initialLoad),
             reloadDepots.value_or(this->reloadDepots),
             maxReloads.value_or(this->maxReloads),
+            vehicleWeight.value_or(this->vehicleWeight),
+            powerToMassRatio.value_or(this->powerToMassRatio),
             name.value_or(this->name)};
 }
 
