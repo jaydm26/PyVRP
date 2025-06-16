@@ -19,7 +19,7 @@ from tests.helpers import make_search_route
         ([2, 3], [1, 4]),  # both non-empty equal length
     ],
 )
-def test_apply(ok_small, visits1: list[int], visits2: list[int]):
+def test_apply(ok_small: ProblemData, visits1: list[int], visits2: list[int]):
     """
     Tests that applying SwapRoutes to two different routes indeed exchanges
     the visits.
@@ -40,7 +40,7 @@ def test_apply(ok_small, visits1: list[int], visits2: list[int]):
     assert_equal(visits1, [node.client for node in route2])
 
 
-def test_evaluate_same_vehicle_type(ok_small):
+def test_evaluate_same_vehicle_type(ok_small: ProblemData):
     """
     Tests that evaluate() returns 0 in case the same vehicle types are used,
     since in that case swapping cannot result in cost savings.
@@ -50,11 +50,11 @@ def test_evaluate_same_vehicle_type(ok_small):
     assert_equal(route1.vehicle_type, route2.vehicle_type)
 
     op = SwapRoutes(ok_small)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
     assert_equal(op.evaluate(route1, route2, cost_eval), 0)
 
 
-def test_same_route(ok_small):
+def test_same_route(ok_small: ProblemData):
     """
     Tests that evaluate() returns 0 in case the same routes are passed in,
     since then swapping has no effect.
@@ -62,11 +62,11 @@ def test_same_route(ok_small):
     route = make_search_route(ok_small, [1])
 
     op = SwapRoutes(ok_small)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
     assert_equal(op.evaluate(route, route, cost_eval), 0)
 
 
-def test_evaluate_empty_routes(ok_small):
+def test_evaluate_empty_routes(ok_small: ProblemData):
     """
     Tests that evaluate() returns 0 when one or both of the routes are empty.
     """
@@ -87,7 +87,7 @@ def test_evaluate_empty_routes(ok_small):
     route2.update()
 
     op = SwapRoutes(data)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
 
     # Vehicle types are no longer the same, but one of the routes is empty.
     # That situation is not currently handled.
@@ -100,7 +100,7 @@ def test_evaluate_empty_routes(ok_small):
     assert_equal(op.evaluate(route3, route2, cost_eval), 0)
 
 
-def test_evaluate_capacity_differences(ok_small):
+def test_evaluate_capacity_differences(ok_small: ProblemData):
     """
     Tests that changes in vehicle capacity violations are evaluated correctly.
     """
@@ -121,7 +121,7 @@ def test_evaluate_capacity_differences(ok_small):
     assert_equal(route2.load(), [3])
 
     op = SwapRoutes(data)
-    cost_eval = CostEvaluator([40], 1, 0)
+    cost_eval = CostEvaluator([40], 1, 0, data=data)
 
     # Swapping the route plans should alleviate the excess load, since the load
     # of 15 on route1 is below route2's capacity, and similarly for route2's
@@ -142,7 +142,7 @@ def test_evaluate_capacity_differences(ok_small):
     assert_(route2.is_feasible())
 
 
-def test_evaluate_shift_time_window_differences(ok_small):
+def test_evaluate_shift_time_window_differences(ok_small: ProblemData):
     """
     Tests that SwapRoutes correctly evaluates changes in time warp due to
     different shift time windows.
@@ -165,11 +165,11 @@ def test_evaluate_shift_time_window_differences(ok_small):
     # route. Thus, we should have that swapping the vehicle types results in
     # a lower cost, due to decreased time warp on the routes.
     op = SwapRoutes(data)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
     assert_(op.evaluate(route1, route2, cost_eval) < 0)
 
 
-def test_evaluate_shift_latest_start_differences(ok_small):
+def test_evaluate_shift_latest_start_differences(ok_small: ProblemData):
     """
     Tests that SwapRoutes correctly evaluates changes in duration due to
     different shift latest start times.
@@ -206,11 +206,11 @@ def test_evaluate_shift_latest_start_differences(ok_small):
     # Swapping the routes results in a reduction of 1000 units of duration,
     # since the wait before the first client is reduced.
     op = SwapRoutes(data)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
     assert_equal(op.evaluate(route1, route2, cost_eval), -1_000)
 
 
-def test_evaluate_max_duration_constraints(ok_small):
+def test_evaluate_max_duration_constraints(ok_small: ProblemData):
     """
     Tests that SwapRoutes correctly evaluates changes in time warp due to
     different maximum duration constraints.
@@ -239,7 +239,7 @@ def test_evaluate_max_duration_constraints(ok_small):
     # Swapping the routes results in a reduction of 5'332 - 5'323 = 9 units of
     # time warp.
     op = SwapRoutes(data)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
     assert_equal(op.evaluate(route1, route2, cost_eval), -9)
 
 
@@ -270,7 +270,7 @@ def test_evaluate_with_different_depots():
     route2 = make_search_route(data, [2], idx=1, vehicle_type=1)  # 1 -> 2 -> 1
 
     op = SwapRoutes(data)
-    cost_eval = CostEvaluator([], 1, 0)
+    cost_eval = CostEvaluator([], 1, 0, data=data)
 
     # The routes each cost 16 distance which is not as efficient as swapping
     # them, as that would reduce each route's cost to 4, for an improvement
@@ -280,7 +280,7 @@ def test_evaluate_with_different_depots():
     assert_equal(op.evaluate(route1, route2, cost_eval), -24)
 
 
-def test_different_objectives(ok_small_multi_depot):
+def test_different_objectives(ok_small_multi_depot: ProblemData):
     """
     Tests that swapping between routes with vehicles having different objective
     coefficients correctly evaluates the resulting cost delta.
@@ -298,7 +298,7 @@ def test_different_objectives(ok_small_multi_depot):
 
     data = ok_small_multi_depot.replace(vehicle_types=vehicle_types)
     op = SwapRoutes(data)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
 
     route1 = make_search_route(data, [3], idx=0, vehicle_type=0)  # 0 -> 3 -> 0
     assert_equal(route1.distance_cost(), 3_994)
@@ -316,7 +316,7 @@ def test_different_objectives(ok_small_multi_depot):
     assert_equal(delta_cost, 3_909 + 3_280 - 3_994 - 4_327)
 
 
-def test_supports(ok_small, ok_small_two_profiles):
+def test_supports(ok_small: ProblemData, ok_small_two_profiles: ProblemData):
     """
     Tests that SwapRoutes does not support instances with just a single vehicle
     type.

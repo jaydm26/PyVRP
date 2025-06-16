@@ -16,17 +16,18 @@ from pyvrp import (
     Solution,
     VehicleType,
 )
+from pyvrp._pyvrp import ProblemData
 from pyvrp.crossover import selective_route_exchange as srex
 from pyvrp.crossover._crossover import selective_route_exchange as cpp_srex
 from pyvrp.exceptions import TspWarning
 
 
-def test_same_parents_same_offspring(ok_small):
+def test_same_parents_same_offspring(ok_small: ProblemData):
     """
     Tests that SREX produces identical offspring when both parents are the
     same.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
 
     solution = Solution(ok_small, [[1, 2], [3, 4]])
@@ -35,13 +36,13 @@ def test_same_parents_same_offspring(ok_small):
     assert_equal(offspring, solution)
 
 
-def test_srex_empty_solution(prize_collecting):
+def test_srex_empty_solution(prize_collecting: ProblemData):
     """
     Tests that SREX returns the other parent when one of the solutions is
     empty. This can occur during prize collecting, and in that case there are
     no routes to exchange.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=prize_collecting)
     rng = RandomNumberGenerator(seed=42)
 
     empty = Solution(prize_collecting, [])
@@ -67,11 +68,13 @@ def test_srex_empty_solution(prize_collecting):
         (0, 0, 2),  # num_moved_routes > min(# routes first, # routes second)
     ],
 )
-def test_raise_invalid_arguments(ok_small, idx1, idx2, num_moved_routes):
+def test_raise_invalid_arguments(
+    ok_small: ProblemData, idx1: int, idx2: int, num_moved_routes: int
+):
     """
     Tests that SREX raises when some of the arguments are invalid.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     sol1 = Solution(ok_small, [[1], [2], [3, 4]])
     sol2 = Solution(ok_small, [[1, 2, 3, 4]])
@@ -86,12 +89,12 @@ def test_raise_invalid_arguments(ok_small, idx1, idx2, num_moved_routes):
         )
 
 
-def test_srex_move_all_routes(ok_small):
+def test_srex_move_all_routes(ok_small: ProblemData):
     """
     Tests if SREX produces an offspring that is identical to the second parent
     when all routes are replaced during crossover.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     sol1 = Solution(ok_small, [[1], [2], [3, 4]])
     sol2 = Solution(ok_small, [[1, 2], [3], [4]])
@@ -101,7 +104,7 @@ def test_srex_move_all_routes(ok_small):
     assert_equal(offspring, sol2)
 
 
-def test_srex_sorts_routes(ok_small):
+def test_srex_sorts_routes(ok_small: ProblemData):
     """
     Tests if SREX sorts the input before applying the operator.
 
@@ -110,7 +113,7 @@ def test_srex_sorts_routes(ok_small):
     routes, SREX should be invariant to route permutations and always produce
     the exact same offspring.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     routes1 = [[1], [2], [3, 4]]
     routes2 = [[1, 2], [3], [4]]
@@ -128,13 +131,13 @@ def test_srex_sorts_routes(ok_small):
             assert_equal(permuted_offspring, offspring)
 
 
-def test_srex_does_not_reinsert_unplanned_clients(ok_small):
+def test_srex_does_not_reinsert_unplanned_clients(ok_small: ProblemData):
     """
     Tests the case where the routes are not perfectly complementary. In that
     case, some clients will no longer in the solution after crossover: SREX
     does not reinsert those, but instead leaves that to the search method.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     # Note that when routes are exchanged, some customers will necessarily be
     # removed from the solution because the routes are overlapping. The
@@ -153,11 +156,11 @@ def test_srex_does_not_reinsert_unplanned_clients(ok_small):
     assert_(not expected.is_complete())
 
 
-def test_srex_changed_start_indices(ok_small):
+def test_srex_changed_start_indices(ok_small: ProblemData):
     """
     Tests the case where the initial start indices are changed in SREX.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     sol1 = Solution(ok_small, [[4], [1, 2, 3]])
     sol2 = Solution(ok_small, [[3], [1, 2, 4]])
@@ -176,7 +179,7 @@ def test_srex_changed_start_indices(ok_small):
     assert_equal(offspring, expected)
 
 
-def test_srex_heterogeneous_changed_start_indices(ok_small):
+def test_srex_heterogeneous_changed_start_indices(ok_small: ProblemData):
     """
     Tests the case where the initial start indices are changed in SREX for
     heterogeneous routes.
@@ -187,7 +190,7 @@ def test_srex_heterogeneous_changed_start_indices(ok_small):
             VehicleType(1, capacity=[20]),
         ]
     )
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     # We create the routes sorted by angle such that SREX sorting doesn't
     # affect them
@@ -223,12 +226,12 @@ def test_srex_heterogeneous_changed_start_indices(ok_small):
     expected = [Route(data, [1, 2, 4], 0), Route(data, [3], 1)]
 
 
-def test_srex_a_right_move(ok_small):
+def test_srex_a_right_move(ok_small: ProblemData):
     """
     Tests the case where the initial start indices are changed by moving the
     A index to the right.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     sol1 = Solution(ok_small, [[4], [2], [1, 3]])
     sol2 = Solution(ok_small, [[3], [2], [4, 1]])
@@ -267,12 +270,12 @@ def test_srex_a_right_move(ok_small):
     assert_equal(offspring, expected)
 
 
-def test_srex_a_left_move(ok_small):
+def test_srex_a_left_move(ok_small: ProblemData):
     """
     Tests the case where the initial start indices are changed by moving to
     A index to the left.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     # We create the routes sorted by angle such that SREX sorting doesn't
     # affect them.
@@ -284,12 +287,12 @@ def test_srex_a_left_move(ok_small):
     assert_equal(offspring, expected)
 
 
-def test_srex_b_left_move(ok_small):
+def test_srex_b_left_move(ok_small: ProblemData):
     """
     Tests the case where the initial start indices are changed by moving the
     B index to the left.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     # We create the routes sorted by angle such that SREX sorting doesn't
     # affect them.
@@ -300,12 +303,12 @@ def test_srex_b_left_move(ok_small):
     assert_equal(offspring, expected)
 
 
-def test_srex_b_right_move(ok_small):
+def test_srex_b_right_move(ok_small: ProblemData):
     """
     Tests the case where the initial start indices are changed by moving the
     B index to the right.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     # We create the routes sorted by angle such that SREX sorting doesn't
     # affect them.
@@ -317,13 +320,13 @@ def test_srex_b_right_move(ok_small):
     assert_equal(offspring, expected)
 
 
-def test_srex_warns_for_tsp_instances(pr107):
+def test_srex_warns_for_tsp_instances(pr107: ProblemData):
     """
     Tests that applying SREX to problems that are TSPs results in a warning,
     since in those cases SREX cannot do anything but return one of the two
     parent solutions.
     """
-    cost_eval = CostEvaluator([20], 6, 0)
+    cost_eval = CostEvaluator([20], 6, 0, data=pr107)
     rng = RandomNumberGenerator(seed=42)
 
     sol1 = Solution.make_random(pr107, rng)
@@ -334,13 +337,13 @@ def test_srex_warns_for_tsp_instances(pr107):
         srex((sol1, sol2), pr107, cost_eval, rng)
 
 
-def test_srex_tsp_instance_returns_a_parent_solution(pr107):
+def test_srex_tsp_instance_returns_a_parent_solution(pr107: ProblemData):
     """
     Tests that applying SREX to problems with just one vehicle (a TSP) results
     in one the return of one of the two parent solutions. No new solution can
     be created in this case, and SREX is not the right tool to use!
     """
-    cost_eval = CostEvaluator([20], 6, 0)
+    cost_eval = CostEvaluator([20], 6, 0, data=pr107)
     rng = RandomNumberGenerator(seed=42)
 
     sol1 = Solution.make_random(pr107, rng)

@@ -28,7 +28,7 @@ from tests.helpers import make_search_route
     ],
 )
 def test_OkSmall_multiple_vehicle_types(
-    ok_small, vehicle_types: list[VehicleType]
+    ok_small: ProblemData, vehicle_types: list[VehicleType]
 ):
     """
     This test evaluates a move that is improving for some of the vehicle types,
@@ -38,7 +38,7 @@ def test_OkSmall_multiple_vehicle_types(
     """
     data = ok_small.replace(vehicle_types=vehicle_types)
 
-    cost_evaluator = CostEvaluator([10_000], 6, 0)  # large load penalty
+    cost_evaluator = CostEvaluator([10_000], 6, 0, data=data)  # large load penalty
     rng = RandomNumberGenerator(seed=42)
 
     neighbours: list[list[int]] = [[], [2], [], [], []]  # only 1 -> 2
@@ -84,7 +84,7 @@ def test_move_involving_empty_routes():
     route2 = make_search_route(data, [], idx=1, vehicle_type=1)
 
     op = SwapTails(data)
-    cost_eval = CostEvaluator([], 0, 0)
+    cost_eval = CostEvaluator([], 0, 0, data=data)
 
     # This move does not change the route structure, so the delta cost is 0.
     assert_equal(op.evaluate(route1[2], route2[0], cost_eval), 0)
@@ -155,7 +155,7 @@ def test_move_involving_multiple_depots():
     assert_equal(route2.distance(), 16)
 
     op = SwapTails(data)
-    cost_eval = CostEvaluator([], 1, 0)
+    cost_eval = CostEvaluator([], 1, 0, data=data)
 
     assert_equal(op.evaluate(route1[1], route2[1], cost_eval), 0)  # no-op
 
@@ -168,7 +168,7 @@ def test_move_involving_multiple_depots():
     assert_equal(op.evaluate(route1[0], route2[1], cost_eval), -16)
 
 
-def test_move_with_different_profiles(ok_small_two_profiles):
+def test_move_with_different_profiles(ok_small_two_profiles: ProblemData):
     """
     Tests that SwapTails correctly evaluates moves between routes with
     different profiles.
@@ -180,7 +180,9 @@ def test_move_with_different_profiles(ok_small_two_profiles):
     route2 = make_search_route(data, [2], idx=1, vehicle_type=1)
 
     op = SwapTails(data)
-    cost_eval = CostEvaluator([0], 0, 0)  # all zero so no costs from penalties
+    cost_eval = CostEvaluator(
+        [0], 0, 0, data=data
+    )  # all zero so no costs from penalties
 
     # First route has profile 0, and its distance is thus computed using the
     # first distance matrix.
@@ -203,7 +205,7 @@ def test_move_with_different_profiles(ok_small_two_profiles):
     assert_equal(op.evaluate(route1[0], route2[1], cost_eval), delta)
 
 
-def test_supports(ok_small, pr107):
+def test_supports(ok_small: ProblemData, pr107: ProblemData):
     """
     Tests that SwapTails does not support TSP instances.
     """

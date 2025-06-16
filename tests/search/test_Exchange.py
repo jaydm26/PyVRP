@@ -26,7 +26,7 @@ from pyvrp.search import (
     NeighbourhoodParams,
     compute_neighbours,
 )
-from pyvrp.search._search import Node, Route
+from pyvrp.search._search import Node, NodeOperator, Route
 from tests.helpers import make_search_route
 
 
@@ -41,13 +41,15 @@ from tests.helpers import make_search_route
         Exchange33,
     ],
 )
-def test_swap_single_route_stays_single_route(rc208, operator):
+def test_swap_single_route_stays_single_route(
+    rc208: ProblemData, operator: NodeOperator
+):
     """
     Swap operators ((N, M)-exchange operators with M > 0) on a single route can
     only move within the same route, so they can never find a solution that has
     more than one route.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=42)
 
     nb_params = NeighbourhoodParams(num_neighbours=rc208.num_clients)
@@ -66,12 +68,12 @@ def test_swap_single_route_stays_single_route(rc208, operator):
 
 
 @pytest.mark.parametrize("operator", [Exchange10, Exchange20, Exchange30])
-def test_relocate_uses_empty_routes(rc208, operator):
+def test_relocate_uses_empty_routes(rc208: ProblemData, operator: NodeOperator):
     """
     Unlike the swapping exchange operators, relocate should be able to relocate
     clients to empty routes if that is an improvement.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=42)
 
     nb_params = NeighbourhoodParams(num_neighbours=rc208.num_clients)
@@ -100,14 +102,16 @@ def test_relocate_uses_empty_routes(rc208, operator):
         Exchange33,
     ],
 )
-def test_cannot_exchange_when_parts_overlap_with_depot(ok_small, operator):
+def test_cannot_exchange_when_parts_overlap_with_depot(
+    ok_small: ProblemData, operator: NodeOperator
+):
     """
     (N, M)-exchange works by exchanging N nodes starting at some node U with
     M nodes starting at some node V. But when there is no sequence of N or M
     nodes that does not contain the depot (because the routes are very short),
     then no exchange is possible.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
 
     nb_params = NeighbourhoodParams(num_neighbours=ok_small.num_clients)
@@ -121,12 +125,14 @@ def test_cannot_exchange_when_parts_overlap_with_depot(ok_small, operator):
 
 
 @pytest.mark.parametrize("operator", [Exchange32, Exchange33])
-def test_cannot_exchange_when_segments_overlap(ok_small, operator):
+def test_cannot_exchange_when_segments_overlap(
+    ok_small: ProblemData, operator: NodeOperator
+):
     """
     (3, 2)- and (3, 3)-exchange cannot exchange anything on a length-four
     single route solution: there's always overlap between the segments.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
 
     nb_params = NeighbourhoodParams(num_neighbours=ok_small.num_clients)
@@ -139,12 +145,12 @@ def test_cannot_exchange_when_segments_overlap(ok_small, operator):
     assert_equal(new_sol, sol)
 
 
-def test_cannot_swap_adjacent_segments(ok_small):
+def test_cannot_swap_adjacent_segments(ok_small: ProblemData):
     """
     (2, 2)-exchange on a single route cannot swap adjacent segments, since
     that's already covered by (2, 0)-exchange.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
 
     nb_params = NeighbourhoodParams(num_neighbours=ok_small.num_clients)
@@ -160,12 +166,12 @@ def test_cannot_swap_adjacent_segments(ok_small):
     assert_equal(new_sol, sol)
 
 
-def test_swap_between_routes_OkSmall(ok_small):
+def test_swap_between_routes_OkSmall(ok_small: ProblemData):
     """
     On the OkSmall example, (2, 1)-exchange should be able to swap parts of a
     two route solution, resulting in something better.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
 
     nb_params = NeighbourhoodParams(num_neighbours=ok_small.num_clients)
@@ -182,7 +188,7 @@ def test_swap_between_routes_OkSmall(ok_small):
     assert_(improved_cost < current_cost)
 
 
-def test_relocate_after_depot_should_work(ok_small):
+def test_relocate_after_depot_should_work(ok_small: ProblemData):
     """
     This test exercises the bug identified in issue #142, involving a relocate
     action that should insert directly after the depot.
@@ -202,7 +208,7 @@ def test_relocate_after_depot_should_work(ok_small):
     # This solution can be improved by moving 3 into its own route, that is,
     # inserting it after the depot of an empty route. Before the bug was fixed,
     # (1, 0)-exchange never performed this move.
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     assert_(route1[3] is nodes[-1])
     assert_(op.evaluate(nodes[-1], route2[0], cost_evaluator) < 0)
 
@@ -263,7 +269,7 @@ def test_relocate_only_happens_when_distance_and_duration_allow_it():
     assert_(distance_optimal.distance() < duration_optimal.distance())
     assert_(duration_optimal.time_warp() < distance_optimal.time_warp())
 
-    cost_evaluator = CostEvaluator([], 1, 0)
+    cost_evaluator = CostEvaluator([], 1, 0, data=data)
     rng = RandomNumberGenerator(seed=42)
     ls = LocalSearch(data, rng, compute_neighbours(data))
     ls.add_node_operator(Exchange10(data))
@@ -272,7 +278,7 @@ def test_relocate_only_happens_when_distance_and_duration_allow_it():
     assert_equal(ls.search(distance_optimal, cost_evaluator), duration_optimal)
 
 
-def test_relocate_to_heterogeneous_empty_route(ok_small):
+def test_relocate_to_heterogeneous_empty_route(ok_small: ProblemData):
     """
     This test asserts that a customer will be relocated to a non-empty route
     with a different capacity even if there is another empty route in between.
@@ -281,7 +287,7 @@ def test_relocate_to_heterogeneous_empty_route(ok_small):
     data = ok_small.replace(vehicle_types=vehicle_types)
 
     # Use a huge cost for load penalties to make other aspects irrelevant
-    cost_evaluator = CostEvaluator([100_000], 6, 0)
+    cost_evaluator = CostEvaluator([100_000], 6, 0, data=data)
     rng = RandomNumberGenerator(seed=42)
 
     # This is a non-empty neighbourhood (so LS does not complain), but the only
@@ -298,9 +304,7 @@ def test_relocate_to_heterogeneous_empty_route(ok_small):
     # with excess [1, 0, 0, 0]. Moving node 3 to route 4 will resolve all
     # load penalties, but other moves would increase load penalties.
     # Therefore, this requires moving to an empty route which is not the first.
-    sol = Solution(
-        data, [SolRoute(data, [1, 2, 3], 0), SolRoute(data, [4], 1)]
-    )
+    sol = Solution(data, [SolRoute(data, [1, 2, 3], 0), SolRoute(data, [4], 1)])
     expected = Solution(
         data,
         [
@@ -323,7 +327,9 @@ def test_relocate_to_heterogeneous_empty_route(ok_small):
         (Exchange30, 135, 997),
     ],
 )
-def test_relocate_fixed_vehicle_cost(ok_small, op, base_cost, fixed_cost):
+def test_relocate_fixed_vehicle_cost(
+    ok_small: ProblemData, op: NodeOperator, base_cost: int, fixed_cost: int
+):
     """
     Tests that relocate operators - (N, M)-exchange where M == 0 - also take
     into account fixed vehicle costs changes if one of the routes is empty. In
@@ -341,10 +347,8 @@ def test_relocate_fixed_vehicle_cost(ok_small, op, base_cost, fixed_cost):
     # First route is not empty, second route is. The operator evaluates moving
     # some nodes to the second route, which would use both of them. That should
     # add to the fixed vehicle cost.
-    cost_eval = CostEvaluator([1], 1, 0)
-    assert_equal(
-        op.evaluate(route1[1], route2[0], cost_eval), base_cost + fixed_cost
-    )
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
+    assert_equal(op.evaluate(route1[1], route2[0], cost_eval), base_cost + fixed_cost)
 
 
 @pytest.mark.parametrize(
@@ -356,7 +360,9 @@ def test_relocate_fixed_vehicle_cost(ok_small, op, base_cost, fixed_cost):
         (Exchange21, 5_000, -596),
     ],
 )
-def test_exchange_with_max_duration_constraint(ok_small, op, max_dur, cost):
+def test_exchange_with_max_duration_constraint(
+    ok_small: ProblemData, op: NodeOperator, max_dur: int, cost: int
+):
     """
     Tests that the exchange operators correctly evaluate time warp due to
     maximum duration violations.
@@ -378,12 +384,12 @@ def test_exchange_with_max_duration_constraint(ok_small, op, max_dur, cost):
     assert_equal(route1.duration(), 5_229)
     assert_equal(route2.duration(), 5_814)
 
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
     assert_equal(op.evaluate(route1[1], route2[1], cost_eval), cost)
 
 
 @pytest.mark.parametrize("operator", [Exchange10, Exchange11])
-def test_within_route_simultaneous_pickup_and_delivery(operator):
+def test_within_route_simultaneous_pickup_and_delivery(operator: NodeOperator):
     """
     Tests that the Exchange operators correctly evaluate load violations within
     the same route.
@@ -412,7 +418,7 @@ def test_within_route_simultaneous_pickup_and_delivery(operator):
     # would also resolve the excess load: the important bit is that we visit 3
     # before 1.
     op = operator(data)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
     assert_equal(op.evaluate(route[1], route[3], cost_eval), -5)
 
 
@@ -424,7 +430,7 @@ def test_within_route_simultaneous_pickup_and_delivery(operator):
         (0, 18_458),  # but with only violations the move is not improving
     ],
 )
-def test_relocate_max_distance(ok_small, max_distance: int, expected: int):
+def test_relocate_max_distance(ok_small: ProblemData, max_distance: int, expected: int):
     """
     Tests that a relocate move correctly evaluates maximum distance constraint
     violations, and can identify improving moves that increase overall distance
@@ -439,7 +445,7 @@ def test_relocate_max_distance(ok_small, max_distance: int, expected: int):
     assert_equal(route1.distance(), 5_501)
     assert_equal(route1.excess_distance(), max(5_501 - max_distance, 0))
 
-    cost_eval = CostEvaluator([0], 0, 10)
+    cost_eval = CostEvaluator([0], 0, 10, data=data)
     op = Exchange10(data)
 
     # Moving client #2 from route1 to route2 does not improve the overall
@@ -474,7 +480,7 @@ def test_relocate_max_distance(ok_small, max_distance: int, expected: int):
         (0, -6_072),  # so tighter constraints do not improve anything
     ],
 )
-def test_swap_max_distance(ok_small, max_distance: int, expected: int):
+def test_swap_max_distance(ok_small: ProblemData, max_distance: int, expected: int):
     """
     Tests that a swap move correctly evaluates maximum distance constraint
     violations, and can identify improving moves that increase overall distance
@@ -492,7 +498,7 @@ def test_swap_max_distance(ok_small, max_distance: int, expected: int):
     assert_equal(route2.distance(), 3_994)
     assert_equal(route2.excess_distance(), max(3_994 - max_distance, 0))
 
-    cost_eval = CostEvaluator([0], 0, 10)
+    cost_eval = CostEvaluator([0], 0, 10, data=data)
     op = Exchange11(data)
 
     # Swapping client #2 in route1 and client #3 in route2 improves the overall
@@ -520,7 +526,7 @@ def test_swap_max_distance(ok_small, max_distance: int, expected: int):
     assert_equal(delta_dist + 10 * delta_excess, expected)
 
 
-def test_swap_with_different_profiles(ok_small_two_profiles):
+def test_swap_with_different_profiles(ok_small_two_profiles: ProblemData):
     """
     Tests that swap correctly evaluates moves between routes with different
     profiles.
@@ -531,7 +537,9 @@ def test_swap_with_different_profiles(ok_small_two_profiles):
     route2 = make_search_route(data, [4], idx=1, vehicle_type=1)
 
     op = Exchange11(data)
-    cost_eval = CostEvaluator([0], 0, 0)  # all zero so no costs from penalties
+    cost_eval = CostEvaluator(
+        [0], 0, 0, data=data
+    )  # all zero so no costs from penalties
 
     # This move evaluates swapping loc 3 and 4 between routes. The cost delta
     # is as follows, taking into account the different profiles' distances.
@@ -541,7 +549,7 @@ def test_swap_with_different_profiles(ok_small_two_profiles):
     assert_equal(op.evaluate(route1[1], route2[1], cost_eval), delta)
 
 
-def test_swap_does_not_swap_depots(ok_small_multiple_trips):
+def test_swap_does_not_swap_depots(ok_small_multiple_trips: ProblemData):
     """
     Tests that the exchange operator does not attempt moves that include moving
     a reload depot.
@@ -550,7 +558,7 @@ def test_swap_does_not_swap_depots(ok_small_multiple_trips):
     route = make_search_route(data, [1, 2, 0, 3, 4])  # route is 1 2 | 3 4
 
     op = Exchange21(data)
-    cost_eval = CostEvaluator([0], 0, 0)
+    cost_eval = CostEvaluator([0], 0, 0, data=data)
 
     # This move overlaps with reload depot at index 3, so cannot be evaluated.
     assert_equal(op.evaluate(route[2], route[4], cost_eval), 0)
@@ -574,7 +582,7 @@ def test_bug_evaluating_move_with_initial_load():
     )
 
     op = Exchange21(data)
-    cost_eval = CostEvaluator([1], 0, 0)
+    cost_eval = CostEvaluator([1], 0, 0, data=data)
 
     route1 = make_search_route(data, [2, 3], idx=0, vehicle_type=0)
     route2 = make_search_route(data, [1], idx=1, vehicle_type=0)
@@ -586,7 +594,9 @@ def test_bug_evaluating_move_with_initial_load():
 
 @pytest.mark.parametrize("operator", [Exchange10, Exchange21, Exchange33])
 @pytest.mark.parametrize("instance", ["ok_small", "pr107", "prize_collecting"])
-def test_supports(operator, instance, request):
+def test_supports(
+    operator: NodeOperator, instance: ProblemData, request: pytest.FixtureRequest
+):
     """
     Tests that the Exchange operators support any type of data instance.
     """

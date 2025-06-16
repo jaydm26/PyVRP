@@ -14,6 +14,7 @@ from pyvrp import (
     RandomNumberGenerator,
     Solution,
 )
+from pyvrp._pyvrp import ProblemData
 from pyvrp.diversity import broken_pairs_distance as bpd
 
 
@@ -104,13 +105,13 @@ def test_params_constructor_does_not_raise_when_arguments_valid(
     assert_equal(params.max_pop_size, min_pop_size + generation_size)
 
 
-def test_add_triggers_purge(ok_small):
+def test_add_triggers_purge(ok_small: ProblemData):
     """
     Tests that adding another solution to a population of maximum size triggers
     survivor selection, that is, a purge that reduces the relevant population
     back to minimum size.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
 
     params = PopulationParams()
@@ -151,12 +152,12 @@ def test_add_triggers_purge(ok_small):
     assert_equal(len(pop), num_infeas + params.min_pop_size)
 
 
-def test_select_returns_same_parents_if_no_other_option(ok_small):
+def test_select_returns_same_parents_if_no_other_option(ok_small: ProblemData):
     """
     Tests that the ``select()`` method tries to return two different parents,
     but will return the same solution twice if there is no other option.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=2_147_483_647)
 
     params = PopulationParams(min_pop_size=0)
@@ -191,13 +192,13 @@ def test_select_returns_same_parents_if_no_other_option(ok_small):
     assert_(900 < different_parents < 1_000)
 
 
-def test_pop_is_empty_with_zero_min_pop_size_and_generation_size(ok_small):
+def test_pop_is_empty_with_zero_min_pop_size_and_generation_size(ok_small: ProblemData):
     """
     Tests that the population can never grow when it starts empty and the
     generation size is set to 0: adding a new solution then immediately
     triggers survivor selection.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=12)
 
     params = PopulationParams(min_pop_size=0, generation_size=0)
@@ -214,13 +215,13 @@ def test_pop_is_empty_with_zero_min_pop_size_and_generation_size(ok_small):
 
 
 @mark.parametrize("num_elite", [5, 25])
-def test_elite_solutions_are_not_purged(rc208, num_elite: int):
+def test_elite_solutions_are_not_purged(rc208: ProblemData, num_elite: int):
     """
     Tests that elite solutions - those considered of such high quality that
     they should be given special treatment - are not purged during survivor
     selection.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     params = PopulationParams(num_elite=num_elite)
     rng = RandomNumberGenerator(seed=42)
 
@@ -254,12 +255,12 @@ def test_elite_solutions_are_not_purged(rc208, num_elite: int):
 
 
 @mark.parametrize("k", [2, 3])
-def test_tournament_ranks_by_fitness(rc208, k: int):
+def test_tournament_ranks_by_fitness(rc208: ProblemData, k: int):
     """
     Tests that the tournament-based parent selection on average returns
     solutions about as often as their relative fitness value would suggest.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(bpd)
 
@@ -303,11 +304,11 @@ def test_tournament_ranks_by_fitness(rc208, k: int):
 
 
 @mark.parametrize("k", [-100, -1, 0])  # k must be strictly positive
-def test_tournament_raises_for_invalid_k(rc208, k: int):
+def test_tournament_raises_for_invalid_k(rc208: ProblemData, k: int):
     """
     Tests that k >= 0 is required for tournament-based selection.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=42)
 
     pop = Population(bpd)
@@ -318,12 +319,12 @@ def test_tournament_raises_for_invalid_k(rc208, k: int):
         pop.tournament(rng, cost_evaluator, k=k)
 
 
-def test_purge_removes_duplicates(rc208):
+def test_purge_removes_duplicates(rc208: ProblemData):
     """
     Tests that purging/survivor selection first removes duplicate solutions,
     before purging by (biased) fitness.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     params = PopulationParams(min_pop_size=5, generation_size=20)
     rng = RandomNumberGenerator(seed=42)
 
@@ -354,11 +355,11 @@ def test_purge_removes_duplicates(rc208):
     assert_equal(duplicates, 1)
 
 
-def test_clear(rc208):
+def test_clear(rc208: ProblemData):
     """
     Tests that clearing the population reduces its size to zero.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=42)
 
     pop = Population(bpd)

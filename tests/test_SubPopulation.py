@@ -8,22 +8,22 @@ from pyvrp import (
     RandomNumberGenerator,
     Solution,
 )
-from pyvrp._pyvrp import SubPopulation
+from pyvrp._pyvrp import ProblemData, SubPopulation
 from pyvrp.diversity import broken_pairs_distance as bpd
 
 
 @mark.parametrize("num_close", [5, 10, 25])
-def test_avg_distance_closest_is_same_up_to_num_close(rc208, num_close: int):
+def test_avg_distance_closest_is_same_up_to_num_close(
+    rc208: ProblemData, num_close: int
+):
     """
     Tests that the average distance of a solution to other solutions only looks
     at the nearest ``num_close`` solutions.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=5)
 
-    params = PopulationParams(
-        min_pop_size=0, generation_size=250, num_close=num_close
-    )
+    params = PopulationParams(min_pop_size=0, generation_size=250, num_close=num_close)
 
     subpop = SubPopulation(bpd, params)
     assert_equal(len(subpop), 0)
@@ -50,12 +50,12 @@ def test_avg_distance_closest_is_same_up_to_num_close(rc208, num_close: int):
     assert_(not np.allclose(distances, distances.mean(), rtol=1 / len(subpop)))
 
 
-def test_avg_distance_closest_for_single_route_solutions(rc208):
+def test_avg_distance_closest_for_single_route_solutions(rc208: ProblemData):
     """
     Tests that the closest computations are exactly right for a simple, single
     route solution where it's easy to reason about what's going on.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     params = PopulationParams(min_pop_size=0, num_close=10)
 
     subpop = SubPopulation(bpd, params)
@@ -74,9 +74,7 @@ def test_avg_distance_closest_for_single_route_solutions(rc208):
             # broken links with this new shifted solution, both around the
             # depot. So the average broken pairs distance is 2 / num_clients
             # for all of them.
-            assert_allclose(
-                bpd(item.solution, shifted), 2 / rc208.num_locations
-            )
+            assert_allclose(bpd(item.solution, shifted), 2 / rc208.num_locations)
 
         subpop.add(shifted, cost_evaluator)
         assert_equal(len(subpop), offset + 1)
@@ -88,12 +86,12 @@ def test_avg_distance_closest_for_single_route_solutions(rc208):
         assert_allclose(distances, distances.mean())
 
 
-def test_fitness_is_purely_based_on_cost_when_only_elites(rc208):
+def test_fitness_is_purely_based_on_cost_when_only_elites(rc208: ProblemData):
     """
     Tests than when all solutions are considered elite, the fitness values
     are completely determines by the solutions' cost.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=51)
     params = PopulationParams(num_elite=25, min_pop_size=25)
     subpop = SubPopulation(bpd, params)
@@ -106,9 +104,7 @@ def test_fitness_is_purely_based_on_cost_when_only_elites(rc208):
 
     # When all solutions are elite the diversity weight term drops out, and
     # fitness rankings are purely based on the cost ranking.
-    cost = np.array(
-        [cost_evaluator.penalised_cost(item.solution) for item in subpop]
-    )
+    cost = np.array([cost_evaluator.penalised_cost(item.solution) for item in subpop])
     by_cost = np.argsort(cost, kind="stable")
 
     rank = np.empty(len(subpop))
@@ -123,12 +119,12 @@ def test_fitness_is_purely_based_on_cost_when_only_elites(rc208):
     assert_allclose(actual_fitness, expected_fitness)
 
 
-def test_fitness_is_average_of_cost_and_diversity_when_no_elites(rc208):
+def test_fitness_is_average_of_cost_and_diversity_when_no_elites(rc208: ProblemData):
     """
     When there are no elite solutions, the fitness ranking averages the cost
     and diversity rank.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=52)
     params = PopulationParams(num_elite=0, min_pop_size=25)
     subpop = SubPopulation(bpd, params)
@@ -141,9 +137,7 @@ def test_fitness_is_average_of_cost_and_diversity_when_no_elites(rc208):
 
     # When no solutions are elite, the fitness ranking is based on the mean
     # of the cost and diversity ranks.
-    cost = np.array(
-        [cost_evaluator.penalised_cost(item.solution) for item in subpop]
-    )
+    cost = np.array([cost_evaluator.penalised_cost(item.solution) for item in subpop])
     cost_rank = np.argsort(cost, kind="stable")
 
     diversity = np.array([item.avg_distance_closest() for item in subpop])

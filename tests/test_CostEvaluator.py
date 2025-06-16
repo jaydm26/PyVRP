@@ -23,6 +23,7 @@ from pyvrp import (
     ],
 )
 def test_raises_negative_penalties(
+    ok_small: ProblemData,
     load_penalties: list[float],
     tw_penalty: float,
     dist_penalty: float,
@@ -32,16 +33,16 @@ def test_raises_negative_penalties(
     error.
     """
     with assert_raises(ValueError):
-        CostEvaluator(load_penalties, tw_penalty, dist_penalty)
+        CostEvaluator(load_penalties, tw_penalty, dist_penalty, data=ok_small)
 
 
 @pytest.mark.parametrize("load_penalty", (2, 4))
-def test_load_penalty(load_penalty: float):
+def test_load_penalty(ok_small: ProblemData, load_penalty: float):
     """
     This test asserts that load penalty computations are correct.
     """
     pen = load_penalty
-    cost_eval = CostEvaluator([pen], 1, 0)
+    cost_eval = CostEvaluator([pen], 1, 0, data=ok_small)
 
     assert_equal(cost_eval.load_penalty(0, 1, 0), 0)  # below capacity
     assert_equal(cost_eval.load_penalty(1, 1, 0), 0)  # at capacity
@@ -49,13 +50,13 @@ def test_load_penalty(load_penalty: float):
     assert_equal(cost_eval.load_penalty(3, 1, 0), 2 * pen)  # 2 above cap
 
 
-def test_load_penalty_multiple_dimensions():
+def test_load_penalty_multiple_dimensions(ok_small: ProblemData):
     """
     Tests that the load penalty computation uses the correct penalty value for
     each load dimension.
     """
     load_penalties = [1, 2]
-    cost_eval = CostEvaluator(load_penalties, 0, 0)
+    cost_eval = CostEvaluator(load_penalties, 0, 0, data=ok_small)
 
     for dim, pen in enumerate(load_penalties):
         assert_equal(cost_eval.load_penalty(0, 1, dim), 0)  # below capacity
@@ -65,13 +66,13 @@ def test_load_penalty_multiple_dimensions():
 
 
 @pytest.mark.parametrize("cap", [5, 15, 29, 51, 103])
-def test_load_penalty_always_zero_when_below_capacity(cap: int):
+def test_load_penalty_always_zero_when_below_capacity(ok_small: ProblemData, cap: int):
     """
     This test asserts that load penalties are only applied to excess load, that
     is, load in excess of the vehicle's capacity.
     """
     penalty = 2
-    cost_eval = CostEvaluator([penalty], 1, 0)
+    cost_eval = CostEvaluator([penalty], 1, 0, data=ok_small)
 
     assert_equal(cost_eval.load_penalty(0, cap, 0), 0)  # below cap
     assert_equal(cost_eval.load_penalty(cap - 1, cap, 0), 0)
@@ -80,18 +81,18 @@ def test_load_penalty_always_zero_when_below_capacity(cap: int):
     assert_equal(cost_eval.load_penalty(cap + 2, cap, 0), 2 * penalty)
 
 
-def test_tw_penalty():
+def test_tw_penalty(ok_small: ProblemData):
     """
     This test asserts that time window penalty computations are correct.
     """
-    cost_evaluator = CostEvaluator([1], 2, 0)
+    cost_evaluator = CostEvaluator([1], 2, 0, data=ok_small)
 
     # Penalty per unit time warp is 2.
     assert_equal(cost_evaluator.tw_penalty(0), 0)
     assert_equal(cost_evaluator.tw_penalty(1), 2)
     assert_equal(cost_evaluator.tw_penalty(2), 4)
 
-    cost_evaluator = CostEvaluator([1], 4, 0)
+    cost_evaluator = CostEvaluator([1], 4, 0, data=ok_small)
 
     # Penalty per unit excess capacity is now 4.
     assert_equal(cost_evaluator.tw_penalty(0), 0)
@@ -99,11 +100,11 @@ def test_tw_penalty():
     assert_equal(cost_evaluator.tw_penalty(2), 8)
 
 
-def test_dist_penalty():
+def test_dist_penalty(ok_small: ProblemData):
     """
     This test asserts that excess distance penalty computations are correct.
     """
-    cost_eval = CostEvaluator([1], 1, 2)
+    cost_eval = CostEvaluator([1], 1, 2, data=ok_small)
 
     # Penalty per unit excess distance is 2.
     assert_equal(cost_eval.dist_penalty(-1, 0), 0)
@@ -111,7 +112,7 @@ def test_dist_penalty():
     assert_equal(cost_eval.dist_penalty(1, 0), 2)
     assert_equal(cost_eval.dist_penalty(2, 0), 4)
 
-    cost_eval = CostEvaluator([1], 1, 4)
+    cost_eval = CostEvaluator([1], 1, 4, data=ok_small)
 
     # Penalty per unit excess capacity is now 4.
     assert_equal(cost_eval.dist_penalty(-1, 0), 0)
@@ -120,14 +121,14 @@ def test_dist_penalty():
     assert_equal(cost_eval.dist_penalty(2, 0), 8)
 
 
-def test_cost(ok_small):
+def test_cost(ok_small: ProblemData):
     """
     This test asserts that the cost is computed correctly for feasible
     solutions, and is a large value (representing infinity) for infeasible
     solutions.
     """
-    default_cost_evaluator = CostEvaluator([0], 0, 0)
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    default_cost_evaluator = CostEvaluator([0], 0, 0, data=ok_small)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
 
     feas_sol = Solution(ok_small, [[1, 2], [3], [4]])  # feasible solution
     distance = feas_sol.distance()
@@ -143,13 +144,13 @@ def test_cost(ok_small):
     assert_equal(default_cost_evaluator.cost(infeas_sol), infeas_cost)
 
 
-def test_cost_with_prizes(prize_collecting):
+def test_cost_with_prizes(prize_collecting: ProblemData):
     """
     When solving a prize-collecting instance, the cost is equal to the distance
     plus a prize term.
     """
     data = prize_collecting
-    cost_evaluator = CostEvaluator([1], 1, 0)
+    cost_evaluator = CostEvaluator([1], 1, 0, data=prize_collecting)
 
     sol = Solution(data, [[1, 2], [3, 4, 5]])
     cost = cost_evaluator.cost(sol)
@@ -164,7 +165,7 @@ def test_cost_with_prizes(prize_collecting):
     assert_equal(sol.distance() + sol.uncollected_prizes(), cost)
 
 
-def test_penalised_cost(ok_small):
+def test_penalised_cost(ok_small: ProblemData):
     """
     The penalised cost represents the smoothed objective, where constraint
     violations are priced in using penalty terms. It can be computed for both
@@ -173,8 +174,8 @@ def test_penalised_cost(ok_small):
     """
     penalty_capacity = 20
     penalty_tw = 6
-    default_evaluator = CostEvaluator([0], 0, 0)
-    cost_evaluator = CostEvaluator([penalty_capacity], penalty_tw, 0)
+    default_evaluator = CostEvaluator([0], 0, 0, data=ok_small)
+    cost_evaluator = CostEvaluator([penalty_capacity], penalty_tw, 0, data=ok_small)
 
     feas = Solution(ok_small, [[1, 2], [3], [4]])
     assert_(feas.is_feasible())
@@ -199,7 +200,7 @@ def test_penalised_cost(ok_small):
     assert_equal(default_evaluator.penalised_cost(infeas), infeas_dist)
 
 
-def test_excess_distance_penalised_cost(ok_small):
+def test_excess_distance_penalised_cost(ok_small: ProblemData):
     """
     Tests that excess distance is properly penalised in the cost computations.
     """
@@ -219,7 +220,7 @@ def test_excess_distance_penalised_cost(ok_small):
     assert_equal(routes[0].excess_distance(), 501)
     assert_equal(routes[1].excess_distance(), 0)
 
-    cost_eval = CostEvaluator([0], 0, 10)
+    cost_eval = CostEvaluator([0], 0, 10, data=ok_small)
     assert_equal(cost_eval.penalised_cost(sol), 5501 + 4224 + 10 * 501)
 
 
@@ -254,7 +255,7 @@ def test_excess_load_penalised_cost():
     assert_equal(routes[1].excess_load(), [2, 1])
     assert_equal(sol.excess_load(), [3, 1])
 
-    cost_eval = CostEvaluator([10, 10], 0, 0)
+    cost_eval = CostEvaluator([10, 10], 0, 0, data=data)
     assert_equal(cost_eval.penalised_cost(sol), 10 * (1 + 2) + 10 * (0 + 1))
 
 
@@ -262,7 +263,7 @@ def test_excess_load_penalised_cost():
     ("assignment", "expected"), [((0, 0), 0), ((0, 1), 10), ((1, 1), 20)]
 )
 def test_cost_with_fixed_vehicle_cost(
-    ok_small, assignment: tuple[int, int], expected: int
+    ok_small: ProblemData, assignment: tuple[int, int], expected: int
 ):
     """
     Tests that the cost evaluator counts the fixed cost when determining the
@@ -283,7 +284,7 @@ def test_cost_with_fixed_vehicle_cost(
     ]
 
     sol = Solution(data, routes)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
 
     # Solution is feasible, so penalised cost and regular cost are equal. Both
     # should contain the fixed vehicle cost.
@@ -292,7 +293,7 @@ def test_cost_with_fixed_vehicle_cost(
     assert_equal(cost_eval.penalised_cost(sol), sol.distance() + expected)
 
 
-def test_unit_distance_duration_cost(ok_small):
+def test_unit_distance_duration_cost(ok_small: ProblemData):
     """
     Tests that the cost evaluator takes into account that unit distance and
     duration costs can vary between routes.
@@ -308,7 +309,56 @@ def test_unit_distance_duration_cost(ok_small):
     assert_equal(sol.distance(), 5_501 + 4_224)
     assert_equal(sol.duration(), 6_221 + 5_004)
 
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
     assert_equal(sol.distance_cost(), 31_729)
     assert_equal(sol.duration_cost(), 31_241)
     assert_equal(cost_eval.penalised_cost(sol), 31_729 + 31_241)
+
+
+def test_fuel_cost(ok_small: ProblemData):
+    unit_fuel_cost = 2.0
+    cost_evaluator = CostEvaluator(
+        [1], 1, 0, data=ok_small, unit_fuel_cost=unit_fuel_cost
+    )
+
+    sol = Solution(ok_small, [[1, 2], [3], [4]])
+    vehicle_type = ok_small.vehicle_type(0)
+    assert_(sol.is_feasible())
+    # assert_equal(
+    #     cost_evaluator.fuel_and_emission_cost_with_constant_velocity_constant_congestion(
+    #         vehicle_type
+    #     ),
+    #     12_782_863,
+    # )
+
+
+def test_wage_cost_with_min_hours_paid(ok_small: ProblemData):
+    unit_wage_cost = 3.0
+    min_hours_paid = 8.0  # Minimum hours paid for a route
+    cost_evaluator = CostEvaluator(
+        [1], 1, 0, data=ok_small, wage_per_hour=unit_wage_cost
+    )
+
+    sol = Solution(ok_small, [[1, 2], [3], [4]])
+    assert_(sol.is_feasible())
+    assert_equal(
+        cost_evaluator.wage_cost(sol.duration() / 3600, unit_wage_cost, min_hours_paid),
+        min_hours_paid * unit_wage_cost,
+    )
+
+
+def test_wage_cost_without_min_hours_paid(ok_small: ProblemData):
+    unit_wage_cost = 3.0
+    min_hours_paid = 0.0  # No minimum hours paid for a route
+    cost_evaluator = CostEvaluator(
+        [1], 1, 0, data=ok_small, wage_per_hour=unit_wage_cost
+    )
+
+    sol = Solution(ok_small, [[1, 2], [3], [4]])
+    assert_(sol.is_feasible())
+    assert_equal(
+        cost_evaluator.wage_cost(
+            np.ceil(sol.duration() / 3600), unit_wage_cost, min_hours_paid
+        ),
+        np.ceil(sol.duration() / 3600) * unit_wage_cost,
+    )

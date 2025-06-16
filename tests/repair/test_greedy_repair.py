@@ -2,16 +2,17 @@ import pytest
 from numpy.testing import assert_, assert_equal, assert_raises
 
 from pyvrp import CostEvaluator, RandomNumberGenerator, Route, Solution
+from pyvrp._pyvrp import ProblemData
 from pyvrp.repair import greedy_repair
 
 
-def test_raises_given_no_routes_and_unplanned_clients(ok_small):
+def test_raises_given_no_routes_and_unplanned_clients(ok_small: ProblemData):
     """
     Tests that the greedy repair function raises when it's not given any routes
     to insert unplanned clients into. Greedy repair does not create new routes,
     so this is an impossible situation.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, ok_small)
 
     # This call should not raise since unplanned is empty: there are no routes
     # to insert into, which is OK since we have nothing to insert.
@@ -22,12 +23,12 @@ def test_raises_given_no_routes_and_unplanned_clients(ok_small):
         greedy_repair([], [1], ok_small, cost_eval)
 
 
-def test_insert_into_empty_route(ok_small):
+def test_insert_into_empty_route(ok_small: ProblemData):
     """
     Although greedy repair does not create *new* routes, existing empty routes
     will be used if they're available.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     # We want to insert client one into an empty route. That should result in
     # a single route with just client 1.
@@ -36,12 +37,12 @@ def test_insert_into_empty_route(ok_small):
     assert_equal(greedy, [Route(ok_small, [1], 0)])
 
 
-def test_empty_routes_or_unplanned_is_a_no_op(ok_small):
+def test_empty_routes_or_unplanned_is_a_no_op(ok_small: ProblemData):
     """
     If there are no routes, or no unplanned clients, then the returned routes
     should be the same as those given as an argument.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     # When unplanned is empty, there is nothing for greedy repair to do, so it
     # should return the exact same routes it received.
@@ -62,11 +63,11 @@ def test_empty_routes_or_unplanned_is_a_no_op(ok_small):
     assert_equal(greedy_repair([], [], ok_small, cost_eval), [])
 
 
-def test_after_depot(ok_small):
+def test_after_depot(ok_small: ProblemData):
     """
     Tests moves where it is optimal to insert directly after the depot.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     # We want to insert client 4 into the following route. It is optimal to do
     # so directly after the depot, just before client 3.
@@ -82,11 +83,11 @@ def test_after_depot(ok_small):
     assert_equal(repaired[0].visits(), [4, 3, 2, 1])
 
 
-def test_OkSmall(ok_small):
+def test_OkSmall(ok_small: ProblemData):
     """
     Tests greedy repair on a small instance.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     # We want to insert 1 and 4 into these routes. Both 1 and 4 are close to
     # 3, so it would be cheapest to insert these into the second route.
@@ -99,7 +100,7 @@ def test_OkSmall(ok_small):
 
 
 @pytest.mark.parametrize("seed", [0, 13, 42])
-def test_RC208(rc208, seed: int):
+def test_RC208(rc208: ProblemData, seed: int):
     """
     This smoke test checks that greedy repair is better than random on a larger
     instance, for several seeds.
@@ -116,7 +117,7 @@ def test_RC208(rc208, seed: int):
     routes = [[idx + 1] for idx in range(rc208.num_vehicles)]
     to_repair = Solution(rc208, routes).routes()
 
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=rc208)
     unplanned = list(range(rc208.num_vehicles + 1, rc208.num_locations))
 
     # Greedily repair by inserting all clients that are not already in the

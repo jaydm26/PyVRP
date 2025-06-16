@@ -23,14 +23,14 @@ from pyvrp.search._search import Node, Route
 from tests.helpers import make_search_route
 
 
-def test_swap_star_identifies_additional_moves_over_regular_swap(rc208):
+def test_swap_star_identifies_additional_moves_over_regular_swap(rc208: ProblemData):
     """
     SWAP* can move two clients to any position in the routes, whereas regular
     swap ((1, 1)-exchange) must reinsert each client in the other's position.
     Thus, SWAP* should still be able to identify additional improving moves
     after (1, 1)-exchange gets stuck.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=42)
 
     # For a fair comparison we should not hamper the node operator with
@@ -58,11 +58,11 @@ def test_swap_star_identifies_additional_moves_over_regular_swap(rc208):
 
 
 @mark.parametrize("seed", [2643, 2742, 2941, 3457, 4299, 4497, 6178, 6434])
-def test_swap_star_on_RC208_instance(rc208, seed: int):
+def test_swap_star_on_RC208_instance(rc208: ProblemData, seed: int):
     """
     Evaluate SWAP* on the RC208 instance, over a few seeds.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=rc208)
     rng = RandomNumberGenerator(seed=seed)
 
     ls = LocalSearch(rc208, rng, compute_neighbours(rc208))
@@ -123,7 +123,7 @@ def test_swap_star_can_swap_in_place():
     route2.append(nodes[3])
     route2.update()
 
-    cost_eval = CostEvaluator([], 1, 0)
+    cost_eval = CostEvaluator([], 1, 0, data=data)
     swap_star = SwapStar(data, overlap_tolerance=1)
 
     # Best is to exchange clients 1 and 3. The cost delta is all distance: it
@@ -169,7 +169,7 @@ def test_wrong_load_calculation_bug():
     route1 = make_search_route(data, [1, 2], idx=0)
     route2 = make_search_route(data, [3, 4], idx=1)
 
-    cost_eval = CostEvaluator([1_000], 1, 0)
+    cost_eval = CostEvaluator([1_000], 1, 0, data=data)
     swap_star = SwapStar(data, overlap_tolerance=1)
 
     # Optimal is 0 -> 3 -> 1 -> 0 and 0 -> 4 -> 2 -> 0. This exchanges four
@@ -185,18 +185,18 @@ def test_wrong_load_calculation_bug():
     assert_equal([node.client for node in route2], [4, 2])
 
 
-def test_max_distance(ok_small):
+def test_max_distance(ok_small: ProblemData):
     """
     Smoke test to check that the SwapStar operator accounts for maximum
     distance constraints when evaluating moves.
     """
 
-    def make_routes(data):
+    def make_routes(data: ProblemData):
         route1 = make_search_route(data, [1, 2, 3], idx=0)
         route2 = make_search_route(data, [4], idx=1)
         return route1, route2
 
-    cost_eval = CostEvaluator([0], 0, 10)  # only max distance is penalised
+    cost_eval = CostEvaluator([0], 0, 10, ok_small)  # only max distance is penalised
 
     route1, route2 = make_routes(ok_small)
     assert_equal(route1.distance(), 6_220)
@@ -231,7 +231,7 @@ def test_max_distance(ok_small):
     assert_equal(10 * (6_220 - 5_000) + 1_043, 13_243)
 
 
-def test_swap_star_overlap_tolerance(ok_small):
+def test_swap_star_overlap_tolerance(ok_small: ProblemData):
     """
     Tests that SwapStar respects the overlap tolerance argument when evaluating
     moves.
@@ -249,7 +249,7 @@ def test_swap_star_overlap_tolerance(ok_small):
     # Overlap tolerance is zero, so no routes should have overlap and thus the
     # move should evaluate to 0.
     swap_star = SwapStar(data, overlap_tolerance=0)
-    cost_eval = CostEvaluator([1_000], 0, 0)
+    cost_eval = CostEvaluator([1_000], 0, 0, data=data)
     assert_equal(swap_star.evaluate(route1, route2, cost_eval), 0)
 
     # But with full overlap tolerance, all routes should be checked. That

@@ -10,6 +10,7 @@ from pyvrp import (
     Statistics,
 )
 from pyvrp.ProgressPrinter import ProgressPrinter
+from pyvrp._pyvrp import ProblemData
 from pyvrp.diversity import broken_pairs_distance as bpd
 
 
@@ -38,16 +39,16 @@ def test_start_multiple_depot_plural(ok_small_multi_depot, capsys):
     assert_(f"{ok_small_multi_depot.num_depots} depots" in out)
 
 
-def test_end(ok_small, capsys):
+def test_end(ok_small: ProblemData, capsys):
     """
     Tests that the progress printer outputs some summary statistics about the
     best-found solution and solver run when calling end.
     """
     best = Solution(ok_small, [[1, 2], [3, 4]])
-    res = Result(best, Statistics(), 25, 0.05)
+    res = Result(best, Statistics(), 25, 0.05, data=ok_small)
 
     printer = ProgressPrinter(should_print=True)
-    printer.end(res)
+    printer.end(res, data=ok_small)
 
     out = capsys.readouterr().out
     assert_(str(round(res.cost())) in out)
@@ -68,14 +69,14 @@ def test_restart(capsys):
     assert_("restart" in out)
 
 
-def test_iteration(ok_small, capsys):
+def test_iteration(ok_small: ProblemData, capsys):
     """
     Tests that calling iteration prints a line about the current feasible and
     infeasible populations, but only every 500 iterations.
     """
     pop = Population(bpd)
     rng = RandomNumberGenerator(seed=42)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     for _ in range(10):
         pop.add(Solution.make_random(ok_small, rng), cost_eval)
@@ -117,13 +118,13 @@ def test_iteration(ok_small, capsys):
     assert_(str(round(infeas.best_cost)) in out)
 
 
-def test_should_print_false_no_output(ok_small, capsys):
+def test_should_print_false_no_output(ok_small: ProblemData, capsys):
     """
     Tests that disabling printing works.
     """
     pop = Population(bpd)
     rng = RandomNumberGenerator(seed=42)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     for _ in range(10):
         pop.add(Solution.make_random(ok_small, rng), cost_eval)
@@ -145,7 +146,7 @@ def test_should_print_false_no_output(ok_small, capsys):
     printer.start(ok_small)
     printer.iteration(stats=stats)
     printer.restart()
-    printer.end(result=Result(best, stats, 25, 0.05))
+    printer.end(result=Result(best, stats, 25, 0.05, data=ok_small), data=ok_small)
 
     out = capsys.readouterr().out
     assert_equal(out, "")
@@ -158,12 +159,14 @@ def test_should_print_false_no_output(ok_small, capsys):
         [[1, 2, 3, 4]],  # infeasible
     ],
 )
-def test_print_dash_when_subpopulation_is_empty(ok_small, routes, capsys):
+def test_print_dash_when_subpopulation_is_empty(
+    ok_small: ProblemData, routes: list[list[int]], capsys
+):
     """
     Tests that a "-" is printed as cost if one of the subpopulations is empty.
     """
     pop = Population(bpd)
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     solution = Solution(ok_small, routes)
     pop.add(solution, cost_eval)

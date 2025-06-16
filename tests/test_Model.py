@@ -8,8 +8,11 @@ from numpy.testing import (
 )
 
 from pyvrp import Client, ClientGroup, Depot, Model, Profile, VehicleType
+from pyvrp.PenaltyManager import PenaltyParams
+from pyvrp._pyvrp import ProblemData
 from pyvrp.constants import MAX_VALUE
 from pyvrp.exceptions import ScalingWarning
+from pyvrp.solve import SolveParams
 from pyvrp.stop import MaxIterations
 from tests.helpers import read_solution
 
@@ -268,7 +271,7 @@ def test_from_data(small_cvrp):
     assert_equal(m_data.duration_matrices(), small_cvrp.duration_matrices())
 
 
-def test_from_data_and_solve(small_cvrp, ok_small):
+def test_from_data_and_solve(small_cvrp: ProblemData, ok_small: ProblemData):
     """
     Tests that solving a model initialised from a data instance finds the
     correct (known) solutions.
@@ -284,7 +287,7 @@ def test_from_data_and_solve(small_cvrp, ok_small):
     assert_(res.is_feasible())
 
 
-def test_model_and_solve(ok_small):
+def test_model_and_solve(ok_small: ProblemData):
     """
     Tests that solving a model initialised using the modelling interface
     finds the correct (known) solutions.
@@ -340,7 +343,7 @@ def test_model_and_solve(ok_small):
     assert_equal(res.cost(), 9_155)
 
 
-def test_model_solve_display_argument(ok_small, capsys):
+def test_model_solve_display_argument(ok_small: ProblemData, capsys):
     """
     Tests that solving a model displays solver progress when the ``display``
     argument is ``True``.
@@ -733,7 +736,7 @@ def test_client_group_membership_works_with_intermediate_changes():
     assert_equal(group.clients, [2, 3, 4, 5])
 
 
-def test_tsp_instance_with_mutually_exclusive_groups(gtsp):
+def test_tsp_instance_with_mutually_exclusive_groups(gtsp: ProblemData):
     """
     Smoke test that tests if the model can solve a generalised TSP instance
     where all clients are spread over fifty mutually exclusive groups.
@@ -746,7 +749,7 @@ def test_tsp_instance_with_mutually_exclusive_groups(gtsp):
     assert_equal(res.best.num_clients(), gtsp.num_groups)
 
 
-def test_minimise_distance_or_duration(ok_small):
+def test_minimise_distance_or_duration(ok_small: ProblemData):
     """
     Small test that checks the model knows how to solve instances with
     different objective values.

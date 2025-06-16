@@ -1,5 +1,5 @@
 import math
-from dataclasses import dataclass
+from dataclasses import field, dataclass
 
 from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp.Statistics import Statistics
@@ -33,6 +33,8 @@ class Result:
     stats: Statistics
     num_iterations: int
     runtime: float
+    data: ProblemData
+    penalty_params: PenaltyParams = field(default_factory=PenaltyParams)
 
     def __post_init__(self):
         if self.num_iterations < 0:
@@ -41,11 +43,7 @@ class Result:
         if self.runtime < 0:
             raise ValueError("Negative runtime not understood.")
 
-    def cost(
-        self,
-        data: ProblemData,
-        penalty_params: PenaltyParams = PenaltyParams(),
-    ) -> float:
+    def cost(self) -> float:
         """
         Returns the cost (objective) value of the best solution. Returns inf
         if the best solution is infeasible.
@@ -58,14 +56,14 @@ class Result:
             [0] * num_load_dims,
             0,
             0,
-            data,
-            unit_fuel_cost=penalty_params.unit_fuel_cost,
-            unit_emission_cost=penalty_params.unit_emission_cost,
-            velocity=penalty_params.velocity,
-            congestion_factor=penalty_params.congestion_factor,
-            fuel_costs=penalty_params.fuel_costs,
-            wage_per_hour=penalty_params.wage_per_hour,
-            min_hours_paid=penalty_params.wage_per_hour,
+            self.data,
+            unit_fuel_cost=self.penalty_params.unit_fuel_cost,
+            unit_emission_cost=self.penalty_params.unit_emission_cost,
+            velocity=self.penalty_params.velocity,
+            congestion_factor=self.penalty_params.congestion_factor,
+            fuel_costs=self.penalty_params.fuel_costs,
+            wage_per_hour=self.penalty_params.wage_per_hour,
+            min_hours_paid=self.penalty_params.wage_per_hour,
         ).cost(self.best)
 
     def is_feasible(self) -> bool:
@@ -74,17 +72,11 @@ class Result:
         """
         return self.best.is_feasible()
 
-    def summary(
-        self,
-        data: ProblemData,
-        penalty_params: PenaltyParams = PenaltyParams(),
-    ) -> str:
+    def summary(self) -> str:
         """
         Returns a nicely formatted result summary.
         """
-        obj_str = (
-            f"{self.cost(data, penalty_params)}" if self.is_feasible() else "INFEASIBLE"
-        )
+        obj_str = f"{self.cost()}" if self.is_feasible() else "INFEASIBLE"
         summary = [
             "Solution results",
             "================",
@@ -102,7 +94,7 @@ class Result:
 
     def __str__(self) -> str:
         content = [
-            # self.summary(),
+            self.summary(),
             "",
             "Routes",
             "------",

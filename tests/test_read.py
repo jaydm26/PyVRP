@@ -523,9 +523,7 @@ def test_read_solution_multiple_vehicle_types(ok_small_multi_depot):
     """
     Tests that reading a solution with multiple vehicle types works correctly.
     """
-    solution = read_solution(
-        "data/OkSmallMultipleDepots.sol", ok_small_multi_depot
-    )
+    solution = read_solution("data/OkSmallMultipleDepots.sol", ok_small_multi_depot)
     routes = solution.routes()
 
     # The solution file shows three routes, but empty routes are ignored.
@@ -665,5 +663,5 @@ def test_read_hfvrp_solution():
     assert_equal(routes[1].vehicle_type(), 0)
     assert_equal(routes[-1].vehicle_type(), 2)
 
-    cost_eval = CostEvaluator([0], 0, 0)
+    cost_eval = CostEvaluator([0], 0, 0, data=data)
     assert_equal(cost_eval.cost(sol), 1941256006)

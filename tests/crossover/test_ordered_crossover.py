@@ -1,16 +1,17 @@
 from numpy.testing import assert_equal, assert_raises
 
 from pyvrp import CostEvaluator, RandomNumberGenerator, Solution, VehicleType
+from pyvrp._pyvrp import ProblemData
 from pyvrp.crossover import ordered_crossover as ox
 from pyvrp.crossover._crossover import ordered_crossover as cpp_ox
 
 
-def test_raises_when_not_tsp(ok_small):
+def test_raises_when_not_tsp(ok_small: ProblemData):
     """
     Tests that the ordered crossover (OX) operator raises when used on a data
     instance that is not a TSP.
     """
-    cost_eval = CostEvaluator([20], 6, 0)
+    cost_eval = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
     sol = Solution(ok_small, [[1, 2], [3, 4]])
 
@@ -20,7 +21,7 @@ def test_raises_when_not_tsp(ok_small):
         ox((sol, sol), ok_small, cost_eval, rng)
 
 
-def test_edge_cases_return_parents(pr107):
+def test_edge_cases_return_parents(pr107: ProblemData):
     """
     Tests that OX returns the first or second parent solution in two specific
     cases.
@@ -44,7 +45,7 @@ def test_edge_cases_return_parents(pr107):
     assert_equal(offspring, sol2)
 
 
-def test_prize_collecting_instance(prize_collecting):
+def test_prize_collecting_instance(prize_collecting: ProblemData):
     """
     Tests that OX functions correctly when there are optional clients.
     """
@@ -69,7 +70,7 @@ def test_prize_collecting_instance(prize_collecting):
     assert_equal(route.visits(), [6, 7, 2, 3, 4, 5])
 
 
-def test_empty_solution(prize_collecting):
+def test_empty_solution(prize_collecting: ProblemData):
     """
     Tests that OX returns the other parent when one of the solutions is empty.
     This can occur during prize collecting, and in that case there is nothing
@@ -77,7 +78,7 @@ def test_empty_solution(prize_collecting):
     """
     data = prize_collecting.replace(vehicle_types=[VehicleType(capacity=[0])])
 
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=prize_collecting)
     rng = RandomNumberGenerator(seed=42)
 
     empty = Solution(data, [])
@@ -90,7 +91,7 @@ def test_empty_solution(prize_collecting):
         assert_equal(offspring, nonempty)
 
 
-def test_wrap_around(ok_small):
+def test_wrap_around(ok_small: ProblemData):
     """
     Tests that OX wraps around properly on a small instance.
     """

@@ -56,7 +56,7 @@ def plot_objectives(
 
     # Use best-found solution to set reasonable y-limits, if available.
     if result.is_feasible():
-        best_cost = result.cost(data, penalty_params)
+        best_cost = result.cost()
         ax.set_ylim(best_cost * ylim_adjust[0], best_cost * ylim_adjust[1])
 
     ax.set_title("Objectives")

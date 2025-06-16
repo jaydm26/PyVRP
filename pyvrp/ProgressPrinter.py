@@ -124,8 +124,8 @@ class ProgressPrinter:
             msg = _END.format(
                 iters=result.num_iterations,
                 runtime=result.runtime,
-                best_cost=round(result.cost(data, penalty_params), 2),
-                summary=result.summary(data, penalty_params),
+                best_cost=round(result.cost(), 2),
+                summary=result.summary(),
             )
             print(msg)
 

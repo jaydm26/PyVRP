@@ -12,12 +12,12 @@ from pyvrp.search._search import (
 from tests.helpers import make_search_route
 
 
-def test_insert_cost_zero_when_not_allowed(ok_small):
+def test_insert_cost_zero_when_not_allowed(ok_small: ProblemData):
     """
     Tests that insert_cost() returns zero when a move is not possible. This is
     the only case where it shortcuts to return a non-negative delta cost.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
     route = make_search_route(ok_small, [1, 2])
 
     # Inserting the depot is not possible.
@@ -28,11 +28,11 @@ def test_insert_cost_zero_when_not_allowed(ok_small):
     assert_equal(insert_cost(route[1], Node(loc=3), ok_small, cost_eval), 0)
 
 
-def test_insert_cost(ok_small):
+def test_insert_cost(ok_small: ProblemData):
     """
     Tests that the insert_cost() method works correctly on a few basic cases.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
     route = make_search_route(ok_small, [1, 2])
 
     # This adds arcs 1 -> 4 -> 2, and removes arcs 1 -> 2. The added distances
@@ -66,7 +66,7 @@ def test_insert_cost(ok_small):
     assert_equal(insert_cost(Node(loc=3), route[2], ok_small, cost_eval), 4355)
 
 
-def test_insert_cost_between_different_depots(ok_small_multi_depot):
+def test_insert_cost_between_different_depots(ok_small_multi_depot: ProblemData):
     """
     Tests that insert_cost() correctly determines the delta distance cost of
     inserting a new node in an empty route with two different depots.
@@ -77,19 +77,19 @@ def test_insert_cost_between_different_depots(ok_small_multi_depot):
     route = Route(data, idx=0, vehicle_type=0)
     route.update()
 
-    cost_eval = CostEvaluator([0], 0, 0)
+    cost_eval = CostEvaluator([0], 0, 0, data=ok_small_multi_depot)
     dist_mat = data.distance_matrix(0)
 
     delta = dist_mat[0, 2] + dist_mat[2, 1] - dist_mat[0, 1]
     assert_equal(insert_cost(Node(loc=2), route[0], data, cost_eval), delta)
 
 
-def test_remove_cost_zero_when_not_allowed(ok_small):
+def test_remove_cost_zero_when_not_allowed(ok_small: ProblemData):
     """
     Tests that remove_cost() returns zero when a move is not possible. This is
     the only case where it shortcuts to return a non-negative delta cost.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
     route = make_search_route(ok_small, [1, 2])
 
     # Removing the depot is not possible.
@@ -100,11 +100,11 @@ def test_remove_cost_zero_when_not_allowed(ok_small):
     assert_equal(remove_cost(Node(loc=3), ok_small, cost_eval), 0)
 
 
-def test_remove(ok_small):
+def test_remove(ok_small: ProblemData):
     """
     Tests that the remove_cost() method works correctly on a few basic cases.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
     route = make_search_route(ok_small, [1, 2])
 
     # Purely distance. Removes arcs 0 -> 1 -> 2, adds arc 0 -> 2. This change
@@ -120,7 +120,6 @@ def test_insert_fixed_vehicle_cost():
     """
     Tests that insert_cost() adds the fixed vehicle cost if the route is empty.
     """
-    cost_eval = CostEvaluator([], 0, 0)
     data = ProblemData(
         clients=[Client(x=1, y=1), Client(x=1, y=0)],
         depots=[Depot(x=0, y=0)],
@@ -128,6 +127,7 @@ def test_insert_fixed_vehicle_cost():
         distance_matrices=[np.zeros((3, 3), dtype=int)],
         duration_matrices=[np.zeros((3, 3), dtype=int)],
     )
+    cost_eval = CostEvaluator([], 0, 0, data=data)
 
     # All distances, durations, and loads are equal. So the only cost change
     # can happen due to vehicle changes. In this, case we evaluate inserting a
@@ -147,7 +147,6 @@ def test_remove_fixed_vehicle_cost():
     Tests that remove_cost() subtracts the fixed vehicle cost if the route will
     be left empty.
     """
-    cost_eval = CostEvaluator([], 0, 0)
     data = ProblemData(
         clients=[Client(x=1, y=1), Client(x=1, y=0)],
         depots=[Depot(x=0, y=0)],
@@ -155,6 +154,7 @@ def test_remove_fixed_vehicle_cost():
         distance_matrices=[np.zeros((3, 3), dtype=int)],
         duration_matrices=[np.zeros((3, 3), dtype=int)],
     )
+    cost_eval = CostEvaluator([], 0, 0, data=data)
 
     # All distances, durations, and loads are equal. So the only cost change
     # can happen due to vehicle changes. In this, case we evaluate removing the
@@ -169,13 +169,13 @@ def test_remove_fixed_vehicle_cost():
     assert_equal(remove_cost(route[1], data, cost_eval), -13)
 
 
-def test_inplace_cost_zero_when_shortcutting_on_guard_clauses(ok_small):
+def test_inplace_cost_zero_when_shortcutting_on_guard_clauses(ok_small: ProblemData):
     """
     Tests that inplace_cost() returns zero cost when it hits one of the guard
     clauses: either when the first node is in a route, or the second node is
     not.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
     route = Route(ok_small, idx=0, vehicle_type=0)
     node1 = Node(loc=1)
     node2 = Node(loc=2)
@@ -199,7 +199,7 @@ def test_inplace_cost_zero_when_shortcutting_on_guard_clauses(ok_small):
     assert_equal(inplace_cost(node1, node2, ok_small, cost_eval), 0)
 
 
-def test_inplace_cost_delta_distance_computation(ok_small):
+def test_inplace_cost_delta_distance_computation(ok_small: ProblemData):
     """
     Tests that inplace_cost() correctly evaluates the delta distance of an
     improving move.
@@ -219,11 +219,11 @@ def test_inplace_cost_delta_distance_computation(ok_small):
     #   dist(0, 1) + dist(1, 2) = 3536
     #   dist(0, 3) + dist(3, 2) = 2578
     #                     delta = -958
-    cost_eval = CostEvaluator([0], 0, 0)
+    cost_eval = CostEvaluator([0], 0, 0, data=ok_small)
     assert_equal(inplace_cost(node3, node1, ok_small, cost_eval), -958)
 
 
-def test_remove_reload_depot(ok_small_multiple_trips):
+def test_remove_reload_depot(ok_small_multiple_trips: ProblemData):
     """
     Tests that remove_cost() correctly evaluates removing a reload depot.
     """
@@ -239,11 +239,11 @@ def test_remove_reload_depot(ok_small_multiple_trips):
     #              dist(2, 3) = 621
     # dist(2, 0) + dist(0, 3) = 1965 + 1931
     #              dist delta = -3275
-    cost_eval = CostEvaluator([1000], 0, 0)
+    cost_eval = CostEvaluator([1000], 0, 0, data=ok_small_multiple_trips)
     assert_equal(remove_cost(route[3], data, cost_eval), 8_000 - 3_275)
 
 
-def test_remove_consecutive_reload_depots(ok_small_multiple_trips):
+def test_remove_consecutive_reload_depots(ok_small_multiple_trips: ProblemData):
     """
     Tests that removing one of multiple, consecutive reload depots is evaluated
     correctly.
@@ -258,7 +258,17 @@ def test_remove_consecutive_reload_depots(ok_small_multiple_trips):
     # There are no distance or duration aspects, so this is purely about load.
     # Load should be a no-op, since there's a reload depot immediately after
     # the one we're trying to remove. So delta cost must be 0.
-    assert_equal(remove_cost(route[3], data, CostEvaluator([1000], 0, 0)), 0)
+    assert_equal(
+        remove_cost(
+            route[3], data, CostEvaluator([1000], 0, 0, data=ok_small_multiple_trips)
+        ),
+        0,
+    )
 
     # And similarly removing the second depot should also be a no-op.
-    assert_equal(remove_cost(route[4], data, CostEvaluator([1000], 0, 0)), 0)
+    assert_equal(
+        remove_cost(
+            route[4], data, CostEvaluator([1000], 0, 0, data=ok_small_multiple_trips)
+        ),
+        0,
+    )

@@ -2,16 +2,17 @@ import pytest
 from numpy.testing import assert_, assert_equal, assert_raises
 
 from pyvrp import CostEvaluator, RandomNumberGenerator, Route, Solution
+from pyvrp._pyvrp import ProblemData
 from pyvrp.repair import nearest_route_insert
 
 
-def test_raises_given_no_routes_and_unplanned_clients(ok_small):
+def test_raises_given_no_routes_and_unplanned_clients(ok_small: ProblemData):
     """
     Tests that the operator raises when it's not given any routes to insert
     unplanned clients into. The operator does not create new routes, so this is
     an impossible situation.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     # This call should not raise since unplanned is empty: there are no routes
     # to insert into, which is OK since we have nothing to insert.
@@ -22,12 +23,12 @@ def test_raises_given_no_routes_and_unplanned_clients(ok_small):
         nearest_route_insert([], [1], ok_small, cost_eval)
 
 
-def test_insert_into_empty_route(ok_small):
+def test_insert_into_empty_route(ok_small: ProblemData):
     """
     Although nearest route insert does not create *new* routes, existing empty
     routes will be used if they're the only ones available.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     # We want to insert client one into an empty route. That should result in
     # a single route with just client 1.
@@ -36,12 +37,12 @@ def test_insert_into_empty_route(ok_small):
     assert_equal(repaired[0].visits(), [1])
 
 
-def test_empty_routes_or_unplanned_is_a_no_op(ok_small):
+def test_empty_routes_or_unplanned_is_a_no_op(ok_small: ProblemData):
     """
     If there are no routes, or no unplanned clients, then the returned routes
     should be the same as those given as an argument.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     # When unplanned is empty, there is nothing for the operator to do, so it
     # should return the exact same routes it received.
@@ -65,11 +66,11 @@ def test_empty_routes_or_unplanned_is_a_no_op(ok_small):
     assert_equal(nearest_route_insert([], [], ok_small, cost_eval), [])
 
 
-def test_OkSmall(ok_small):
+def test_OkSmall(ok_small: ProblemData):
     """
     Tests nearest route insert on a small instance.
     """
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
 
     routes = Solution(ok_small, [[2], [3]]).routes()
     unplanned = [1, 4]
@@ -83,7 +84,7 @@ def test_OkSmall(ok_small):
 
 
 @pytest.mark.parametrize("seed", [0, 13, 42])
-def test_RC208(rc208, seed: int):
+def test_RC208(rc208: ProblemData, seed: int):
     """
     This smoke test checks that nearest route insert is better than random on a
     larger instance, for several seeds.
@@ -99,7 +100,7 @@ def test_RC208(rc208, seed: int):
     # same number of vehicles, we initialise dummy routes.
     routes = [Route(rc208, [idx + 1], 0) for idx in range(rc208.num_vehicles)]
     unplanned = list(range(rc208.num_vehicles + 1, rc208.num_clients + 1))
-    cost_eval = CostEvaluator([1], 1, 0)
+    cost_eval = CostEvaluator([1], 1, 0, data=rc208)
 
     # Repair inserting all clients that are not already in the dummy routes.
     nearest = nearest_route_insert(routes, unplanned, rc208, cost_eval)

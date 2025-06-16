@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 from numpy.testing import assert_, assert_equal
 
@@ -8,15 +9,16 @@ from pyvrp import (
     Solution,
     Statistics,
 )
+from pyvrp._pyvrp import ProblemData
 from pyvrp.diversity import broken_pairs_distance
 
 
-def test_csv_serialises_correctly(ok_small, tmp_path):
+def test_csv_serialises_correctly(ok_small: ProblemData, tmp_path: Path):
     """
     Tests that writing a CSV of a ``Statistics`` object and then reading that
     CSV again returns the same object.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(broken_pairs_distance)
 
@@ -40,12 +42,12 @@ def test_csv_serialises_correctly(ok_small, tmp_path):
 
 
 @pytest.mark.parametrize("num_iterations", [0, 5])
-def test_collect_a_data_point_per_iteration(ok_small, num_iterations: int):
+def test_collect_a_data_point_per_iteration(ok_small: ProblemData, num_iterations: int):
     """
     Tests that the statistics object collects on feasible and infeasible data
     point every time ``collect_from`` is called.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(broken_pairs_distance)
 
@@ -61,11 +63,11 @@ def test_collect_a_data_point_per_iteration(ok_small, num_iterations: int):
 
 
 @pytest.mark.parametrize("num_iterations", [0, 1, 10])
-def test_eq(ok_small, num_iterations: int):
+def test_eq(ok_small: ProblemData, num_iterations: int):
     """
     Tests the equality operator.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(broken_pairs_distance)
 
@@ -89,11 +91,11 @@ def test_eq(ok_small, num_iterations: int):
         assert_(stats.infeas_stats[0] != "test")
 
 
-def test_more_eq():
+def test_more_eq(ok_small: ProblemData):
     """
     Tests the equality operator for the same population trajectory.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     pop = Population(broken_pairs_distance)
     assert_equal(len(pop), 0)
 
@@ -118,7 +120,7 @@ def test_more_eq():
     assert_equal(stats1, stats2)
 
 
-def test_not_collecting():
+def test_not_collecting(ok_small: ProblemData):
     """
     Tests that calling collect_from() on a Statistics object that is not
     collecting is a no-op.
@@ -126,7 +128,7 @@ def test_not_collecting():
     stats = Statistics(collect_stats=False)
     assert_(not stats.is_collecting())
 
-    cost_eval = CostEvaluator([1], 1, 1)
+    cost_eval = CostEvaluator([1], 1, 1, data=ok_small)
     pop = Population(broken_pairs_distance)
     stats.collect_from(pop, cost_eval)
     stats.collect_from(pop, cost_eval)

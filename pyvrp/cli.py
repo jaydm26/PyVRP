@@ -50,7 +50,7 @@ def write_solution(
                 visits = visits[1:-1]  # skip start and end depots
                 fh.write(f"Route #{idx}: {' '.join(visits)}\n")
 
-            fh.write(f"Cost: {round(result.cost(data, penalty_params), 2)}\n")
+            fh.write(f"Cost: {round(result.cost(), 2)}\n")
             return
 
         # Since there are multiple vehicle types, we need to take some care
@@ -70,7 +70,7 @@ def write_solution(
             routes[vehicle] += " " + " ".join(visits)
 
         fh.writelines(route + "\n" for route in routes)
-        fh.write(f"Cost: {round(result.cost(data, penalty_params), 2)}\n")
+        fh.write(f"Cost: {round(result.cost(), 2)}\n")
 
 
 def _solve(
@@ -150,7 +150,7 @@ def _solve(
     return (
         instance_name,
         "Y" if result.is_feasible() else "N",
-        round(result.cost(data, params.penalty), 2),
+        round(result.cost(), 2),
         result.num_iterations,
         round(result.runtime, 3),
     )

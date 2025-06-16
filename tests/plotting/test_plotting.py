@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib.testing.decorators import image_comparison as img_comp
 from numpy.testing import assert_, assert_equal, assert_raises
+from pytest import WarningsRecorder
 
 from pyvrp import (
     CostEvaluator,
@@ -91,7 +92,7 @@ def test_plot_result():
 
     data = read("data/RC208.vrp", round_func="trunc")
     bks = read_solution("data/RC208.sol", data)
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=data)
     rng = RandomNumberGenerator(seed=42)
 
     params = PopulationParams()
@@ -114,7 +115,7 @@ def test_plot_result():
         # Hacky to produce deterministic result
         stats.runtimes[-1] = i % 3
 
-    res = Result(bks, stats, num_iterations, 0.0)
+    res = Result(bks, stats, num_iterations, 0.0, data=data)
     plotting.plot_result(res, data)
 
 
@@ -166,7 +167,9 @@ def test_plot_demands_raises_for_out_of_bounds_load_dimension():
         plotting.plot_demands(data)
 
 
-def test_plots_do_not_raise_when_there_are_no_feasible_sols(ok_small, recwarn):
+def test_plots_do_not_raise_when_there_are_no_feasible_sols(
+    ok_small: ProblemData, recwarn: WarningsRecorder
+):
     """
     Tests the small bug identified in #724 is fixed. The issue occurred that we
     used to set an axis limit that could be NaN when no feasible solution has
@@ -175,7 +178,7 @@ def test_plots_do_not_raise_when_there_are_no_feasible_sols(ok_small, recwarn):
     sol = Solution(ok_small, [[1, 2, 3, 4]])
     assert_(not sol.is_feasible())
 
-    cost_eval = CostEvaluator([1], 1, 1)
+    cost_eval = CostEvaluator([1], 1, 1, data=ok_small)
 
     pop = Population(broken_pairs_distance)
     pop.add(sol, cost_eval)
@@ -183,10 +186,10 @@ def test_plots_do_not_raise_when_there_are_no_feasible_sols(ok_small, recwarn):
     stats = Statistics()
     stats.collect_from(pop, cost_eval)
 
-    res = Result(sol, stats, 1, 0.0)
+    res = Result(sol, stats, 1, 0.0, data=ok_small)
     assert_(not res.is_feasible())
 
     # This used to either warn about NaN values, or raise because of NaNs.
-    plotting.plot_objectives(res)
+    plotting.plot_objectives(res, ok_small)
     plotting.plot_result(res, ok_small)
     assert_equal(len(recwarn), 0)

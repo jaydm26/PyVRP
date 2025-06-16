@@ -14,6 +14,7 @@ from pyvrp import (
     RandomNumberGenerator,
     Solution,
 )
+from pyvrp._pyvrp import ProblemData
 from pyvrp.crossover import selective_route_exchange as srex
 from pyvrp.diversity import broken_pairs_distance as bpd
 from pyvrp.search import Exchange10, LocalSearch, compute_neighbours
@@ -64,12 +65,12 @@ def test_params_constructor_does_not_raise_when_arguments_valid(
     assert_equal(params.num_iters_no_improvement, num_iters_no_improvement)
 
 
-def test_raises_when_no_initial_solutions(rc208):
+def test_raises_when_no_initial_solutions(rc208: ProblemData):
     """
     Tests that GeneticAlgorithm raises when no initial solutions are provided,
     since that is insufficient to do crossover.
     """
-    pen_manager = PenaltyManager(initial_penalties=([20], 6, 6))
+    pen_manager = PenaltyManager(initial_penalties=([20], 6, 6), data=rc208)
     rng = RandomNumberGenerator(seed=42)
     ls = LocalSearch(rc208, rng, compute_neighbours(rc208))
 
@@ -85,12 +86,12 @@ def test_raises_when_no_initial_solutions(rc208):
     GeneticAlgorithm(rc208, pen_manager, rng, pop, ls, srex, [sol])
 
 
-def test_initial_solutions_added_when_running(rc208):
+def test_initial_solutions_added_when_running(rc208: ProblemData):
     """
     Tests that GeneticAlgorithm adds initial solutions to the population
     when running the algorithm.
     """
-    pm = PenaltyManager(initial_penalties=([20], 6, 6))
+    pm = PenaltyManager(initial_penalties=([20], 6, 6), data=rc208)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(bpd)
     ls = LocalSearch(rc208, rng, compute_neighbours(rc208))
@@ -106,12 +107,12 @@ def test_initial_solutions_added_when_running(rc208):
     assert_equal(len(pop), 25)
 
 
-def test_initial_solutions_added_when_restarting(rc208):
+def test_initial_solutions_added_when_restarting(rc208: ProblemData):
     """
     Tests that GeneticAlgorithm clears the population and adds the initial
     solutions when restarting.
     """
-    pm = PenaltyManager(initial_penalties=([20], 6, 6))
+    pm = PenaltyManager(initial_penalties=([20], 6, 6), data=rc208)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(bpd)
 
@@ -141,20 +142,17 @@ def test_initial_solutions_added_when_restarting(rc208):
     assert_equal(len(pop), 26)
 
 
-def test_best_solution_improves_with_more_iterations(rc208):
+def test_best_solution_improves_with_more_iterations(rc208: ProblemData):
     """
     Tests that additional iterations result in better solutions. This is a
     smoke test that checks at least something's improving during the GA's
     execution.
     """
     rng = RandomNumberGenerator(seed=42)
-    pm = PenaltyManager(initial_penalties=([20], 6, 6))
+    pm = PenaltyManager(initial_penalties=([20], 6, 6), data=rc208)
     pop_params = PopulationParams()
     pop = Population(bpd, params=pop_params)
-    init = [
-        Solution.make_random(rc208, rng)
-        for _ in range(pop_params.min_pop_size)
-    ]
+    init = [Solution.make_random(rc208, rng) for _ in range(pop_params.min_pop_size)]
 
     ls = LocalSearch(rc208, rng, compute_neighbours(rc208))
     ls.add_node_operator(Exchange10(rc208))
@@ -171,13 +169,13 @@ def test_best_solution_improves_with_more_iterations(rc208):
     assert_(new_best.is_feasible())  # best must be feasible
 
 
-def test_best_initial_solution(rc208):
+def test_best_initial_solution(rc208: ProblemData):
     """
     Tests that GeneticAlgorithm uses the best initial solution to initialise
     the best found solution.
     """
     rng = RandomNumberGenerator(seed=42)
-    pm = PenaltyManager(initial_penalties=([20], 6, 6))
+    pm = PenaltyManager(initial_penalties=([20], 6, 6), data=rc208)
     pop = Population(bpd)
 
     init = [Solution.make_random(rc208, rng) for _ in range(24)]
@@ -194,14 +192,14 @@ def test_best_initial_solution(rc208):
     assert_equal(result.best, bks)
 
 
-def test_infeasible_offspring_is_repaired(rc208):
+def test_infeasible_offspring_is_repaired(rc208: ProblemData):
     """
     Tests that infeasible offspring will be repaired if the repair probability
     is 1.
     """
     bks = read_solution("data/RC208.sol", rc208)
 
-    pm = PenaltyManager(initial_penalties=([20], 6, 6))
+    pm = PenaltyManager(initial_penalties=([20], 6, 6), data=rc208)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(bpd)
 
@@ -227,13 +225,15 @@ def test_infeasible_offspring_is_repaired(rc208):
     assert_equal(res.best, bks)
 
 
-def test_never_repairs_when_zero_repair_probability(rc208):
+def test_never_repairs_when_zero_repair_probability(rc208: ProblemData):
     """
     Tests that the genetic algorithm does not repair when the repair
     probability parameter is set to zero.
     """
     rng = RandomNumberGenerator(seed=42)
-    pm = PenaltyManager(([20], 6, 6), PenaltyParams(repair_booster=10))
+    pm = PenaltyManager(
+        ([20], 6, 6), data=rc208, params=PenaltyParams(repair_booster=10)
+    )
     pop = Population(bpd)
 
     ls = LocalSearch(rc208, rng, compute_neighbours(rc208))

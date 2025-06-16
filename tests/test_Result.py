@@ -7,6 +7,7 @@ from numpy.testing import assert_, assert_allclose, assert_equal, assert_raises
 from pyvrp import CostEvaluator, Population, RandomNumberGenerator, Solution
 from pyvrp.Result import Result
 from pyvrp.Statistics import Statistics
+from pyvrp._pyvrp import ProblemData
 from pyvrp.diversity import broken_pairs_distance
 
 
@@ -14,20 +15,22 @@ from pyvrp.diversity import broken_pairs_distance
     ("routes", "num_iterations", "runtime"),
     [([[1, 2], [3], [4]], 1, 1.5), ([[1, 2, 3, 4]], 100, 54.2)],
 )
-def test_fields_are_correctly_set(ok_small, routes, num_iterations, runtime):
+def test_fields_are_correctly_set(
+    ok_small: ProblemData, routes: list[list[int]], num_iterations: int, runtime: float
+):
     """
     Tests that ``Result``'s data properties are correctly set after
     initialisation completes.
     """
     sol = Solution(ok_small, routes)
-    res = Result(sol, Statistics(), num_iterations, runtime)
+    res = Result(sol, Statistics(), num_iterations, runtime, data=ok_small)
 
     assert_equal(res.is_feasible(), sol.is_feasible())
     assert_equal(res.num_iterations, num_iterations)
     assert_allclose(res.runtime, runtime)
 
     if sol.is_feasible():
-        assert_equal(res.cost(), CostEvaluator([0], 0, 0).cost(sol))
+        assert_equal(res.cost(), CostEvaluator([0], 0, 0, data=ok_small).cost(sol))
     else:
         assert_equal(res.cost(), math.inf)
 
@@ -39,22 +42,24 @@ def test_fields_are_correctly_set(ok_small, routes, num_iterations, runtime):
         (0, -1.0),  # runtime < 0
     ],
 )
-def test_init_raises_invalid_arguments(ok_small, num_iterations, runtime):
+def test_init_raises_invalid_arguments(
+    ok_small: ProblemData, num_iterations: int, runtime: float
+):
     """
     Tests that invalid arguments are rejected.
     """
     sol = Solution(ok_small, [[1, 2, 3, 4]])
 
     with assert_raises(ValueError):
-        Result(sol, Statistics(), num_iterations, runtime)
+        Result(sol, Statistics(), num_iterations, runtime, data=ok_small)
 
 
 @pytest.mark.parametrize("num_iterations", [0, 1, 10])
-def test_num_iterations(ok_small, num_iterations: int):
+def test_num_iterations(ok_small: ProblemData, num_iterations: int):
     """
     Tests access to the ``num_iterations`` property.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(broken_pairs_distance)
     stats = Statistics()
@@ -63,7 +68,7 @@ def test_num_iterations(ok_small, num_iterations: int):
         stats.collect_from(pop, cost_evaluator)
 
     best = Solution.make_random(ok_small, rng)
-    res = Result(best, stats, num_iterations, 0.0)
+    res = Result(best, stats, num_iterations, 0.0, data=ok_small)
     assert_equal(res.num_iterations, num_iterations)
 
 
@@ -71,17 +76,19 @@ def test_num_iterations(ok_small, num_iterations: int):
     "routes",
     [[[1, 2], [3], [4]], [[1, 2, 3, 4]]],
 )
-def test_summary_contains_essential_information(ok_small, routes):
+def test_summary_contains_essential_information(
+    ok_small: ProblemData, routes: list[list[int]]
+):
     """
     Tests that calling ``summary()`` returns a summary of the solution.
     """
     sol = Solution(ok_small, routes)
-    res = Result(sol, Statistics(), 0, 0.0)
+    res = Result(sol, Statistics(), 0, 0.0, data=ok_small)
     summary = res.summary()
 
     # Test that feasibility status and solution cost are presented.
     if sol.is_feasible():
-        cost = CostEvaluator([0], 0, 0).cost(sol)
+        cost = CostEvaluator([0], 0, 0, data=ok_small).cost(sol)
         assert_(str(cost) in summary)
     else:
         assert_("INFEASIBLE" in summary)
@@ -97,13 +104,15 @@ def test_summary_contains_essential_information(ok_small, routes):
     "routes",
     [[[1, 2], [3], [4]], [[1, 2, 3, 4]]],
 )
-def test_str_contains_summary_and_routes(ok_small, routes):
+def test_str_contains_summary_and_routes(
+    ok_small: ProblemData, routes: list[list[int]]
+):
     """
     Tests that printing (or, in general, calling ``str(result)``) returns a
     summary of the solution and the solution's routes.
     """
     sol = Solution(ok_small, routes)
-    res = Result(sol, Statistics(), 0, 0.0)
+    res = Result(sol, Statistics(), 0, 0.0, data=ok_small)
     str_representation = str(res)
 
     # Test that the summary details are present in the string representation.
@@ -115,12 +124,12 @@ def test_str_contains_summary_and_routes(ok_small, routes):
 
 
 @pytest.mark.parametrize("num_iterations", [0, 1, 10])
-def test_result_can_be_pickled(ok_small, num_iterations: int):
+def test_result_can_be_pickled(ok_small: ProblemData, num_iterations: int):
     """
     Tests that a ``Result`` object can be pickled: it can be serialised and
     unserialised. This is useful for e.g. storing results to disk.
     """
-    cost_evaluator = CostEvaluator([20], 6, 0)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
     rng = RandomNumberGenerator(seed=42)
     pop = Population(broken_pairs_distance)
     stats = Statistics()
@@ -131,7 +140,7 @@ def test_result_can_be_pickled(ok_small, num_iterations: int):
 
     best = Solution(ok_small, [[1, 2], [3], [4]])
 
-    before_pickle = Result(best, stats, num_iterations, 1.2)
+    before_pickle = Result(best, stats, num_iterations, 1.2, data=ok_small)
     bytes = pickle.dumps(before_pickle)
     after_pickle = pickle.loads(bytes)
 
