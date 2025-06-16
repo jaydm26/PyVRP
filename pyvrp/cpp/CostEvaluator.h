@@ -380,22 +380,25 @@ Cost CostEvaluator::penalisedCost(T const &arg) const
     if constexpr (PrizeCostEvaluatable<T>)
         return cost + arg.uncollectedPrizes();
 
-    // if constexpr (RoutesEvaluatable<T>)
-    // {
-    //     for (Route route : arg.routes())
-    //     {
-    //         cost +=
-    //         fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-    //             static_cast<double>(route.duration()),
-    //             data_.vehicleType(route.vehicleType()));
-    //     }
-    // }
-    // else if constexpr (RouteEvaluatable<T>)
-    // {
-    //     cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-    //         static_cast<double>(arg.route().duration()),
-    //         data_.vehicleType(arg.vehicleType()));
-    // }
+    cost += wageCost(std::ceil<Duration>(arg.duration().get() / 3600),
+                     wagePerHour_,
+                     minHoursPaid_);
+
+    if constexpr (RoutesEvaluatable<T>)
+    {
+        for (Route route : arg.routes())
+        {
+            cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                static_cast<double>(route.duration()),
+                data_.vehicleType(route.vehicleType()));
+        }
+    }
+    else if constexpr (RouteEvaluatable<T>)
+    {
+        cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            static_cast<double>(arg.duration()),
+            data_.vehicleType(arg.vehicleType()));
+    }
 
     return cost;
 };
