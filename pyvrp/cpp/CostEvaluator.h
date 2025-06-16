@@ -168,7 +168,7 @@ public:
      */
     [[nodiscard]] inline Cost
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        double duration, double vehicleWeight, double powerToMassRatio) const;
+        double duration, ProblemData::VehicleType vehicleType) const;
 
     [[nodiscard]] inline Cost fuelCost2(ProblemData data, Route route) const;
 
@@ -313,11 +313,12 @@ double CostEvaluator::emissionCostPerTonPerHour(double powerToMassRatio,
  * ton.
  */
 Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-    double duration, double vehicleWeight, double powerToMassRatio) const
+    double duration, ProblemData::VehicleType vehicleType) const
 {
-    double emissionFactor = emissionCostPerTonPerHour(
-                                powerToMassRatio, velocity_ * congestionFactor_)
-                            * vehicleWeight * duration;
+    double emissionFactor
+        = emissionCostPerTonPerHour(vehicleType.powerToMassRatio,
+                                    velocity_ * congestionFactor_)
+          * vehicleType.vehicleWeight * duration;
 
     double fuelAndEmissionCost
         = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -390,18 +391,14 @@ Cost CostEvaluator::penalisedCost(T const &arg) const
         {
             auto routeVehicle = data_.vehicleType(route.vehicleType());
             cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-                static_cast<double>(route.duration()),
-                routeVehicle.vehicleWeight,
-                routeVehicle.powerToMassRatio);
+                static_cast<double>(route.duration()), routeVehicle);
         }
     }
     else if constexpr (RouteEvaluatable<T>)
     {
         auto routeVehicle = data_.vehicleType(arg.vehicleType());
         cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            static_cast<double>(arg.duration()),
-            routeVehicle.vehicleWeight,
-            routeVehicle.powerToMassRatio);
+            static_cast<double>(arg.duration()), routeVehicle.vehicleWeight);
     }
 
     return cost;
@@ -440,9 +437,7 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
 
     auto const routeVehicleType = data_.vehicleType(route->vehicleType());
     out -= fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(routeDuration),
-        routeVehicleType.vehicleWeight,
-        routeVehicleType.powerToMassRatio);
+        static_cast<double>(routeDuration), routeVehicleType);
 
     auto const distance = proposal.distance();
     out += route->unitDistanceCost() * static_cast<Cost>(distance);
@@ -468,9 +463,7 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
                     minHoursPaid_);
 
     out += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(duration),
-        routeVehicleType.vehicleWeight,
-        routeVehicleType.powerToMassRatio);
+        static_cast<double>(duration), routeVehicleType);
 
     return true;
 }
@@ -518,14 +511,10 @@ bool CostEvaluator::deltaCost(Cost &out,
 
     auto const uRouteVehiceType = data_.vehicleType(uRoute->vehicleType());
     out -= fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(uRouteDuration),
-        uRouteVehiceType.vehicleWeight,
-        uRouteVehiceType.powerToMassRatio);
+        static_cast<double>(uRouteDuration), uRouteVehiceType);
     auto const vRouteVehicleType = data_.vehicleType(vRoute->vehicleType());
     out -= fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(vRouteDuration),
-        vRouteVehicleType.vehicleWeight,
-        vRouteVehicleType.powerToMassRatio);
+        static_cast<double>(vRouteDuration), vRouteVehicleType);
 
     auto const uDist = uProposal.distance();
     out += uRoute->unitDistanceCost() * static_cast<Cost>(uDist);
@@ -561,9 +550,7 @@ bool CostEvaluator::deltaCost(Cost &out,
                     wagePerHour_,
                     minHoursPaid_);
     out += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(uDuration),
-        uRouteVehiceType.vehicleWeight,
-        uRouteVehiceType.powerToMassRatio);
+        static_cast<double>(uDuration), uRouteVehiceType);
 
     auto const [vDuration, vTimeWarp] = vProposal.duration();
     out += vRoute->unitDurationCost() * static_cast<Cost>(vDuration);
@@ -572,9 +559,7 @@ bool CostEvaluator::deltaCost(Cost &out,
                     wagePerHour_,
                     minHoursPaid_);
     out += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(vDuration),
-        vRouteVehicleType.vehicleWeight,
-        vRouteVehicleType.powerToMassRatio);
+        static_cast<double>(vDuration), vRouteVehicleType);
 
     return true;
 }

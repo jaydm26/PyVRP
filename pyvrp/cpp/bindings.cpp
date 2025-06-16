@@ -997,8 +997,7 @@ PYBIND11_MODULE(_pyvrp, m)
             &CostEvaluator::
                 fuelAndEmissionCostWithConstantVelocityConstantCongestion,
             py::arg("duration"),
-            py::arg("vehicle_weight"),
-            py::arg("power_to_mass_ratio"))
+            py::arg("vehicle_type"))
         .def("wage_cost",
              &CostEvaluator::wageCost,
              py::arg("hours_worked"),
