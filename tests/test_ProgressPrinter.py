@@ -48,7 +48,7 @@ def test_end(ok_small: ProblemData, capsys):
     res = Result(best, Statistics(), 25, 0.05, data=ok_small)
 
     printer = ProgressPrinter(should_print=True)
-    printer.end(res, data=ok_small)
+    printer.end(res)
 
     out = capsys.readouterr().out
     assert_(str(round(res.cost())) in out)
@@ -146,7 +146,7 @@ def test_should_print_false_no_output(ok_small: ProblemData, capsys):
     printer.start(ok_small)
     printer.iteration(stats=stats)
     printer.restart()
-    printer.end(result=Result(best, stats, 25, 0.05, data=ok_small), data=ok_small)
+    printer.end(result=Result(best, stats, 25, 0.05, data=ok_small))
 
     out = capsys.readouterr().out
     assert_equal(out, "")

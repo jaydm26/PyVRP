@@ -3,6 +3,7 @@
 
 #include "Measure.h"
 #include "Solution.h"
+#include "search/Route.h"
 
 #include <cassert>
 #include <concepts>
@@ -16,20 +17,17 @@ namespace pyvrp
 /**
  * Internal Enumeration to quickly ascertain the cost function to use
  */
-enum INTERNAL_VelocityBehaviour
+enum INTERNAL_CostBehaviour
 {
-    ConstantNoCongestion,
-    ConstantWithConstantCongestion,
-    ConstantWithConstantInSegmentCongestion,
-    ConstantWithVariableCongestion,
-    ConstantInSegmentNoCongestion,
-    ConstantInSegmentWithConstantCongestion,
-    ConstantInSegmentWithConstantInSegmentCongestion,
-    ConstantInSegmentWithVariableCongestion,
-    VariableNoCongestion,
-    VariableWithConstantCongestion,
-    VariableWithConstantInSegmentCongestion,
-    VariableWithVariableCongestion,
+    ConstantVelocityWithConstantCongestion,
+    ConstantVelocityWithConstantInSegmentCongestion,
+    ConstantVelocityWithVariableCongestion,
+    ConstantVelocityInSegmentWithConstantCongestion,
+    ConstantVelocityInSegmentWithConstantInSegmentCongestion,
+    ConstantVelocityInSegmentWithVariableCongestion,
+    VariableVelocityWithConstantCongestion,
+    VariableVelocityWithConstantInSegmentCongestion,
+    VariableVelocityWithVariableCongestion,
 };
 
 // The following methods must be implemented for a type to be evaluatable by
@@ -49,14 +47,19 @@ concept CostEvaluatable = requires(T arg) {
 
 // an object that has the routes method available and maps to a vector of routes
 template <typename T>
-concept RoutesEvaluatable = requires(T arg) {
-    { arg.routes() } -> std::same_as<std::vector<Route>>;
+concept isSolution = std::is_same_v<std::remove_cvref_t<T>, Solution>;
+
+template <typename T>
+concept HasRoute = requires(T arg) {
+    { arg.route() };
 };
 
 template <typename T>
-concept RouteEvaluatable = requires(T arg) {
-    { arg.route } -> std::same_as<Route>;
-};
+concept IsRoute = std::is_same_v<std::remove_cvref_t<T>, Route>;
+
+template <typename T>
+concept IsSearchRoute
+    = std::is_same_v<std::remove_cvref_t<T>, pyvrp::search::Route>;
 
 // If, additionally, methods related to optional clients and prize
 // collecting are implemented we can also take that aspect into account. See
@@ -125,6 +128,14 @@ class CostEvaluator
     [[nodiscard]] inline Cost
     excessLoadPenalties(std::vector<Load> const &excessLoads) const;
 
+private:
+    /**
+     * This variable controls how the cost is evaluated with regards to the fuel
+     * and emission
+     */
+    INTERNAL_CostBehaviour costBehaviour_
+        = INTERNAL_CostBehaviour::ConstantVelocityWithConstantCongestion;
+
 public:
     CostEvaluator(std::vector<double> loadPenalties,
                   double twPenalty,
@@ -170,7 +181,9 @@ public:
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
         double duration, ProblemData::VehicleType vehicleType) const;
 
-    [[nodiscard]] inline Cost fuelCost2(ProblemData data, Route route) const;
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        Route route) const;
 
     /**
      * Computes the wage cost for the given hours worked, wage per hour, and
@@ -326,36 +339,68 @@ Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
     return static_cast<Cost>(fuelAndEmissionCost);
 }
 
-Cost CostEvaluator::fuelCost2(ProblemData data, Route route) const
+Cost CostEvaluator::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        Route route) const
 {
-    double totalFuelCost = 0.0;
-    pyvrp::Matrix<pyvrp::Distance> distanceMatrix
-        = data.distanceMatrix(data.vehicleType(route.vehicleType()).profile);
-
-    for (auto &subRoute : route.trips())
+    double costForRoute = 0;
+    ProblemData::VehicleType vehicleType
+        = data_.vehicleType(route.vehicleType());
+    auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data_.durationMatrix(vehicleType.profile);
+    for (Trip trip : route.trips())
     {
-        size_t from, to;
-        from = subRoute.startDepot();
-        for (auto client : subRoute)
+        size_t from = trip.startDepot();
+        size_t to;
+        for (size_t client : trip.visits())
         {
-            to = client;
-            totalFuelCost += static_cast<double>(distanceMatrix(from, to));
+            size_t to = client;
+
+            Distance distanceOfSegment = distanceMatrix(from, to);
+            Duration durationOfSegment = durationMatrix(from, to);
+            if (durationOfSegment == 0)
+            {
+                throw std::logic_error(
+                    "Duration is 0. Velocity cannot be infinite. Did you "
+                    "provide a duration matrix?");
+            };
+            double velocityInSegment
+                = distanceOfSegment.get() / durationOfSegment.get();
+            double emissionFactor
+                = emissionCostPerTonPerHour(vehicleType.powerToMassRatio,
+                                            velocityInSegment
+                                                * congestionFactor_)
+                  * vehicleType.vehicleWeight * durationOfSegment.get();
+
+            double fuelAndEmissionCost
+                = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+
+            costForRoute += fuelAndEmissionCost;
             from = to;
         }
-        to = subRoute.endDepot();
-        totalFuelCost += static_cast<double>(distanceMatrix(from, to));
+        to = trip.endDepot();
+        Distance distanceOfSegment = distanceMatrix(from, to);
+        Duration durationOfSegment = durationMatrix(from, to);
+        if (durationOfSegment == 0)
+        {
+            throw std::logic_error(
+                "Duration is 0. Velocity cannot be infinite. Did you "
+                "provide a duration matrix?");
+        };
+        double velocityInSegment
+            = distanceOfSegment.get() / durationOfSegment.get();
+        double emissionFactor
+            = emissionCostPerTonPerHour(vehicleType.powerToMassRatio,
+                                        velocityInSegment * congestionFactor_)
+              * vehicleType.vehicleWeight * durationOfSegment.get();
+
+        double fuelAndEmissionCost
+            = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+
+        costForRoute += fuelAndEmissionCost;
     }
 
-    // for (auto it = route.pairwise_begin(), end = route.pairwise_end();
-    //      it != end;
-    //      ++it)
-    // {
-    //     auto [from, to] = *it;
-    //     std::cout << "Fuel cost from " << from << " to " << to << ": "
-    //               << "Sample Value here" << "\n";
-    //     totalFuelCost += fuelCosts_[from][to];
-    // }
-    return static_cast<Cost>(totalFuelCost);
+    return static_cast<Cost>(costForRoute);
 }
 
 Cost CostEvaluator::wageCost(Duration hoursWorked,
@@ -372,33 +417,88 @@ template <CostEvaluatable T>
 Cost CostEvaluator::penalisedCost(T const &arg) const
 {
     // Standard objective plus infeasibility-related penalty terms.
+    std::cout << "Starting Cost Calculation" << std::endl;
     auto cost = arg.distanceCost() + arg.durationCost()
                 + (!arg.empty() ? arg.fixedVehicleCost() : 0)
                 + excessLoadPenalties(arg.excessLoad())
                 + twPenalty(arg.timeWarp())
                 + distPenalty(arg.excessDistance(), 0);
 
+    std::cout << "First Block Done. Cost: " << cost << std::endl;
+
     if constexpr (PrizeCostEvaluatable<T>)
-        return cost + arg.uncollectedPrizes();
+        cost += arg.uncollectedPrizes();
+
+    std::cout << "Added Prizes. Cost: " << cost << std::endl;
 
     cost += wageCost(std::ceil<Duration>(arg.duration().get() / 3600),
                      wagePerHour_,
                      minHoursPaid_);
 
-    if constexpr (RoutesEvaluatable<T>)
+    std::cout << "Added Wages. Cost: " << cost << std::endl;
+
+    if constexpr (isSolution<T>)
     {
+        std::cout << "Solution" << std::endl;
         for (Route route : arg.routes())
         {
-            auto routeVehicle = data_.vehicleType(route.vehicleType());
-            cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-                static_cast<double>(route.duration()), routeVehicle);
+            if (costBehaviour_
+                == INTERNAL_CostBehaviour::
+                    ConstantVelocityWithConstantCongestion)
+            {
+                auto routeVehicle = data_.vehicleType(route.vehicleType());
+                cost
+                    += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                        static_cast<double>(route.duration()), routeVehicle);
+            }
+            else if (costBehaviour_
+                     == INTERNAL_CostBehaviour::
+                         ConstantVelocityInSegmentWithConstantCongestion)
+            {
+                cost
+                    += fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                        route);
+            }
         }
     }
-    else if constexpr (RouteEvaluatable<T>)
+    else if constexpr (HasRoute<T>)
     {
+        std::cout << "HasRoute" << std::endl;
+        if (costBehaviour_
+            == INTERNAL_CostBehaviour::ConstantVelocityWithConstantCongestion)
+        {
+            auto routeVehicle = data_.vehicleType(arg.vehicleType());
+            cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                static_cast<double>(arg.duration()),
+                routeVehicle.vehicleWeight);
+        }
+        else if (costBehaviour_
+                 == INTERNAL_CostBehaviour::
+                     ConstantVelocityInSegmentWithConstantCongestion)
+        {
+            cost
+                += fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                    arg.route());
+        }
+    }
+    else if constexpr (IsRoute<T>)
+    {
+        std::cout << "Route" << std::endl;
         auto routeVehicle = data_.vehicleType(arg.vehicleType());
         cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            static_cast<double>(arg.duration()), routeVehicle.vehicleWeight);
+            static_cast<double>(arg.duration()), routeVehicle);
+    }
+    else if constexpr (IsSearchRoute<T>)
+    {
+        std::cout << "Search Route" << std::endl;
+        auto routeVehicle = data_.vehicleType(arg.vehicleType());
+        cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            static_cast<double>(arg.duration()), routeVehicle);
+    }
+    else
+    {
+        std::cout << "arg has no route or routes method" << std::endl;
+        throw std::logic_error("Arg is strange");
     }
 
     return cost;

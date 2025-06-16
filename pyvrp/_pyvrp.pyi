@@ -132,6 +132,8 @@ class VehicleType:
     initial_load: list[int]
     reload_depots: list[int]
     max_reloads: int
+    vehicle_weight: float
+    power_to_mass_ratio: float
     name: str
     def __init__(
         self,
@@ -151,6 +153,8 @@ class VehicleType:
         initial_load: list[int] = [],
         reload_depots: list[int] = [],
         max_reloads: int = ...,
+        vehicle_weight: float = 0.0,
+        power_to_mass_ratio: float = 0.0,
         *,
         name: str = "",
     ) -> None: ...
@@ -174,6 +178,8 @@ class VehicleType:
         initial_load: list[int] | None = None,
         reload_depots: list[int] | None = None,
         max_reloads: int | None = None,
+        vehicle_weight: float | None = None,
+        power_to_mass_ratio: float | None = None,
         *,
         name: str | None = None,
     ) -> VehicleType: ...

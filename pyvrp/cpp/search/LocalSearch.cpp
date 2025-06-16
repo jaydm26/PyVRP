@@ -184,6 +184,9 @@ bool LocalSearch::applyNodeOps(Route::Node *U,
             // be exact. The resulting cost is then the sum of the cost before
             // the move, plus the delta cost.
             assert(costAfter == costBefore + deltaCost);
+            std::cout << "Cost Before: " << costBefore
+                      << " | Cost After: " << costAfter
+                      << " | Delta Cost: " << deltaCost << std::endl;
 
             return true;
         }
@@ -216,6 +219,9 @@ bool LocalSearch::applyRouteOps(Route *U,
             // be exact. The resulting cost is then the sum of the cost before
             // the move, plus the delta cost.
             assert(costAfter == costBefore + deltaCost);
+            std::cout << "Cost Before: " << costBefore
+                      << " | Cost After: " << costAfter
+                      << " | Delta Cost: " << deltaCost << std::endl;
 
             return true;
         }

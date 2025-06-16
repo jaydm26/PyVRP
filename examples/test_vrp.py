@@ -6,8 +6,17 @@ from pyvrp.solve import SolveParams
 from pyvrp.stop import MaxIterations
 
 
+RC208_FULL = "data/RC208.vrp"
+RC208_SMALL = "data/RC208_small.vrp"
+RC208_VERY_SMALL = "data/RC208_very_small.vrp"
+
 CURRENT_DIR = Path(__file__).parent
-instance = read(str(CURRENT_DIR / "data/RC208_small.vrp"))
+instance = read(str(CURRENT_DIR / RC208_VERY_SMALL))
+instance = instance.replace(
+    vehicle_types=[
+        instance.vehicle_type(0).replace(vehicle_weight=1, power_to_mass_ratio=1)
+    ]
+)
 model = Model.from_data(instance)
 
 params = SolveParams(

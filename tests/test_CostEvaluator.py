@@ -322,14 +322,16 @@ def test_fuel_cost(ok_small: ProblemData):
     )
 
     sol = Solution(ok_small, [[1, 2], [3], [4]])
-    vehicle_type = ok_small.vehicle_type(0)
+    vehicle_type = ok_small.vehicle_type(0).replace(
+        vehicle_weight=1, power_to_mass_ratio=1
+    )
     assert_(sol.is_feasible())
-    # assert_equal(
-    #     cost_evaluator.fuel_and_emission_cost_with_constant_velocity_constant_congestion(
-    #         vehicle_type
-    #     ),
-    #     12_782_863,
-    # )
+    assert_equal(
+        cost_evaluator.fuel_and_emission_cost_with_constant_velocity_constant_congestion(
+            sol.duration(), vehicle_type
+        ),
+        14_323_462,
+    )
 
 
 def test_wage_cost_with_min_hours_paid(ok_small: ProblemData):

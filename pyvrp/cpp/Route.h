@@ -72,6 +72,7 @@ public:
     {
         Iterator current_;
         Iterator next_;
+
     public:
         PairwiseIterator(Iterator begin, Iterator end)
             : current_(begin), next_(begin)
@@ -101,7 +102,8 @@ public:
     /**
      * Returns a pair of iterators for pairwise traversal.
      * Usage:
-     *   for (auto it = route.pairwise_begin(), end = route.pairwise_end(); it != end; ++it) { ... }
+     *   for (auto it = route.pairwise_begin(), end = route.pairwise_end(); it
+     * != end; ++it) { ... }
      */
     PairwiseIterator pairwise_begin() const
     {

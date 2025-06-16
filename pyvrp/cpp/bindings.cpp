@@ -288,6 +288,8 @@ PYBIND11_MODULE(_pyvrp, m)
                       &ProblemData::VehicleType::reloadDepots,
                       py::return_value_policy::reference_internal)
         .def_readonly("max_reloads", &ProblemData::VehicleType::maxReloads)
+        .def_readonly("vehicle_weight", &ProblemData::VehicleType::vehicleWeight)
+        .def_readonly("power_to_mass_ratio", &ProblemData::VehicleType::powerToMassRatio)
         .def_property_readonly("max_trips", &ProblemData::VehicleType::maxTrips)
         .def_readonly("name",
                       &ProblemData::VehicleType::name,

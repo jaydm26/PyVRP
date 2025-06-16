@@ -110,12 +110,7 @@ class ProgressPrinter:
         )
         print(msg)
 
-    def end(
-        self,
-        result: Result,
-        data: ProblemData,
-        penalty_params: PenaltyParams = PenaltyParams(),
-    ):
+    def end(self, result: Result):
         """
         Outputs information about the search duration and the best-found
         solution.

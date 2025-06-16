@@ -199,9 +199,16 @@ class GeneticAlgorithm:
             print_progress.iteration(stats)
 
         end = time.perf_counter() - start
-        res = Result(self._best, stats, iters, end, data=self._data)
+        res = Result(
+            self._best,
+            stats,
+            iters,
+            end,
+            data=self._data,
+            penalty_params=self._pm._params,
+        )
 
-        print_progress.end(res, self._data, self._pm._params)
+        print_progress.end(res)
 
         return res
 
