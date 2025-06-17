@@ -339,6 +339,15 @@ Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
     return static_cast<Cost>(fuelAndEmissionCost);
 }
 
+/**
+ * Calculate fuel and emission cost for a route by breaking it down into
+ * individual segments. For each segment, it is assumed that the velocity is
+ * constant and it is calculated by getting the distance of the segment and the
+ * duration to complete the segment.
+ * Note that the route must be associated with a vehicle that has the vehicle
+ * weight and power to mass ratio already defined. Otherwise, the value will be
+ * 0.
+ */
 Cost CostEvaluator::
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
         Route route) const
@@ -348,10 +357,12 @@ Cost CostEvaluator::
         = data_.vehicleType(route.vehicleType());
     auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
     auto durationMatrix = data_.durationMatrix(vehicleType.profile);
+
     for (Trip trip : route.trips())
     {
         size_t from = trip.startDepot();
         size_t to;
+
         for (size_t client : trip.visits())
         {
             size_t to = client;

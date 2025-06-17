@@ -24,6 +24,9 @@ class CostEvaluator:
     def fuel_and_emission_cost_with_constant_velocity_constant_congestion(
         self, duration: int, vehicle_type: VehicleType
     ) -> int: ...
+    def fuel_and_emission_cost_with_constant_velocity_in_segments_constant_congestion(
+        self, route: Route
+    ) -> int: ...
     def cost(self, solution: Solution) -> int: ...
     def wage_cost(
         self, hours_worked: int, wage_per_hour: float, min_hours_paid: float

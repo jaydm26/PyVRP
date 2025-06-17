@@ -1000,6 +1000,12 @@ PYBIND11_MODULE(_pyvrp, m)
                 fuelAndEmissionCostWithConstantVelocityConstantCongestion,
             py::arg("duration"),
             py::arg("vehicle_type"))
+        .def(
+            "fuel_and_emission_cost_with_constant_velocity_in_segments_"
+            "constant_congestion",
+            &CostEvaluator::
+                fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion,
+            py::arg("route"))
         .def("wage_cost",
              &CostEvaluator::wageCost,
              py::arg("hours_worked"),
