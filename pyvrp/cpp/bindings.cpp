@@ -1008,6 +1008,36 @@ PYBIND11_MODULE(_pyvrp, m)
           &pyvrp::velocity::getProfileBasedOnDistance,
           py::arg("distance"));
 
+    py::enum_<pyvrp::INTERNAL_CostBehaviour>(m, "InternalCostBehaviour")
+        .value("ConstantVelocityWithConstantCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   ConstantVelocityWithConstantCongestion)
+        .value("ConstantVelocityWithConstantInSegmentCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   ConstantVelocityWithConstantInSegmentCongestion)
+        .value("ConstantVelocityWithVariableCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   ConstantVelocityWithVariableCongestion)
+        .value("ConstantVelocityInSegmentWithConstantCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   ConstantVelocityInSegmentWithConstantCongestion)
+        .value("ConstantVelocityInSegmentWithConstantInSegmentCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   ConstantVelocityInSegmentWithConstantInSegmentCongestion)
+        .value("ConstantVelocityInSegmentWithVariableCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   ConstantVelocityInSegmentWithVariableCongestion)
+        .value("VariableVelocityWithConstantCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   VariableVelocityWithConstantCongestion)
+        .value("VariableVelocityWithConstantInSegmentCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   VariableVelocityWithConstantInSegmentCongestion)
+        .value("VariableVelocityWithVariableCongestion",
+               pyvrp::INTERNAL_CostBehaviour::
+                   VariableVelocityWithVariableCongestion)
+        .export_values();
+
     py::class_<CostEvaluator>(m, "CostEvaluator", DOC(pyvrp, CostEvaluator))
         .def(py::init<std::vector<double>,
                       double,
@@ -1019,7 +1049,8 @@ PYBIND11_MODULE(_pyvrp, m)
                       double,
                       std::vector<std::vector<double>>,
                       double,
-                      pyvrp::Duration>(),
+                      pyvrp::Duration,
+                      pyvrp::INTERNAL_CostBehaviour>(),
              py::arg("load_penalties"),
              py::arg("tw_penalty"),
              py::arg("dist_penalty"),
@@ -1030,7 +1061,9 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("congestion_factor") = 1.0,
              py::arg("fuel_costs") = std::vector<std::vector<double>>(),
              py::arg("wage_per_hour") = 0.0,
-             py::arg("min_hours_paid") = pyvrp::Duration(0))
+             py::arg("min_hours_paid") = pyvrp::Duration(0),
+             py::arg("cost_behaviour") = pyvrp::INTERNAL_CostBehaviour::
+                 ConstantVelocityWithConstantCongestion)
         .def("load_penalty",
              &CostEvaluator::loadPenalty,
              py::arg("load"),
@@ -1051,7 +1084,8 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("solution"),
              DOC(pyvrp, CostEvaluator, penalisedCost))
         .def(
-            "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
+            "fuel_and_emission_cost_with_constant_velocity_constant_"
+            "congestion",
             [](const CostEvaluator &self, Solution const &solution)
             {
                 return self
@@ -1060,7 +1094,8 @@ PYBIND11_MODULE(_pyvrp, m)
             },
             py::arg("solution"))
         .def(
-            "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
+            "fuel_and_emission_cost_with_constant_velocity_constant_"
+            "congestion",
             [](const CostEvaluator &self, Route const &route)
             {
                 return self
@@ -1069,7 +1104,8 @@ PYBIND11_MODULE(_pyvrp, m)
             },
             py::arg("route"))
         .def(
-            "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
+            "fuel_and_emission_cost_with_constant_velocity_constant_"
+            "congestion",
             [](const CostEvaluator &self, pyvrp::search::Route const &route)
             {
                 return self

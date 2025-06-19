@@ -64,6 +64,7 @@ class Result:
             fuel_costs=self.penalty_params.fuel_costs,
             wage_per_hour=self.penalty_params.wage_per_hour,
             min_hours_paid=self.penalty_params.wage_per_hour,
+            cost_behaviour=self.penalty_params.cost_behaviour,
         ).cost(self.best)
 
     def is_feasible(self) -> bool:

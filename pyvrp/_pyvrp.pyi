@@ -1,10 +1,15 @@
+from enum import Enum
 from typing import Callable, Iterator, overload
 
 import numpy as np
 
 class WLTCProfile:
     def __init__(
-        self, name: str, path: str, start_offset_time: int, end_offset_time: int
+        self,
+        name: str,
+        path: str,
+        start_offset_time: int,
+        end_offset_time: int,
     ) -> None: ...
     def get_distance_for_travel_time(self, time: float) -> float: ...
     def get_squared_velocity_integral(self, time: float) -> float: ...
@@ -35,9 +40,18 @@ class WLTCProfile:
 
 def get_profile_based_on_distance(distance: float) -> WLTCProfile: ...
 
-slow_velocity_profile: WLTCProfile
-medium_velocity_profile: WLTCProfile
-high_velocity_profile: WLTCProfile
+class InternalCostBehaviour(Enum):
+    ConstantVelocityWithConstantCongestion: InternalCostBehaviour
+    ConstantVelocityWithConstantInSegmentCongestion: InternalCostBehaviour
+    ConstantVelocityWithVariableCongestion: InternalCostBehaviour
+    ConstantVelocityInSegmentWithConstantCongestion: InternalCostBehaviour
+    ConstantVelocityInSegmentWithConstantInSegmentCongestion: (
+        InternalCostBehaviour
+    )
+    ConstantVelocityInSegmentWithVariableCongestion: InternalCostBehaviour
+    VariableVelocityWithConstantCongestion: InternalCostBehaviour
+    VariableVelocityWithConstantInSegmentCongestion: InternalCostBehaviour
+    VariableVelocityWithVariableCongestion: InternalCostBehaviour
 
 class CostEvaluator:
     def __init__(
@@ -53,8 +67,11 @@ class CostEvaluator:
         fuel_costs: list[list[float]] = [],
         wage_per_hour: float = 0.0,
         min_hours_paid: float = 0.0,
+        cost_behaviour: InternalCostBehaviour = InternalCostBehaviour.ConstantVelocityWithConstantCongestion,  # noqa: E501, PYI011
     ) -> None: ...
-    def load_penalty(self, load: int, capacity: int, dimension: int) -> int: ...
+    def load_penalty(
+        self, load: int, capacity: int, dimension: int
+    ) -> int: ...
     def tw_penalty(self, time_warp: int) -> int: ...
     def dist_penalty(self, distance: int, max_distance: int) -> int: ...
     def penalised_cost(self, solution: Solution) -> int: ...
@@ -376,7 +393,9 @@ class Solution:
         routes: list[Route] | list[list[int]],
     ) -> None: ...
     @classmethod
-    def make_random(cls, data: ProblemData, rng: RandomNumberGenerator) -> Solution: ...
+    def make_random(
+        cls, data: ProblemData, rng: RandomNumberGenerator
+    ) -> Solution: ...
     def neighbours(self) -> list[tuple[int, int] | None]: ...
     def routes(self) -> list[Route]: ...
     def has_excess_load(self) -> bool: ...
@@ -432,7 +451,9 @@ class SubPopulation:
         diversity_op: Callable[[Solution, Solution], float],
         params: PopulationParams,
     ) -> None: ...
-    def add(self, solution: Solution, cost_evaluator: CostEvaluator) -> None: ...
+    def add(
+        self, solution: Solution, cost_evaluator: CostEvaluator
+    ) -> None: ...
     def purge(self, cost_evaluator: CostEvaluator) -> None: ...
     def update_fitness(self, cost_evaluator: CostEvaluator) -> None: ...
     def __getitem__(self, idx: int) -> SubPopulationItem: ...

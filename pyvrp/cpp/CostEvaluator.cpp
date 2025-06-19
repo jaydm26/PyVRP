@@ -14,7 +14,8 @@ CostEvaluator::CostEvaluator(std::vector<double> loadPenalties,
                              double congestionFactor,
                              std::vector<std::vector<double>> fuelCosts,
                              double wagePerHour,
-                             Duration minHoursPaid)
+                             Duration minHoursPaid,
+                             INTERNAL_CostBehaviour costBehaviour)
     : loadPenalties_(std::move(loadPenalties)),
       twPenalty_(twPenalty),
       distPenalty_(distPenalty),
@@ -25,7 +26,8 @@ CostEvaluator::CostEvaluator(std::vector<double> loadPenalties,
       congestionFactor_(congestionFactor),
       fuelCosts_(std::move(fuelCosts)),
       wagePerHour_(wagePerHour),
-      minHoursPaid_(minHoursPaid)
+      minHoursPaid_(minHoursPaid),
+      costBehaviour_(costBehaviour)
 {
     for (auto const penalty : loadPenalties_)
         if (penalty < 0)

@@ -6,7 +6,12 @@ from warnings import warn
 
 import numpy as np
 
-from pyvrp._pyvrp import CostEvaluator, ProblemData, Solution
+from pyvrp._pyvrp import (
+    CostEvaluator,
+    InternalCostBehaviour,
+    ProblemData,
+    Solution,
+)
 from pyvrp.exceptions import PenaltyBoundWarning
 
 
@@ -101,6 +106,9 @@ class PenaltyParams:
     fuel_costs: list[list[int]] = field(default_factory=list)
     wage_per_hour: float = 0.0
     min_hours_paid: float = 8.0
+    cost_behaviour: InternalCostBehaviour = (
+        InternalCostBehaviour.ConstantVelocityWithConstantCongestion
+    )
 
     def __post_init__(self):
         if not self.repair_booster >= 1:
@@ -168,7 +176,9 @@ class PenaltyManager:
         )
 
         # Tracks recent feasibilities for each penalty dimension.
-        self._feas_lists: list[list[bool]] = [[] for _ in range(len(self._penalties))]
+        self._feas_lists: list[list[bool]] = [
+            [] for _ in range(len(self._penalties))
+        ]
 
     def penalties(self) -> tuple[list[float], float, float]:
         """
@@ -309,6 +319,7 @@ class PenaltyManager:
             self._params.fuel_costs,
             self._params.wage_per_hour,
             self._params.min_hours_paid,
+            self._params.cost_behaviour,
         )
 
     def booster_cost_evaluator(self) -> CostEvaluator:
@@ -328,4 +339,5 @@ class PenaltyManager:
             self._params.fuel_costs,
             self._params.wage_per_hour,
             self._params.min_hours_paid,
+            self._params.cost_behaviour,
         )
