@@ -190,7 +190,7 @@ def test_srex_heterogeneous_changed_start_indices(ok_small: ProblemData):
             VehicleType(1, capacity=[20]),
         ]
     )
-    cost_evaluator = CostEvaluator([20], 6, 0, data=ok_small)
+    cost_evaluator = CostEvaluator([20], 6, 0, data=data)
 
     # We create the routes sorted by angle such that SREX sorting doesn't
     # affect them
