@@ -341,6 +341,8 @@ class Model:
         initial_load: int | list[int] = [],
         reload_depots: list[Depot] = [],
         max_reloads: int = np.iinfo(np.uint64).max,
+        vehicle_weight: float = 0.0,
+        power_to_mass_ratio: float = 0.0,
         *,
         name: str = "",
     ) -> VehicleType:
@@ -395,7 +397,9 @@ class Model:
 
         vehicle_type = VehicleType(
             num_available=num_available,
-            capacity=[capacity] if isinstance(capacity, int) else capacity,
+            capacity=[capacity]
+            if isinstance(capacity, int | float)
+            else capacity,
             start_depot=start_idx,
             end_depot=end_idx,
             fixed_cost=fixed_cost,
@@ -410,6 +414,8 @@ class Model:
             initial_load=init_load,
             reload_depots=reloads,
             max_reloads=max_reloads,
+            vehicle_weight=vehicle_weight,
+            power_to_mass_ratio=power_to_mass_ratio,
             name=name,
         )
 

@@ -47,7 +47,8 @@ libpyvrp = static_library(
         SRC_DIR / 'SubPopulation.cpp',
         SRC_DIR / 'LoadSegment.cpp',
         SRC_DIR / 'DurationSegment.cpp',
-        SRC_DIR / 'Velocity.cpp'
+        SRC_DIR / 'Velocity.cpp',
+        SRC_DIR / 'search' / 'Route.cpp'
     ],
     include_directories: INCLUDES,
 )

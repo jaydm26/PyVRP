@@ -39,6 +39,7 @@ dependencies = [
     "ipykernel>=6.29.5",
     "pandas>=2.3.0",
     "scipy>=1.15.3",
+    "mypy>=1.16.1",
 ]
 
 [project.urls]
@@ -67,7 +68,7 @@ dev = [
     "pytest-codspeed>=2.2.1",
     "pytest-xdist>=3.6.1",
     "pytest-sugar>=1.0.0",
-    "codecov",
+    "codecov", 
 ]
 
 docs = [
