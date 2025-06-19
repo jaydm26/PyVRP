@@ -98,6 +98,11 @@ public:
          * Returns the excess load of the proposed route.
          */
         Load excessLoad(size_t dimension) const;
+
+        /**
+         * Returns the segments of the proposed route.
+         */
+        std::tuple<Segments...> segments() const;
     };
 
     /**
@@ -1022,6 +1027,12 @@ std::pair<Duration, Duration> Route::Proposal<Segments...>::duration() const
     };
 
     return std::apply(fn, detail::reverse(segments_));
+}
+
+template <Segment... Segments>
+inline std::tuple<Segments...> Route::Proposal<Segments...>::segments() const
+{
+    return segments_;
 }
 
 template <Segment... Segments>

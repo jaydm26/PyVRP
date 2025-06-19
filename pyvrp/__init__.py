@@ -20,6 +20,8 @@ from ._pyvrp import Route as Route
 from ._pyvrp import Solution as Solution
 from ._pyvrp import Trip as Trip
 from ._pyvrp import VehicleType as VehicleType
+from ._pyvrp import WLTCProfile as WLTCProfile
+from ._pyvrp import get_profile_based_on_distance as get_profile_based_on_distance
 from .minimise_fleet import minimise_fleet as minimise_fleet
 from .read import read as read
 from .read import read_solution as read_solution

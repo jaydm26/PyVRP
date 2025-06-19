@@ -10,6 +10,7 @@
 #include "Solution.h"
 #include "SubPopulation.h"
 #include "Trip.h"
+#include "Velocity.h"
 #include "pyvrp_docs.h"
 
 #include <pybind11/functional.h>
@@ -952,6 +953,61 @@ PYBIND11_MODULE(_pyvrp, m)
                  return stream.str();
              });
 
+    py::class_<pyvrp::velocity::WLTCProfile>(m, "WLTCProfile")
+        .def(py::init<const std::string,
+                      const std::string,
+                      const int,
+                      const int>(),
+             py::arg("name"),
+             py::arg("path"),
+             py::arg("start_offset_time"),
+             py::arg("end_offset_time"))
+        .def("get_distance_for_travel_time",
+             &pyvrp::velocity::WLTCProfile::getDistanceForTravelTime,
+             py::arg("time"))
+        .def("get_squared_velocity_integral",
+             &pyvrp::velocity::WLTCProfile::getSquaredVelocityIntegral,
+             py::arg("time"))
+        .def("get_cubed_velocity_integral",
+             &pyvrp::velocity::WLTCProfile::getCubedVelocityIntegral,
+             py::arg("time"))
+        .def("get_time_for_travel_distance",
+             &pyvrp::velocity::WLTCProfile::getTimeForTravelDistance,
+             py::arg("distance"))
+        .def_property_readonly("name", &pyvrp::velocity::WLTCProfile::name)
+        .def_property_readonly("path", &pyvrp::velocity::WLTCProfile::path)
+        .def_property_readonly("time", &pyvrp::velocity::WLTCProfile::time)
+        .def_property_readonly("velocity",
+                               &pyvrp::velocity::WLTCProfile::velocity)
+        .def_property_readonly("full_spline",
+                               &pyvrp::velocity::WLTCProfile::fullSpline)
+        .def_property_readonly(
+            "full_profile_distance",
+            &pyvrp::velocity::WLTCProfile::fullProfileDistance)
+        .def_property_readonly(
+            "repeatable_profile_distance",
+            &pyvrp::velocity::WLTCProfile::repeatableProfileDistance)
+        .def_property_readonly(
+            "repeatable_profile_time",
+            &pyvrp::velocity::WLTCProfile::repeatableProfileTime)
+        .def_property_readonly("start_offset_time",
+                               &pyvrp::velocity::WLTCProfile::startOffsetTime)
+        .def_property_readonly("end_offset_time",
+                               &pyvrp::velocity::WLTCProfile::endOffsetTime)
+        .def_property_readonly(
+            "start_offset_distance",
+            &pyvrp::velocity::WLTCProfile::startOffsetDistance)
+        .def_property_readonly("end_offset_distance",
+                               &pyvrp::velocity::WLTCProfile::endOffsetDistance)
+        .def_property_readonly("spline_time",
+                               &pyvrp::velocity::WLTCProfile::splineTime)
+        .def_property_readonly("spline_velocity",
+                               &pyvrp::velocity::WLTCProfile::splineVelocity);
+
+    m.def("get_profile_based_on_distance",
+          &pyvrp::velocity::getProfileBasedOnDistance,
+          py::arg("distance"));
+
     py::class_<CostEvaluator>(m, "CostEvaluator", DOC(pyvrp, CostEvaluator))
         .def(py::init<std::vector<double>,
                       double,
@@ -994,18 +1050,72 @@ PYBIND11_MODULE(_pyvrp, m)
              &CostEvaluator::penalisedCost<Solution>,
              py::arg("solution"),
              DOC(pyvrp, CostEvaluator, penalisedCost))
+        //    .def(
+        //        "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
+        //        py::overload_cast<Solution>(
+        //            &CostEvaluator::
+        //                fuelAndEmissionCostWithConstantVelocityConstantCongestion))
         .def(
             "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
-            &CostEvaluator::
-                fuelAndEmissionCostWithConstantVelocityConstantCongestion,
-            py::arg("duration"),
-            py::arg("vehicle_type"))
+            [](const CostEvaluator &self, Route const &route)
+            {
+                return self
+                    .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                        route);
+            },
+            py::arg("route"))
+        //    .def(
+        //        "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
+        //        [](const CostEvaluator &self, pyvrp::search::Route route)
+        //        {
+        //            return self
+        //                .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        //                    std::move(route));
+        //        })
+        //    .def(
+        //        "fuel_and_emission_cost_with_constant_velocity_in_segments_"
+        //        "constant_congestion",
+        //        py::overload_cast<Solution>(
+        //            &CostEvaluator::
+        //                fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion))
         .def(
             "fuel_and_emission_cost_with_constant_velocity_in_segments_"
             "constant_congestion",
-            &CostEvaluator::
-                fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion,
+            [](const CostEvaluator &self, Route const &route)
+            {
+                return self
+                    .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                        route);
+            },
             py::arg("route"))
+        //    .def(
+        //        "fuel_and_emission_cost_with_constant_velocity_in_segments_"
+        //        "constant_congestion",
+        //        py::overload_cast<pyvrp::search::Route>(
+        //            &CostEvaluator::
+        //                fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion))
+        //    .def(
+        //        "fuel_and_emission_cost_with_non_linear_velocity_constant_"
+        //        "congestion",
+        //        py::overload_cast<Solution>(
+        //            &CostEvaluator::
+        //                fuelAndEmissionCostWithNonLinearVelocityConstantCongestion))
+        .def(
+            "fuel_and_emission_cost_with_non_linear_velocity_constant_"
+            "congestion",
+            [](CostEvaluator &self, Route const &route)
+            {
+                return self
+                    .fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+                        route);
+            },
+            py::arg("route"))
+        //    .def(
+        //        "fuel_and_emission_cost_with_non_linear_velocity_constant_"
+        //        "congestion",
+        //        py::overload_cast<pyvrp::search::Route>(
+        //            &CostEvaluator::
+        //                fuelAndEmissionCostWithNonLinearVelocityConstantCongestion))
         .def("wage_cost",
              &CostEvaluator::wageCost,
              py::arg("hours_worked"),

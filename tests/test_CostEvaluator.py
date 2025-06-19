@@ -309,7 +309,7 @@ def test_unit_distance_duration_cost(ok_small: ProblemData):
     assert_equal(sol.distance(), 5_501 + 4_224)
     assert_equal(sol.duration(), 6_221 + 5_004)
 
-    cost_eval = CostEvaluator([1], 1, 0, data=ok_small)
+    cost_eval = CostEvaluator([1], 1, 0, data=data)
     assert_equal(sol.distance_cost(), 31_729)
     assert_equal(sol.duration_cost(), 31_241)
     assert_equal(cost_eval.penalised_cost(sol), 31_729 + 31_241)
@@ -319,26 +319,30 @@ def test_fuel_cost_with_constant_velocity_and_constant_congestion(
     ok_small: ProblemData,
 ):
     unit_fuel_cost = 2.0
+    data = ok_small.replace(
+        vehicle_types=[
+            vehicle_type.replace(vehicle_weight=1, power_to_mass_ratio=1)
+            for vehicle_type in ok_small.vehicle_types()
+        ]
+    )
     cost_evaluator = CostEvaluator(
         [1],
         1,
         0,
-        data=ok_small,
+        data=data,
         unit_fuel_cost=unit_fuel_cost,
         velocity=1,
         congestion_factor=1.0,
     )
 
     sol = Solution(ok_small, [[1, 2], [3], [4]])
-    vehicle_type = ok_small.vehicle_type(0).replace(
-        vehicle_weight=1, power_to_mass_ratio=1
-    )
+
     assert_(sol.is_feasible())
     assert_equal(
         cost_evaluator.fuel_and_emission_cost_with_constant_velocity_constant_congestion(
-            sol.duration(), vehicle_type
+            sol.routes()[0]
         ),
-        14_323_462,
+        6_797_235,
     )
 
 
@@ -369,6 +373,36 @@ def test_fuel_cost_with_constant_velocity_in_segments_and_constant_congestion(
             sol.routes()[0]
         ),
         6_010_543,
+    )
+
+
+def test_fuel_cost_with_non_linear_velocity_and_constant_congestion(
+    ok_small: ProblemData,
+) -> None:
+    data = ok_small.replace(
+        vehicle_types=[
+            vehicle_type.replace(vehicle_weight=1, power_to_mass_ratio=1)
+            for vehicle_type in ok_small.vehicle_types()
+        ]
+    )
+    unit_fuel_cost = 2.0
+    cost_evaluator = CostEvaluator(
+        [1],
+        1,
+        0,
+        data=data,
+        unit_fuel_cost=unit_fuel_cost,
+        congestion_factor=1.0,
+    )
+
+    sol = Solution(ok_small, [[1, 2], [3], [4]])
+
+    assert_(sol.is_feasible())
+    assert_equal(
+        cost_evaluator.fuel_and_emission_cost_with_non_linear_velocity_constant_congestion(
+            sol.routes()[0]
+        ),
+        6_015_196,
     )
 
 

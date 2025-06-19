@@ -3,6 +3,7 @@
 
 #include "Measure.h"
 #include "Solution.h"
+#include "Velocity.h"
 #include "search/Route.h"
 
 #include <cassert>
@@ -53,13 +54,6 @@ template <typename T>
 concept HasRoute = requires(T arg) {
     { arg.route() };
 };
-
-template <typename T>
-concept IsRoute = std::is_same_v<std::remove_cvref_t<T>, Route>;
-
-template <typename T>
-concept IsSearchRoute
-    = std::is_same_v<std::remove_cvref_t<T>, pyvrp::search::Route>;
 
 // If, additionally, methods related to optional clients and prize
 // collecting are implemented we can also take that aspect into account. See
@@ -172,18 +166,60 @@ public:
      * power-to-mass ratio and velocity.
      */
     [[nodiscard]] inline double
-    emissionCostPerTonPerHour(double powerToMassRatio, double velocity) const;
+    emissionCostPerTonPerHourConstantVelocity(double powerToMassRatio,
+                                              double velocity) const;
+
+    [[nodiscard]] inline double emissionCostPerTonPerHourNonLinearVelocity(
+        double powerToMassRatio,
+        double duration,
+        double distance,
+        double squaredVelocityIntegral,
+        double cubedVelocityIntegral) const;
 
     /**
      * Compute the total fuel cost for the given distance and duration.
      */
     [[nodiscard]] inline Cost
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        double duration, ProblemData::VehicleType vehicleType) const;
+        Route const &route) const;
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        Solution const &solution) const;
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        pyvrp::search::Route const &route) const;
+    template <pyvrp::search::Segment... Segments>
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        pyvrp::search::Route::Proposal<Segments...> const &proposal) const;
 
     [[nodiscard]] inline Cost
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        Route route) const;
+        Route const &route) const;
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        Solution const &solution) const;
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        pyvrp::search::Route const &route) const;
+    template <pyvrp::search::Segment... Segments>
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        pyvrp::search::Route::Proposal<Segments...> const &proposal) const;
+
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        Route const &route) const;
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        Solution const &solution) const;
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        pyvrp::search::Route const &route) const;
+    template <pyvrp::search::Segment... Segments>
+    [[nodiscard]] inline Cost
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        pyvrp::search::Route::Proposal<Segments...> const &proposal) const;
 
     /**
      * Computes the wage cost for the given hours worked, wage per hour, and
@@ -192,6 +228,9 @@ public:
     [[nodiscard]] inline Cost wageCost(Duration hoursWorked,
                                        double wagePerHour,
                                        Duration minHoursPaid) const;
+
+    template <typename T>
+    [[nodiscard]] inline Cost applyFuelAndEmissionCost(T const &route) const;
 
     /**
      * Computes a smoothed objective (penalised cost) for a given solution.
@@ -306,8 +345,8 @@ Cost CostEvaluator::distPenalty(Distance distance, Distance maxDistance) const
 }
 
 // Do not attempt to modify velocity here. Consider this as a utility function
-double CostEvaluator::emissionCostPerTonPerHour(double powerToMassRatio,
-                                                double velocity) const
+double CostEvaluator::emissionCostPerTonPerHourConstantVelocity(
+    double powerToMassRatio, double velocity) const
 {
     double a, b, c, d, e;
     a = 465.390;
@@ -319,6 +358,23 @@ double CostEvaluator::emissionCostPerTonPerHour(double powerToMassRatio,
 
     return a + b + c + d + e;
 }
+
+double CostEvaluator::emissionCostPerTonPerHourNonLinearVelocity(
+    double powerToMassRatio,
+    double duration,
+    double distance,
+    double squaredVelocityIntegral,
+    double cubedVelocityIntegral) const
+{
+    double a, b, c, d, e;
+    a = 465.390 * duration;
+    b = 48.143 * powerToMassRatio * duration;
+    c = (32.389 + 0.8931 * powerToMassRatio) * distance;
+    d = (-0.4771 - 0.02559 * powerToMassRatio) * squaredVelocityIntegral;
+    e = (0.0008889 + 0.0004055 * powerToMassRatio) * cubedVelocityIntegral;
+
+    return a + b + c + d + e;
+}
 /**
  * Calculate the fuel and emission cost where the velocity and congestion are a
  * constant term. Duration must be passed in hours, vehicle weight (inside
@@ -326,13 +382,60 @@ double CostEvaluator::emissionCostPerTonPerHour(double powerToMassRatio,
  * ton.
  */
 Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-    double duration, ProblemData::VehicleType vehicleType) const
+    Route const &route) const
 {
+    double duration = route.duration().get();
+    pyvrp::ProblemData::VehicleType vehicleType
+        = data_.vehicleType(route.vehicleType());
     double emissionFactor
-        = emissionCostPerTonPerHour(vehicleType.powerToMassRatio,
-                                    velocity_ * congestionFactor_)
+        = emissionCostPerTonPerHourConstantVelocity(
+              vehicleType.powerToMassRatio, velocity_ * congestionFactor_)
           * vehicleType.vehicleWeight * duration;
 
+    double fuelAndEmissionCost
+        = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+
+    return static_cast<Cost>(fuelAndEmissionCost);
+}
+
+Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+    Solution const &solution) const
+{
+    Cost cost = 0;
+    for (Route route : solution.routes())
+    {
+        cost
+            += fuelAndEmissionCostWithConstantVelocityConstantCongestion(route);
+    }
+    return cost;
+}
+
+Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+    pyvrp::search::Route const &route) const
+{
+    double duration = route.duration().get();
+    auto vehicleType = data_.vehicleType(route.vehicleType());
+    double emissionFactor
+        = emissionCostPerTonPerHourConstantVelocity(
+              vehicleType.powerToMassRatio, velocity_ * congestionFactor_)
+          * vehicleType.vehicleWeight * duration;
+    double fuelAndEmissionCost
+        = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+
+    return static_cast<Cost>(fuelAndEmissionCost);
+}
+
+template <pyvrp::search::Segment... Segments>
+Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+    pyvrp::search::Route::Proposal<Segments...> const &proposal) const
+{
+    auto const [duration, timeWarp] = proposal.duration();
+    auto *route = proposal.route();
+    auto vehicleType = data_.vehicleType(route->vehicleType());
+    double emissionFactor
+        = emissionCostPerTonPerHourConstantVelocity(
+              vehicleType.powerToMassRatio, velocity_ * congestionFactor_)
+          * vehicleType.vehicleWeight * duration.get();
     double fuelAndEmissionCost
         = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
 
@@ -350,11 +453,10 @@ Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
  */
 Cost CostEvaluator::
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        Route route) const
+        Route const &route) const
 {
     double costForRoute = 0;
-    ProblemData::VehicleType vehicleType
-        = data_.vehicleType(route.vehicleType());
+    auto vehicleType = data_.vehicleType(route.vehicleType());
     auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
     auto durationMatrix = data_.durationMatrix(vehicleType.profile);
 
@@ -377,11 +479,11 @@ Cost CostEvaluator::
             };
             double velocityInSegment
                 = distanceOfSegment.get() / durationOfSegment.get();
-            double emissionFactor
-                = emissionCostPerTonPerHour(vehicleType.powerToMassRatio,
-                                            velocityInSegment
-                                                * congestionFactor_)
-                  * vehicleType.vehicleWeight * durationOfSegment.get();
+            double emissionFactor = emissionCostPerTonPerHourConstantVelocity(
+                                        vehicleType.powerToMassRatio,
+                                        velocityInSegment * congestionFactor_)
+                                    * vehicleType.vehicleWeight
+                                    * durationOfSegment.get();
 
             double fuelAndEmissionCost
                 = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -400,10 +502,11 @@ Cost CostEvaluator::
         };
         double velocityInSegment
             = distanceOfSegment.get() / durationOfSegment.get();
-        double emissionFactor
-            = emissionCostPerTonPerHour(vehicleType.powerToMassRatio,
-                                        velocityInSegment * congestionFactor_)
-              * vehicleType.vehicleWeight * durationOfSegment.get();
+        double emissionFactor = emissionCostPerTonPerHourConstantVelocity(
+                                    vehicleType.powerToMassRatio,
+                                    velocityInSegment * congestionFactor_)
+                                * vehicleType.vehicleWeight
+                                * durationOfSegment.get();
 
         double fuelAndEmissionCost
             = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -414,111 +517,279 @@ Cost CostEvaluator::
     return static_cast<Cost>(costForRoute);
 }
 
+Cost CostEvaluator::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        Solution const &solution) const
+{
+    Cost cost = 0;
+    for (Route route : solution.routes())
+    {
+        cost
+            += fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                route);
+    }
+    return cost;
+}
+
+Cost CostEvaluator::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        pyvrp::search::Route const &route) const
+{
+    auto vehicleType = data_.vehicleType(route.vehicleType());
+    auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data_.durationMatrix(vehicleType.profile);
+
+    double cost = 0;
+
+    size_t from, to;
+    from = route.startDepot();
+    for (size_t i = 1; i < route.size(); i++)
+    {
+        to = route[i]->client();
+        Distance distanceOfSegment = distanceMatrix(from, to);
+        Duration durationOfSegment = durationMatrix(from, to);
+        if (durationOfSegment == 0)
+        {
+            throw std::logic_error(
+                "Duration is 0. Velocity cannot be infinite. Did you "
+                "provide a duration matrix?");
+        };
+        double velocityInSegment
+            = distanceOfSegment.get() / durationOfSegment.get();
+        double emissionFactor = emissionCostPerTonPerHourConstantVelocity(
+                                    vehicleType.powerToMassRatio,
+                                    velocityInSegment * congestionFactor_)
+                                * vehicleType.vehicleWeight
+                                * durationOfSegment.get();
+
+        double fuelAndEmissionCost
+            = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+
+        cost += fuelAndEmissionCost;
+        from = to;
+    }
+    return static_cast<Cost>(cost);
+}
+
+template <pyvrp::search::Segment... Segments>
+Cost CostEvaluator::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        pyvrp::search::Route::Proposal<Segments...> const &proposal) const
+{
+    auto segments = proposal.segments();
+    auto impl = [&](auto... segment)
+    {
+        return (
+            fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                *segment.route())
+            + ...);
+    };
+
+    Cost cost = std::apply(impl, segments);
+
+    return cost;
+}
+
+Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+    Route const &route) const
+{
+    double costForRoute = 0;
+    auto vehicleType = data_.vehicleType(route.vehicleType());
+    auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data_.durationMatrix(vehicleType.profile);
+
+    for (Trip trip : route.trips())
+    {
+        size_t from = trip.startDepot();
+        size_t to;
+
+        for (size_t client : trip.visits())
+        {
+            size_t to = client;
+            Distance distanceOfSegment = distanceMatrix(from, to);
+            Duration durationOfSegment = durationMatrix(from, to);
+            if (durationOfSegment == 0)
+            {
+                throw std::logic_error(
+                    "Duration is 0. Velocity cannot be infinite. Did you "
+                    "provide a duration matrix?");
+            };
+            pyvrp::velocity::WLTCProfile velocityProfile
+                = pyvrp::velocity::getProfileBasedOnDistance(
+                    distanceOfSegment.get());
+            double emissionFactor = emissionCostPerTonPerHourNonLinearVelocity(
+                vehicleType.powerToMassRatio,
+                durationOfSegment.get(),
+                distanceOfSegment.get(),
+                velocityProfile.getSquaredVelocityIntegral(
+                    durationOfSegment.get()),
+                velocityProfile.getCubedVelocityIntegral(
+                    durationOfSegment.get()));
+
+            double fuelAndEmissionCost
+                = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+
+            costForRoute += fuelAndEmissionCost;
+            from = to;
+        }
+        to = trip.endDepot();
+        Distance distanceOfSegment = distanceMatrix(from, to);
+        Duration durationOfSegment = durationMatrix(from, to);
+        if (durationOfSegment == 0)
+        {
+            throw std::logic_error(
+                "Duration is 0. Velocity cannot be infinite. Did you "
+                "provide a duration matrix?");
+        };
+        pyvrp::velocity::WLTCProfile velocityProfile
+            = pyvrp::velocity::getProfileBasedOnDistance(
+                distanceOfSegment.get());
+        double emissionFactor = emissionCostPerTonPerHourNonLinearVelocity(
+            vehicleType.powerToMassRatio,
+            durationOfSegment.get(),
+            distanceOfSegment.get(),
+            velocityProfile.getSquaredVelocityIntegral(durationOfSegment.get()),
+            velocityProfile.getCubedVelocityIntegral(durationOfSegment.get()));
+
+        double fuelAndEmissionCost
+            = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+
+        costForRoute += fuelAndEmissionCost;
+    }
+    return static_cast<Cost>(costForRoute);
+}
+
+Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+    Solution const &solution) const
+{
+    Cost cost = 0;
+    for (Route route : solution.routes())
+    {
+        cost += fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+            route);
+    }
+    return cost;
+}
+
+Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+    pyvrp::search::Route const &route) const
+{
+    double cost = 0;
+    auto vehicleType = data_.vehicleType(route.vehicleType());
+    auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data_.durationMatrix(vehicleType.profile);
+
+    size_t from, to;
+    from = route.startDepot();
+    for (size_t i = 1; i < route.size(); i++)
+    {
+        to = route[i]->client();
+        Distance distanceOfSegment = distanceMatrix(from, to);
+        Duration durationOfSegment = durationMatrix(from, to);
+        if (durationOfSegment == 0)
+        {
+            throw std::logic_error(
+                "Duration is 0. Velocity cannot be infinite. Did you "
+                "provide a duration matrix?");
+        };
+        pyvrp::velocity::WLTCProfile velocityProfile
+            = pyvrp::velocity::getProfileBasedOnDistance(
+                distanceOfSegment.get());
+        double emissionFactor = emissionCostPerTonPerHourNonLinearVelocity(
+            vehicleType.powerToMassRatio,
+            durationOfSegment.get(),
+            distanceOfSegment.get(),
+            velocityProfile.getSquaredVelocityIntegral(durationOfSegment.get()),
+            velocityProfile.getCubedVelocityIntegral(durationOfSegment.get()));
+
+        double fuelAndEmissionCost
+            = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
+        cost += fuelAndEmissionCost;
+    }
+    return static_cast<Cost>(cost);
+}
+
+template <pyvrp::search::Segment... Segments>
+Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+    pyvrp::search::Route::Proposal<Segments...> const &proposal) const
+{
+    std::tuple<Segments...> segments = proposal.segments();
+
+    auto impl = [&](auto... segment)
+    {
+        return (fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+                    *segment.route())
+                + ...);
+    };
+
+    Cost cost = std::apply(impl, segments);
+
+    return cost;
+}
+
 Cost CostEvaluator::wageCost(Duration hoursWorked,
                              double wagePerHour,
                              Duration minHoursPaid) const
 {
-    // If the worked hours are less than the minimum paid hours, we pay the
-    // minimum.
+    // If the worked hours are less than the minimum paid hours, we pay
+    // the minimum.
     auto const paidHours = std::max<Duration>(hoursWorked, minHoursPaid);
     return static_cast<Cost>(paidHours.get() * wagePerHour);
+}
+
+template <typename T>
+Cost CostEvaluator::applyFuelAndEmissionCost(T const &route) const
+{
+    Cost cost = 0;
+    if (costBehaviour_
+        == INTERNAL_CostBehaviour::ConstantVelocityWithConstantCongestion)
+    {
+        cost
+            += fuelAndEmissionCostWithConstantVelocityConstantCongestion(route);
+    }
+    else if (costBehaviour_
+             == INTERNAL_CostBehaviour::
+                 ConstantVelocityInSegmentWithConstantCongestion)
+    {
+        cost
+            += fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                route);
+    }
+    else if (costBehaviour_
+             == INTERNAL_CostBehaviour::VariableVelocityWithConstantCongestion)
+    {
+        cost += fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+            route);
+    }
+    return cost;
 }
 
 template <CostEvaluatable T>
 Cost CostEvaluator::penalisedCost(T const &arg) const
 {
     // Standard objective plus infeasibility-related penalty terms.
-    std::cout << "Starting Cost Calculation" << std::endl;
     auto cost = arg.distanceCost() + arg.durationCost()
                 + (!arg.empty() ? arg.fixedVehicleCost() : 0)
                 + excessLoadPenalties(arg.excessLoad())
                 + twPenalty(arg.timeWarp())
                 + distPenalty(arg.excessDistance(), 0);
 
-    std::cout << "First Block Done. Cost: " << cost << std::endl;
-
     if constexpr (PrizeCostEvaluatable<T>)
         cost += arg.uncollectedPrizes();
-
-    std::cout << "Added Prizes. Cost: " << cost << std::endl;
 
     cost += wageCost(std::ceil<Duration>(arg.duration().get() / 3600),
                      wagePerHour_,
                      minHoursPaid_);
 
-    std::cout << "Added Wages. Cost: " << cost << std::endl;
-
-    if constexpr (isSolution<T>)
-    {
-        std::cout << "Solution" << std::endl;
-        for (Route route : arg.routes())
-        {
-            if (costBehaviour_
-                == INTERNAL_CostBehaviour::
-                    ConstantVelocityWithConstantCongestion)
-            {
-                auto routeVehicle = data_.vehicleType(route.vehicleType());
-                cost
-                    += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-                        static_cast<double>(route.duration()), routeVehicle);
-            }
-            else if (costBehaviour_
-                     == INTERNAL_CostBehaviour::
-                         ConstantVelocityInSegmentWithConstantCongestion)
-            {
-                cost
-                    += fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                        route);
-            }
-        }
-    }
-    else if constexpr (HasRoute<T>)
-    {
-        std::cout << "HasRoute" << std::endl;
-        if (costBehaviour_
-            == INTERNAL_CostBehaviour::ConstantVelocityWithConstantCongestion)
-        {
-            auto routeVehicle = data_.vehicleType(arg.vehicleType());
-            cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-                static_cast<double>(arg.duration()),
-                routeVehicle.vehicleWeight);
-        }
-        else if (costBehaviour_
-                 == INTERNAL_CostBehaviour::
-                     ConstantVelocityInSegmentWithConstantCongestion)
-        {
-            cost
-                += fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                    arg.route());
-        }
-    }
-    else if constexpr (IsRoute<T>)
-    {
-        std::cout << "Route" << std::endl;
-        auto routeVehicle = data_.vehicleType(arg.vehicleType());
-        cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            static_cast<double>(arg.duration()), routeVehicle);
-    }
-    else if constexpr (IsSearchRoute<T>)
-    {
-        std::cout << "Search Route" << std::endl;
-        auto routeVehicle = data_.vehicleType(arg.vehicleType());
-        cost += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            static_cast<double>(arg.duration()), routeVehicle);
-    }
-    else
-    {
-        std::cout << "arg has no route or routes method" << std::endl;
-        throw std::logic_error("Arg is strange");
-    }
+    cost += applyFuelAndEmissionCost(arg);
 
     return cost;
 };
 
 template <CostEvaluatable T> Cost CostEvaluator::cost(T const &arg) const
 {
-    // Penalties are zero when the solution is feasible, so we can fall back to
-    // penalised cost in that case.
+    // Penalties are zero when the solution is feasible, so we can fall
+    // back to penalised cost in that case.
     return arg.isFeasible() ? penalisedCost(arg)
                             : std::numeric_limits<Cost>::max();
 }
@@ -546,9 +817,7 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
                     wagePerHour_,
                     minHoursPaid_);
 
-    auto const routeVehicleType = data_.vehicleType(route->vehicleType());
-    out -= fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(routeDuration), routeVehicleType);
+    out -= applyFuelAndEmissionCost(*route);
 
     auto const distance = proposal.distance();
     out += route->unitDistanceCost() * static_cast<Cost>(distance);
@@ -573,8 +842,7 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
                     wagePerHour_,
                     minHoursPaid_);
 
-    out += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(duration), routeVehicleType);
+    out += applyFuelAndEmissionCost(proposal);
 
     return true;
 }
@@ -620,12 +888,8 @@ bool CostEvaluator::deltaCost(Cost &out,
                     wagePerHour_,
                     minHoursPaid_);
 
-    auto const uRouteVehiceType = data_.vehicleType(uRoute->vehicleType());
-    out -= fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(uRouteDuration), uRouteVehiceType);
-    auto const vRouteVehicleType = data_.vehicleType(vRoute->vehicleType());
-    out -= fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(vRouteDuration), vRouteVehicleType);
+    out -= applyFuelAndEmissionCost(*uRoute);
+    out -= applyFuelAndEmissionCost(*vRoute);
 
     auto const uDist = uProposal.distance();
     out += uRoute->unitDistanceCost() * static_cast<Cost>(uDist);
@@ -660,8 +924,8 @@ bool CostEvaluator::deltaCost(Cost &out,
     out += wageCost(std::ceil<Duration>(uDuration.get() / 3600),
                     wagePerHour_,
                     minHoursPaid_);
-    out += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(uDuration), uRouteVehiceType);
+
+    out += applyFuelAndEmissionCost(uProposal);
 
     auto const [vDuration, vTimeWarp] = vProposal.duration();
     out += vRoute->unitDurationCost() * static_cast<Cost>(vDuration);
@@ -669,8 +933,7 @@ bool CostEvaluator::deltaCost(Cost &out,
     out += wageCost(std::ceil<Duration>(vDuration.get() / 3600),
                     wagePerHour_,
                     minHoursPaid_);
-    out += fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        static_cast<double>(vDuration), vRouteVehicleType);
+    out += applyFuelAndEmissionCost(vProposal);
 
     return true;
 }

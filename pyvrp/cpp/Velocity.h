@@ -1,28 +1,81 @@
+#pragma once
 #ifndef PYVRP_VELOCITY_H
 #define PYVRP_VELOCITY_H
 
-#include "includes/csv.hpp"
-#include <boost/math/interpolators/cubic_b_spline.hpp>
-#include <boost/math/quadrature/trapezoidal.hpp>
+#include <boost/math/interpolators/cardinal_cubic_b_spline.hpp>
+#include <filesystem>
 #include <vector>
 
-namespace velocity
+namespace pyvrp::velocity
 {
-inline std::vector<double> time;
-inline std::vector<double> velocity_1, velocity_2, velocity_3;
-inline boost::math::cubic_b_spline<double> spline_1, spline_2, spline_3;
-/**
- * Initializes the velocity data from a CSV file.
- * The CSV file should have columns "time" and "velocity".
- * The velocity is processed to create three splines:
- * - spline_1 for velocity
- * - spline_2 for velocity squared
- * - spline_3 for velocity cubed
- */
+class WLTCProfile
+{
+    std::string name_;
+    std::filesystem::path path_;
+    std::vector<double> time_;
+    std::vector<double> velocity_;
+    std::vector<double> squaredVelocity_;
+    std::vector<double> cubedVelocity_;
+    boost::math::interpolators::cardinal_cubic_b_spline<double> spline_;
+    boost::math::interpolators::cardinal_cubic_b_spline<double> squaredSpline_;
+    boost::math::interpolators::cardinal_cubic_b_spline<double> cubedSpline_;
+    boost::math::interpolators::cardinal_cubic_b_spline<double> fullSpline_;
+    double fullProfileDistance_;
+    double repeatableProfileTime_;
+    double repeatableProfileDistance_;
+    double repeatableSquaredVelocityIntegral_;
+    double repeatableCubedVelocityIntegral_;
+    int startOffsetTime_;  // Left offset for the repeatable profile
+    int endOffsetTime_;    // Right offset for the repeatable profile
+    double startOffsetDistance_;
+    double endOffsetDistance_;
 
-void initialize();
+public:
+    WLTCProfile(const std::string name,
+                const std::filesystem::path path,
+                const int startOffsetTime,
+                const int endOffsetTime);
+    double getDistanceForTravelTime(double time);
+    double getSquaredVelocityIntegral(double time);
+    double getCubedVelocityIntegral(double time);
+    double getTimeForTravelDistance(double distance);
 
-double get_velocity_integral(double start, double end, int power = 1);
-}  // namespace velocity
+    std::string name() const { return name_; }
+    std::string path() const { return path_; }
+    std::vector<double> time() { return time_; }
+    std::vector<double> velocity() { return velocity_; }
+    boost::math::interpolators::cardinal_cubic_b_spline<double> fullSpline()
+    {
+        return fullSpline_;
+    }
+    double fullProfileDistance() { return fullProfileDistance_; }
+    double repeatableProfileDistance() { return repeatableProfileDistance_; }
+    double repeatableProfileTime() { return repeatableProfileTime_; }
+    double startOffsetTime() { return startOffsetTime_; }
+    double endOffsetTime() { return endOffsetTime_; }
+    double startOffsetDistance() { return startOffsetDistance_; }
+    double endOffsetDistance() { return endOffsetDistance_; }
+    std::vector<double> splineTime()
+    {
+        std::vector<double> vec(time_.begin() + startOffsetTime_,
+                                time_.end() - endOffsetTime_);
+        std::vector<double> outVec;
+        std::transform(vec.begin(),
+                       vec.end(),
+                       std::back_inserter(outVec),
+                       [vec](double x) { return x - vec.front(); });
+        return outVec;
+    }
+    std::vector<double> splineVelocity()
+    {
+        return std::vector<double>(velocity_.begin() + startOffsetTime_,
+                                   velocity_.end() - endOffsetTime_);
+    }
+};
+
+// WLTCProfile slowVelocityProfile, mediumVelocityProfile, highVelocityProfile;
+
+WLTCProfile getProfileBasedOnDistance(double distance);
+}  // namespace pyvrp::velocity
 
 #endif  // PYVRP_VELOCITY_H

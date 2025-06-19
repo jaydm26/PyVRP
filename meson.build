@@ -32,7 +32,7 @@ endif
 # Python extension modules down below. We also define the top-level source 
 # directory here, for convenience.
 SRC_DIR = 'pyvrp' / 'cpp'
-INCLUDES = include_directories(SRC_DIR)
+INCLUDES = include_directories(SRC_DIR,SRC_DIR / 'includes')
 
 libpyvrp = static_library(
     'pyvrp',
@@ -47,6 +47,7 @@ libpyvrp = static_library(
         SRC_DIR / 'SubPopulation.cpp',
         SRC_DIR / 'LoadSegment.cpp',
         SRC_DIR / 'DurationSegment.cpp',
+        SRC_DIR / 'Velocity.cpp'
     ],
     include_directories: INCLUDES,
 )
@@ -109,8 +110,9 @@ extensions = [
 ]
 
 # Extension dependencies: Python itself, and pybind11.
+boost_dep = declare_dependency(include_directories: include_directories('/usr/local/opt/boost/include'))
 py = import('python').find_installation()
-dependencies = [py.dependency(), dependency('pybind11')]
+dependencies = [py.dependency(), dependency('pybind11'), boost_dep]
 
 foreach extension : extensions
     rawname = extension[0]
