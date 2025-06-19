@@ -1050,11 +1050,15 @@ PYBIND11_MODULE(_pyvrp, m)
              &CostEvaluator::penalisedCost<Solution>,
              py::arg("solution"),
              DOC(pyvrp, CostEvaluator, penalisedCost))
-        //    .def(
-        //        "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
-        //        py::overload_cast<Solution>(
-        //            &CostEvaluator::
-        //                fuelAndEmissionCostWithConstantVelocityConstantCongestion))
+        .def(
+            "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
+            [](const CostEvaluator &self, Solution const &solution)
+            {
+                return self
+                    .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                        solution);
+            },
+            py::arg("solution"))
         .def(
             "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
             [](const CostEvaluator &self, Route const &route)
@@ -1064,20 +1068,25 @@ PYBIND11_MODULE(_pyvrp, m)
                         route);
             },
             py::arg("route"))
-        //    .def(
-        //        "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
-        //        [](const CostEvaluator &self, pyvrp::search::Route route)
-        //        {
-        //            return self
-        //                .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        //                    std::move(route));
-        //        })
-        //    .def(
-        //        "fuel_and_emission_cost_with_constant_velocity_in_segments_"
-        //        "constant_congestion",
-        //        py::overload_cast<Solution>(
-        //            &CostEvaluator::
-        //                fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion))
+        .def(
+            "fuel_and_emission_cost_with_constant_velocity_constant_congestion",
+            [](const CostEvaluator &self, pyvrp::search::Route const &route)
+            {
+                return self
+                    .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                        route);
+            },
+            py::arg("route"))
+        .def(
+            "fuel_and_emission_cost_with_constant_velocity_in_segments_"
+            "constant_congestion",
+            [](const CostEvaluator &self, Solution const &solution)
+            {
+                return self
+                    .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                        solution);
+            },
+            py::arg("solution"))
         .def(
             "fuel_and_emission_cost_with_constant_velocity_in_segments_"
             "constant_congestion",
@@ -1088,18 +1097,26 @@ PYBIND11_MODULE(_pyvrp, m)
                         route);
             },
             py::arg("route"))
-        //    .def(
-        //        "fuel_and_emission_cost_with_constant_velocity_in_segments_"
-        //        "constant_congestion",
-        //        py::overload_cast<pyvrp::search::Route>(
-        //            &CostEvaluator::
-        //                fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion))
-        //    .def(
-        //        "fuel_and_emission_cost_with_non_linear_velocity_constant_"
-        //        "congestion",
-        //        py::overload_cast<Solution>(
-        //            &CostEvaluator::
-        //                fuelAndEmissionCostWithNonLinearVelocityConstantCongestion))
+        .def(
+            "fuel_and_emission_cost_with_constant_velocity_in_segments_"
+            "constant_congestion",
+            [](const CostEvaluator &self, pyvrp::search::Route const &route)
+            {
+                return self
+                    .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                        route);
+            },
+            py::arg("route"))
+        .def(
+            "fuel_and_emission_cost_with_non_linear_velocity_constant_"
+            "congestion",
+            [](const CostEvaluator &self, Solution const &solution)
+            {
+                return self
+                    .fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+                        solution);
+            },
+            py::arg("solution"))
         .def(
             "fuel_and_emission_cost_with_non_linear_velocity_constant_"
             "congestion",
@@ -1110,12 +1127,16 @@ PYBIND11_MODULE(_pyvrp, m)
                         route);
             },
             py::arg("route"))
-        //    .def(
-        //        "fuel_and_emission_cost_with_non_linear_velocity_constant_"
-        //        "congestion",
-        //        py::overload_cast<pyvrp::search::Route>(
-        //            &CostEvaluator::
-        //                fuelAndEmissionCostWithNonLinearVelocityConstantCongestion))
+        .def(
+            "fuel_and_emission_cost_with_non_linear_velocity_constant_"
+            "congestion",
+            [](CostEvaluator &self, pyvrp::search::Route const &route)
+            {
+                return self
+                    .fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+                        route);
+            },
+            py::arg("route"))
         .def("wage_cost",
              &CostEvaluator::wageCost,
              py::arg("hours_worked"),
