@@ -47,35 +47,30 @@ WLTCProfile::WLTCProfile(const std::string name,
         splineTime_.front(),
         stepSize);
 
-    repeatableProfileDistance_
-        = boost::math::quadrature::trapezoidal(
-              spline_, splineTime_.front(), splineTime_.back())
-          / 3600;
-    repeatableProfileTime_ = splineTime_.back() - splineTime_.front();
+    repeatableProfileDistance_ = boost::math::quadrature::trapezoidal(
+        spline_, splineTime_.front(), splineTime_.back());              // in m
+    repeatableProfileTime_ = splineTime_.back() - splineTime_.front();  // in s
 
     if (time_.front() < time_[startOffsetTime_])
     {
-        startOffsetDistance_
-            = boost::math::quadrature::trapezoidal(
-                  fullSpline_, time_.front(), time_[startOffsetTime_])
-              / 3600;
+        startOffsetDistance_ = boost::math::quadrature::trapezoidal(
+            fullSpline_, time_.front(), time_[startOffsetTime_]);  // in m
     }
     else
     {
-        startOffsetDistance_ = 0.0;
+        startOffsetDistance_ = 0.0;  // in m
     }
 
     if (time_[time_.size() - 1 - endOffsetTime_] < time_.back())
     {
         endOffsetDistance_ = boost::math::quadrature::trapezoidal(
-                                 fullSpline_,
-                                 time_[time_.size() - 1 - endOffsetTime_],
-                                 time_.back())
-                             / 3600;
+            fullSpline_,
+            time_[time_.size() - 1 - endOffsetTime_],
+            time_.back());  // in m
     }
     else
     {
-        endOffsetDistance_ = 0.0;
+        endOffsetDistance_ = 0.0;  // in m
     }
 
     std::transform(splineVelocity_.begin(),
@@ -88,10 +83,8 @@ WLTCProfile::WLTCProfile(const std::string name,
         splineTime_.front(),
         stepSize);
 
-    repeatableSquaredVelocityIntegral_
-        = boost::math::quadrature::trapezoidal(
-              squaredSpline_, splineTime_.front(), splineTime_.back())
-          / 3600;
+    repeatableSquaredVelocityIntegral_ = boost::math::quadrature::trapezoidal(
+        squaredSpline_, splineTime_.front(), splineTime_.back());
 
     std::transform(splineVelocity_.begin(),
                    splineVelocity_.end(),
@@ -103,26 +96,21 @@ WLTCProfile::WLTCProfile(const std::string name,
         splineTime_.front(),
         stepSize);
 
-    repeatableCubedVelocityIntegral_
-        = boost::math::quadrature::trapezoidal(
-              cubedSpline_, splineTime_.front(), splineTime_.back())
-          / 3600;
+    repeatableCubedVelocityIntegral_ = boost::math::quadrature::trapezoidal(
+        cubedSpline_, splineTime_.front(), splineTime_.back());
 }
 
 /**
- * Distance is obtained in km. To adjust the velocity in km/hr and time in s, we
- * divide the final value by 3600. Since we want to obfuscate the complexity of
- * the setup, we accept the time in seconds.
+ * Distance is obtained in m. Time is in seconds.
  */
 double WLTCProfile::getDistanceForTravelTime(double time)
 {
     double distance = std::floor(time / repeatableProfileTime_)
-                      * repeatableProfileDistance_;
+                      * repeatableProfileDistance_;  // in m
     double remainingTime = std::fmod(time, repeatableProfileTime_);
-    double remainingDistance
-        = boost::math::quadrature::trapezoidal(spline_, 0.0, remainingTime)
-          / 3600;
-    distance += remainingDistance;
+    double remainingDistance = boost::math::quadrature::trapezoidal(
+        spline_, 0.0, remainingTime);  // in m
+    distance += remainingDistance;     // in m
 
     return distance;
 }
@@ -134,8 +122,7 @@ double WLTCProfile::getSquaredVelocityIntegral(double time)
     double remainingTime = std::fmod(time, repeatableProfileTime_);
     double remainingSquaredVelocityIntegral
         = boost::math::quadrature::trapezoidal(
-              squaredSpline_, 0.0, remainingTime)
-          / 3600;
+            squaredSpline_, 0.0, remainingTime);
     value += remainingSquaredVelocityIntegral;
     return value;
 }
@@ -146,14 +133,14 @@ double WLTCProfile::getCubedVelocityIntegral(double time)
                    * repeatableCubedVelocityIntegral_;
     double remainingTime = std::fmod(time, repeatableProfileTime_);
     double remainingCubedVelocityIntegral
-        = boost::math::quadrature::trapezoidal(cubedSpline_, 0.0, remainingTime)
-          / 3600;
+        = boost::math::quadrature::trapezoidal(
+            cubedSpline_, 0.0, remainingTime);
     value += remainingCubedVelocityIntegral;
     return value;
 }
 
 /**
- * Distance must be passed in km. The value returned will be time in seconds.
+ * Distance must be passed in m. The value returned will be time in seconds.
  */
 double WLTCProfile::getTimeForTravelDistance(double distance)
 {
@@ -163,10 +150,10 @@ double WLTCProfile::getTimeForTravelDistance(double distance)
 
     // We start with the offset distances already.
     double remainingDistance
-        = distance - startOffsetDistance_ - endOffsetDistance_;
+        = distance - startOffsetDistance_ - endOffsetDistance_;  // in m
     // This means that the vehicle must have travelled at least the offset
     // times.
-    double time = startOffsetTime_ + endOffsetTime_;
+    double time = startOffsetTime_ + endOffsetTime_;  // in s
     // The remainder of the distance can be obtained by first counting
     // number of full repeatable splines we can go through. The remaining
     // distance thereafter can be passed through a bisection algorithm to
@@ -176,15 +163,16 @@ double WLTCProfile::getTimeForTravelDistance(double distance)
     // Cover the repeatable profiles
     int repeatableProfiles
         = std::floor(remainingDistance / repeatableProfileDistance_);
-    remainingDistance -= repeatableProfiles * repeatableProfileDistance_;
-    time += repeatableProfiles * repeatableProfileTime_;
+    remainingDistance
+        -= repeatableProfiles * repeatableProfileDistance_;  // in m
+    time += repeatableProfiles * repeatableProfileTime_;     // in s
 
     // The remainder distance must be covered in time t which is obtained by
     // finding the root of the function below (i.e. when it is equal to 0).
     auto func = [this, remainingDistance](double t)
     {
-        return boost::math::quadrature::trapezoidal(spline_, 0.0, t) / 3600
-               - remainingDistance;
+        return boost::math::quadrature::trapezoidal(spline_, 0.0, t)  // in m
+               - remainingDistance;                                   // in m
     };
     // To get the root, we use bisection.
     auto result = boost::math::tools::bisect(
@@ -194,7 +182,7 @@ double WLTCProfile::getTimeForTravelDistance(double distance)
         [](double a, double b) { return std::abs(a - b) <= 1e-8; });
     // Take the average value of the two results we get and add that to the
     // time. This is the total time it takes to cover the distance.
-    time += (result.first + result.second) / 2;
+    time += (result.first + result.second) / 2;  // in s
     return time;
 }
 
