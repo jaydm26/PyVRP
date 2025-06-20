@@ -11,7 +11,8 @@ from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp._pyvrp import InternalCostBehaviour
 from pyvrp.plotting import plot_instance, plot_result, plot_route_schedule
 from pyvrp.solve import SolveParams
-from pyvrp.stop import MaxIterations
+from pyvrp.stop import MaxIterations, MaxRuntime
+from pyvrp.stop.MultipleCriteria import MultipleCriteria
 from research.utils.distance import get_distance_between_coordinates
 from research.utils.duration import get_time_from_distance
 
@@ -77,7 +78,10 @@ solve_params = SolveParams(
         wage_per_hour=1.0,
     )
 )
-result = model.solve(stop=MaxIterations(1), params=solve_params)
+result = model.solve(
+    stop=MultipleCriteria([MaxIterations(1000), MaxRuntime(1800)]),
+    params=solve_params,
+)
 
 print(result)
 
