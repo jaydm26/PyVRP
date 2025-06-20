@@ -31,31 +31,35 @@ class WLTCProfile
     double endOffsetDistance_;
 
 public:
-    WLTCProfile(const std::string name,
-                const std::filesystem::path path,
-                const int startOffsetTime,
-                const int endOffsetTime);
-    double getDistanceForTravelTime(double time);
-    double getSquaredVelocityIntegral(double time);
-    double getCubedVelocityIntegral(double time);
-    double getTimeForTravelDistance(double distance);
+    WLTCProfile(const std::string &name,
+                const std::filesystem::path &path,
+                const int &startOffsetTime,
+                const int &endOffsetTime);
+    double getDistanceForTravelTime(double const &time) const;
+    double getSquaredVelocityIntegral(double const &time) const;
+    double getCubedVelocityIntegral(double const &time) const;
+    double getTimeForTravelDistance(double const &distance) const;
 
     std::string name() const { return name_; }
     std::string path() const { return path_; }
-    std::vector<double> time() { return time_; }
-    std::vector<double> velocity() { return velocity_; }
-    boost::math::interpolators::cardinal_cubic_b_spline<double> fullSpline()
+    std::vector<double> time() const { return time_; }
+    std::vector<double> velocity() const { return velocity_; }
+    boost::math::interpolators::cardinal_cubic_b_spline<double> const
+    fullSpline()
     {
         return fullSpline_;
     }
-    double fullProfileDistance() { return fullProfileDistance_; }
-    double repeatableProfileDistance() { return repeatableProfileDistance_; }
-    double repeatableProfileTime() { return repeatableProfileTime_; }
-    double startOffsetTime() { return startOffsetTime_; }
-    double endOffsetTime() { return endOffsetTime_; }
-    double startOffsetDistance() { return startOffsetDistance_; }
-    double endOffsetDistance() { return endOffsetDistance_; }
-    std::vector<double> splineTime()
+    double fullProfileDistance() const { return fullProfileDistance_; }
+    double repeatableProfileDistance() const
+    {
+        return repeatableProfileDistance_;
+    }
+    double repeatableProfileTime() const { return repeatableProfileTime_; }
+    double startOffsetTime() const { return startOffsetTime_; }
+    double endOffsetTime() const { return endOffsetTime_; }
+    double startOffsetDistance() const { return startOffsetDistance_; }
+    double endOffsetDistance() const { return endOffsetDistance_; }
+    std::vector<double> splineTime() const
     {
         std::vector<double> vec(time_.begin() + startOffsetTime_,
                                 time_.end() - endOffsetTime_);
@@ -66,7 +70,7 @@ public:
                        [vec](double x) { return x - vec.front(); });
         return outVec;
     }
-    std::vector<double> splineVelocity()
+    std::vector<double> splineVelocity() const
     {
         return std::vector<double>(velocity_.begin() + startOffsetTime_,
                                    velocity_.end() - endOffsetTime_);
@@ -75,7 +79,7 @@ public:
 
 // WLTCProfile slowVelocityProfile, mediumVelocityProfile, highVelocityProfile;
 
-WLTCProfile getProfileBasedOnDistance(double distance);
+WLTCProfile getProfileBasedOnDistance(double const &distance);
 }  // namespace pyvrp::velocity
 
 #endif  // PYVRP_VELOCITY_H

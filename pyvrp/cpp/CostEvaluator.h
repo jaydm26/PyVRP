@@ -497,7 +497,7 @@ Cost CostEvaluator::
                 //            + " and client: " + std::to_string(to) + " is not
                 //            0."
                 //     << std::endl;
-                return 0;  // return 0 as the cost for going from the node to
+                continue;  // continue as the cost for going from the node to
                            // itself is always 0.
             };
             double velocityInSegment
@@ -526,7 +526,7 @@ Cost CostEvaluator::
             //            + std::to_string(from)
             //            + " and client: " + std::to_string(to) + " is not 0."
             //     << std::endl;
-            return 0;  // return 0 as the cost for going from the node to itself
+            continue;  // continue as the cost for going from the node to itself
                        // is always 0.
         };
         double velocityInSegment
@@ -587,7 +587,7 @@ Cost CostEvaluator::
             //            + std::to_string(from)
             //            + " and client: " + std::to_string(to) + " is not 0."
             //     << std::endl;
-            return 0;  // return 0 as the cost for going from the node to itself
+            continue;  // continue as the cost for going from the node to itself
                        // is always 0.
         };
         double velocityInSegment
@@ -656,7 +656,7 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
                 //            + " and client: " + std::to_string(to) + " is not
                 //            0."
                 //     << std::endl;
-                return 0;  // return 0 as the cost for going from the node to
+                continue;  // continue as the cost for going from the node to
                            // itself is always 0.
             };
             pyvrp::velocity::WLTCProfile velocityProfile
@@ -691,7 +691,7 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             //            + std::to_string(from)
             //            + " and client: " + std::to_string(to) + " is not 0."
             //     << std::endl;
-            return 0;  // return 0 as the cost for going from the node to itself
+            continue;  // continue as the cost for going from the node to itself
                        // is always 0.
         };
         pyvrp::velocity::WLTCProfile velocityProfile
@@ -753,8 +753,8 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             //            + std::to_string(from)
             //            + " and client: " + std::to_string(to) + " is not 0."
             //     << std::endl;
-            return 0;  // return 0 as the cost for going from the node to itself
-                       // is always 0.
+            continue;  // continue as cost of going from the node to itself is
+                       // always 0.
         };
         pyvrp::velocity::WLTCProfile velocityProfile
             = pyvrp::velocity::getProfileBasedOnDistance(

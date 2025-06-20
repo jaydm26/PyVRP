@@ -9,10 +9,10 @@
 namespace pyvrp::velocity
 {
 
-WLTCProfile::WLTCProfile(const std::string name,
-                         const std::filesystem::path path,
-                         const int startOffsetTime,
-                         const int endOffsetTime)
+WLTCProfile::WLTCProfile(const std::string &name,
+                         const std::filesystem::path &path,
+                         const int &startOffsetTime,
+                         const int &endOffsetTime)
     : name_(name),
       path_(path),
       startOffsetTime_(startOffsetTime),
@@ -103,7 +103,7 @@ WLTCProfile::WLTCProfile(const std::string name,
 /**
  * Distance is obtained in m. Time is in seconds.
  */
-double WLTCProfile::getDistanceForTravelTime(double time)
+double WLTCProfile::getDistanceForTravelTime(double const &time) const
 {
     double distance = std::floor(time / repeatableProfileTime_)
                       * repeatableProfileDistance_;  // in m
@@ -115,7 +115,7 @@ double WLTCProfile::getDistanceForTravelTime(double time)
     return distance;
 }
 
-double WLTCProfile::getSquaredVelocityIntegral(double time)
+double WLTCProfile::getSquaredVelocityIntegral(double const &time) const
 {
     double value = std::floor(time / repeatableProfileTime_)
                    * repeatableSquaredVelocityIntegral_;
@@ -127,7 +127,7 @@ double WLTCProfile::getSquaredVelocityIntegral(double time)
     return value;
 }
 
-double WLTCProfile::getCubedVelocityIntegral(double time)
+double WLTCProfile::getCubedVelocityIntegral(double const &time) const
 {
     double value = std::floor(time / repeatableProfileTime_)
                    * repeatableCubedVelocityIntegral_;
@@ -142,7 +142,7 @@ double WLTCProfile::getCubedVelocityIntegral(double time)
 /**
  * Distance must be passed in m. The value returned will be time in seconds.
  */
-double WLTCProfile::getTimeForTravelDistance(double distance)
+double WLTCProfile::getTimeForTravelDistance(double const &distance) const
 {
     // We assume that distance will always be greater than the
     // fullProfileDistance_ for the high velocity scenario. Otherwise it
@@ -204,7 +204,7 @@ WLTCProfile mediumVelocityProfile
 WLTCProfile highVelocityProfile
     = WLTCProfile("high", highVelocityProfilePath, 70, 113);
 
-WLTCProfile getProfileBasedOnDistance(double distance)
+WLTCProfile getProfileBasedOnDistance(double const &distance)
 {
     if (distance > 3 * mediumVelocityProfile.fullProfileDistance())
     {
