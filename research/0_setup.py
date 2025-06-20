@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import NamedTuple
 
 import matplotlib.pyplot as plt
-import numpy as np
 
+from instances.c101_C10 import instance_c101_C10 as instance_data
 from pyvrp import Edge, Model
 from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp._pyvrp import InternalCostBehaviour
@@ -25,52 +25,13 @@ from research.utils.duration import get_time_from_distance
 model = Model()
 
 
-class VRPData(NamedTuple):
-    string_id: str
-    type: str
-    x: int
-    y: int
-    demand: int
-    pickup_demand: int
-    delivery_demand: int
-    ready_time: int
-    due_date: int
-    service_time: int
-
-
-c101_C10_data: list[VRPData] = [
-    VRPData("S0", "f", 40, 50, 0, 0, 0, 0, 1236, 0),
-    VRPData("S1", "f", 77, 52, 0, 0, 0, 0, 1236, 0),
-    VRPData("S3", "f", 57, 82, 0, 0, 0, 0, 1236, 0),
-    VRPData("S16", "f", 48, 8, 0, 0, 0, 0, 1236, 0),
-    VRPData("S20", "f", 93, 43, 0, 0, 0, 0, 1236, 0),
-    VRPData("C98", "c", 58, 75, 20, 5, 15, 181, 247, 90),
-    VRPData("C78", "c", 88, 35, 20, 13, 7, 667, 731, 90),
-    VRPData("C4", "c", 42, 68, 10, 4, 6, 584, 656, 90),
-    VRPData("C13", "c", 22, 75, 30, 22, 8, 1042, 1106, 90),
-    VRPData("C95", "c", 62, 80, 30, 7, 23, 274, 330, 90),
-    VRPData("C100", "c", 55, 85, 20, 8, 12, 744, 798, 90),
-    VRPData("C54", "c", 42, 10, 40, 31, 9, 810, 868, 90),
-    VRPData("C27", "c", 23, 52, 10, 6, 4, 263, 311, 90),
-    VRPData("C89", "c", 63, 58, 10, 1, 9, 929, 989, 90),
-    VRPData("C96", "c", 60, 80, 10, 3, 7, 177, 243, 90),
-]
-
-num_vehicles = 4
-vehicle_capacity = 200.0
-velocity = 1.0
-latest_due_date = max([data.due_date for data in c101_C10_data])
-
-depots_data = list(filter(lambda x: x.type == "f", c101_C10_data))
-client_data = list(filter(lambda x: x.type == "c", c101_C10_data))
-
 depots = [
     model.add_depot(
         x=depot.x,
         y=depot.y,
         name=depot.string_id,
     )
-    for depot in depots_data
+    for depot in instance_data.depots_data
 ]
 
 clients = [
@@ -83,17 +44,17 @@ clients = [
         tw_late=client.due_date,
         name=client.string_id,
     )
-    for client in client_data
+    for client in instance_data.client_data
 ]
 
 vehicles = [
     model.add_vehicle_type(
-        num_vehicles,
-        vehicle_capacity,
+        instance_data.num_vehicles,
+        instance_data.vehicle_capacity,
         start_depot=depot,
         end_depot=depot,
         tw_early=0,
-        tw_late=latest_due_date,
+        tw_late=instance_data.latest_due_date,
     )
     for depot in depots
 ]
@@ -101,8 +62,8 @@ vehicles = [
 edges: list[Edge] = []
 for from_node, to_node in product(model.locations, model.locations):
     distance = get_distance_between_coordinates(from_node, to_node)
-    # duration = get_time_from_distance(distance)
-    duration = round(distance / velocity)
+    duration = get_time_from_distance(distance)
+    # duration = round(distance / velocity)
     edges.append(
         model.add_edge(
             frm=from_node,
@@ -114,11 +75,15 @@ for from_node, to_node in product(model.locations, model.locations):
 
 solve_params = SolveParams(
     penalty=PenaltyParams(
-        velocity=velocity,
-        cost_behaviour=InternalCostBehaviour.ConstantVelocityInSegmentWithConstantCongestion,
+        velocity=instance_data.velocity,
+        cost_behaviour=InternalCostBehaviour.VariableVelocityWithConstantCongestion,
+        unit_emission_cost=1.0,
+        unit_fuel_cost=1.0,
+        min_hours_paid=8.0,
+        wage_per_hour=1.0,
     )
 )
-result = model.solve(stop=MaxIterations(1000), params=solve_params)
+result = model.solve(stop=MaxIterations(1), params=solve_params)
 
 print(result)
 
