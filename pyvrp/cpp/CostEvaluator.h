@@ -613,14 +613,17 @@ Cost CostEvaluator::
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
         pyvrp::search::Route::Proposal<Segments...> const &proposal) const
 {
-    auto segments = proposal.segments();
-    auto impl = [&](auto... segment)
+    std::tuple<Segments...> segments = proposal.segments();
+
+    auto getSafeRoute = [&](auto const &segment)
     {
-        return (
-            fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                *segment.route())
-            + ...);
+        if (segment.route() == nullptr)
+            return static_cast<Cost>(0.0);
+        else
+            return fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                *segment.route());
     };
+    auto impl = [&](auto... segment) { return (... + getSafeRoute(segment)); };
 
     Cost cost = std::apply(impl, segments);
 
@@ -787,12 +790,15 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
 {
     std::tuple<Segments...> segments = proposal.segments();
 
-    auto impl = [&](auto... segment)
+    auto getSafeRoute = [&](auto const &segment)
     {
-        return (fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-                    *segment.route())
-                + ...);
+        if (segment.route() == nullptr)
+            return static_cast<Cost>(0.0);
+        else
+            return fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+                *segment.route());
     };
+    auto impl = [&](auto... segment) { return (... + getSafeRoute(segment)); };
 
     Cost cost = std::apply(impl, segments);
 

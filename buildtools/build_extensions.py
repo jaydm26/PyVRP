@@ -67,7 +67,7 @@ def configure(
         build_dir,
         "--buildtype", build_type,
         f"-Dpython.platlibdir={cwd.absolute()}",
-        f"-Dstrip={'true' if build_type == 'release' else 'false'}",
+        "-Dstrip=false",
         f"-Db_coverage={'true' if build_type != 'release' else 'false'}",
         *additional,
     ]

@@ -10,7 +10,7 @@ project(
     ).stdout().replace('"', ''),  # turns "XXX" into just XXX
     default_options: [
         'cpp_std=c++20',
-        'b_ndebug=if-release',  # disables asserts in release builds
+        # 'b_ndebug=if-release',  # disables asserts in release builds
         'b_lto=true',  # sets -flto
         'werror=true',  # sets -Werror
         'warning_level=3',  # level 3 sets -Wextra and -Wpedantic
@@ -24,7 +24,8 @@ if compiler.has_argument('-Wno-dangling-reference')
     # now and issues false positives for some of our code. See #656 and #657
     # for details.
     add_project_arguments('-Wno-dangling-reference', language: 'cpp')
-    add_project_arguments('-b_ndebug', language: 'cpp')
+    add_project_link_arguments('-Wl,-no_strip_all', language: 'cpp')
+    # add_project_arguments('-b_ndebug', language: 'cpp')
 endif
 
 # We first compile static libraries that contains all regular, C++ code, one

@@ -56,7 +56,7 @@ vehicles = [
 
 edges: list[Edge] = []
 for from_node, to_node in product(model.locations, model.locations):
-    distance = get_distance_between_coordinates(from_node, to_node) * 1000
+    distance = get_distance_between_coordinates(from_node, to_node)
     duration = get_time_from_distance(distance)
     # duration = round(distance / velocity)
     edges.append(
@@ -79,7 +79,7 @@ solve_params = SolveParams(
     )
 )
 result = model.solve(
-    stop=MultipleCriteria([MaxIterations(1000), MaxRuntime(1800)]),
+    stop=MultipleCriteria([MaxIterations(100), MaxRuntime(1800)]),
     params=solve_params,
 )
 
