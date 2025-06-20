@@ -497,6 +497,7 @@ Cost CostEvaluator::
                 //            + " and client: " + std::to_string(to) + " is not
                 //            0."
                 //     << std::endl;
+                from = to;
                 continue;  // continue as the cost for going from the node to
                            // itself is always 0.
             };
@@ -587,6 +588,7 @@ Cost CostEvaluator::
             //            + std::to_string(from)
             //            + " and client: " + std::to_string(to) + " is not 0."
             //     << std::endl;
+            from = to;
             continue;  // continue as the cost for going from the node to itself
                        // is always 0.
         };
@@ -656,6 +658,7 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
                 //            + " and client: " + std::to_string(to) + " is not
                 //            0."
                 //     << std::endl;
+                from = to;
                 continue;  // continue as the cost for going from the node to
                            // itself is always 0.
             };
@@ -753,8 +756,9 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             //            + std::to_string(from)
             //            + " and client: " + std::to_string(to) + " is not 0."
             //     << std::endl;
-            continue;  // continue as cost of going from the node to itself is
-                       // always 0.
+            from = to;
+            continue;  // continue as cost of going from the node to
+                       // itself is always 0.
         };
         pyvrp::velocity::WLTCProfile velocityProfile
             = pyvrp::velocity::getProfileBasedOnDistance(
@@ -772,6 +776,7 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         double fuelAndEmissionCost
             = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
         cost += fuelAndEmissionCost;
+        from = to;
     }
     return static_cast<Cost>(cost);
 }
