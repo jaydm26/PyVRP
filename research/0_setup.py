@@ -55,7 +55,7 @@ vehicles = [
 
 edges: list[Edge] = []
 for from_node, to_node in product(model.locations, model.locations):
-    distance = get_distance_between_coordinates(from_node, to_node)
+    distance = get_distance_between_coordinates(from_node, to_node) * 1000
     duration = get_time_from_distance(distance)
     # duration = round(distance / velocity)
     edges.append(
