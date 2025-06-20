@@ -346,6 +346,8 @@ Cost CostEvaluator::distPenalty(Distance distance, Distance maxDistance) const
 }
 
 // Do not attempt to modify velocity here. Consider this as a utility function
+// Power To Mass Ratio is in KW per kg, velocity is in m/s, and the result is
+// factor per g of CO2.
 double CostEvaluator::emissionCostPerTonPerHourConstantVelocity(
     double powerToMassRatio, double velocity) const
 {
@@ -482,9 +484,16 @@ Cost CostEvaluator::
             Duration durationOfSegment = durationMatrix(from, to);
             if (durationOfSegment == 0)
             {
-                throw std::logic_error(
-                    "Duration is 0. Velocity cannot be infinite. Did you "
-                    "provide a duration matrix?");
+                std::cout
+                    << "Duration is 0. Velocity cannot be infinite. Did you "
+                       "provide a duration matrix? And if you did, check if "
+                       "the "
+                       "duration between client: "
+                           + std::to_string(from)
+                           + " and client: " + std::to_string(to) + " is not 0."
+                    << std::endl;
+                return 0;  // return 0 as the cost for going from the node to
+                           // itself is always 0.
             };
             double velocityInSegment
                 = distanceOfSegment.get() / durationOfSegment.get();
@@ -505,9 +514,15 @@ Cost CostEvaluator::
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            throw std::logic_error(
-                "Duration is 0. Velocity cannot be infinite. Did you "
-                "provide a duration matrix?");
+            std::cout
+                << "Duration is 0. Velocity cannot be infinite. Did you "
+                   "provide a duration matrix? And if you did, check if the "
+                   "duration between client: "
+                       + std::to_string(from)
+                       + " and client: " + std::to_string(to) + " is not 0."
+                << std::endl;
+            return 0;  // return 0 as the cost for going from the node to itself
+                       // is always 0.
         };
         double velocityInSegment
             = distanceOfSegment.get() / durationOfSegment.get();
@@ -559,9 +574,15 @@ Cost CostEvaluator::
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            throw std::logic_error(
-                "Duration is 0. Velocity cannot be infinite. Did you "
-                "provide a duration matrix?");
+            std::cout
+                << "Duration is 0. Velocity cannot be infinite. Did you "
+                   "provide a duration matrix? And if you did, check if the "
+                   "duration between client: "
+                       + std::to_string(from)
+                       + " and client: " + std::to_string(to) + " is not 0."
+                << std::endl;
+            return 0;  // return 0 as the cost for going from the node to itself
+                       // is always 0.
         };
         double velocityInSegment
             = distanceOfSegment.get() / durationOfSegment.get();
@@ -619,9 +640,16 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             Duration durationOfSegment = durationMatrix(from, to);
             if (durationOfSegment == 0)
             {
-                throw std::logic_error(
-                    "Duration is 0. Velocity cannot be infinite. Did you "
-                    "provide a duration matrix?");
+                std::cout
+                    << "Duration is 0. Velocity cannot be infinite. Did you "
+                       "provide a duration matrix? And if you did, check if "
+                       "the "
+                       "duration between client: "
+                           + std::to_string(from)
+                           + " and client: " + std::to_string(to) + " is not 0."
+                    << std::endl;
+                return 0;  // return 0 as the cost for going from the node to
+                           // itself is always 0.
             };
             pyvrp::velocity::WLTCProfile velocityProfile
                 = pyvrp::velocity::getProfileBasedOnDistance(
@@ -646,9 +674,15 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            throw std::logic_error(
-                "Duration is 0. Velocity cannot be infinite. Did you "
-                "provide a duration matrix?");
+            std::cout
+                << "Duration is 0. Velocity cannot be infinite. Did you "
+                   "provide a duration matrix? And if you did, check if the "
+                   "duration between client: "
+                       + std::to_string(from)
+                       + " and client: " + std::to_string(to) + " is not 0."
+                << std::endl;
+            return 0;  // return 0 as the cost for going from the node to itself
+                       // is always 0.
         };
         pyvrp::velocity::WLTCProfile velocityProfile
             = pyvrp::velocity::getProfileBasedOnDistance(
@@ -697,9 +731,15 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            throw std::logic_error(
-                "Duration is 0. Velocity cannot be infinite. Did you "
-                "provide a duration matrix?");
+            std::cout
+                << "Duration is 0. Velocity cannot be infinite. Did you "
+                   "provide a duration matrix? And if you did, check if the "
+                   "duration between client: "
+                       + std::to_string(from)
+                       + " and client: " + std::to_string(to) + " is not 0."
+                << std::endl;
+            return 0;  // return 0 as the cost for going from the node to itself
+                       // is always 0.
         };
         pyvrp::velocity::WLTCProfile velocityProfile
             = pyvrp::velocity::getProfileBasedOnDistance(
