@@ -1,11 +1,15 @@
 # Either we can directly read the data which is in DIMACS format
+from datetime import datetime
 from itertools import product
+from pathlib import Path
 from typing import NamedTuple
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from pyvrp import Edge, Model
 from pyvrp.PenaltyManager import PenaltyParams
+from pyvrp._pyvrp import InternalCostBehaviour
 from pyvrp.plotting import plot_instance, plot_result, plot_route_schedule
 from pyvrp.solve import SolveParams
 from pyvrp.stop import MaxIterations
@@ -108,23 +112,30 @@ for from_node, to_node in product(model.locations, model.locations):
         )
     )
 
-
 solve_params = SolveParams(
     penalty=PenaltyParams(
         velocity=velocity,
+        cost_behaviour=InternalCostBehaviour.ConstantVelocityInSegmentWithConstantCongestion,
     )
 )
 result = model.solve(stop=MaxIterations(1000), params=solve_params)
 
+print(result)
+
+folder = Path(
+    f"research/results/0_setup_c101_C10_{datetime.now().isoformat()}"
+)
+folder.mkdir(parents=True, exist_ok=True)
+
 fig_instance = plt.figure(figsize=(15, 9))
 plot_instance(model.data(), fig_instance)
 fig_instance.tight_layout()
-fig_instance.savefig("instance.png")
+fig_instance.savefig(folder / "instance.png")
 
 fig_result = plt.figure(figsize=(15, 9))
 plot_result(result, model.data(), solve_params.penalty, fig_result)
 fig_result.tight_layout()
-fig_result.savefig("resut.png")
+fig_result.savefig(folder / "resut.png")
 
 fig_route_schedule, axs_route_schedule = plt.subplots(
     len(result.best.routes()), 1, figsize=(15, 30)
@@ -133,4 +144,4 @@ fig_route_schedule, axs_route_schedule = plt.subplots(
 for ax, route in zip(axs_route_schedule, result.best.routes(), strict=True):
     plot_route_schedule(model.data(), route, ax=ax)
 
-fig_route_schedule.savefig("schedule.png")
+fig_route_schedule.savefig(folder / "schedule.png")
