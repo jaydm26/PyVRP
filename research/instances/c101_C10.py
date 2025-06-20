@@ -1,6 +1,5 @@
 from research.utils.vrp_data import InstanceData, VRPData
 
-
 c101_C10_data: list[VRPData] = [
     VRPData("S0", "f", 40, 50, 0, 0, 0, 0, 1236, 0),
     VRPData("S1", "f", 77, 52, 0, 0, 0, 0, 1236, 0),
@@ -21,6 +20,8 @@ c101_C10_data: list[VRPData] = [
 
 num_vehicles = 4
 vehicle_capacity = 200.0
+vehicle_weight = 1000.0
+power_to_mass_ratio = 60  # Example value, adjust as needed
 velocity = 1.0
 latest_due_date = max([data.due_date for data in c101_C10_data])
 
@@ -31,6 +32,8 @@ instance_c101_C10 = InstanceData(
     name="c101_C10",
     num_vehicles=num_vehicles,
     vehicle_capacity=vehicle_capacity,
+    vehicle_weight=vehicle_weight,
+    power_to_mass_ratio=power_to_mass_ratio,
     velocity=velocity,
     latest_due_date=latest_due_date,
     depots_data=depots_data,

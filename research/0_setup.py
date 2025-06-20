@@ -2,7 +2,6 @@
 from datetime import datetime
 from itertools import product
 from pathlib import Path
-from typing import NamedTuple
 
 import matplotlib.pyplot as plt
 
@@ -16,14 +15,7 @@ from pyvrp.stop import MaxIterations
 from research.utils.distance import get_distance_between_coordinates
 from research.utils.duration import get_time_from_distance
 
-# instance = read("data/RC208_small.vrp")
-# model = Model.from_data(instance)
-#
-# OR
-# We specify the instance ourselves
-
 model = Model()
-
 
 depots = [
     model.add_depot(
@@ -55,6 +47,8 @@ vehicles = [
         end_depot=depot,
         tw_early=0,
         tw_late=instance_data.latest_due_date,
+        vehicle_weight=instance_data.vehicle_weight,
+        power_to_mass_ratio=instance_data.power_to_mass_ratio,
     )
     for depot in depots
 ]
@@ -87,8 +81,10 @@ result = model.solve(stop=MaxIterations(1), params=solve_params)
 
 print(result)
 
+file_name = Path(__file__).stem
+
 folder = Path(
-    f"research/results/0_setup_c101_C10_{datetime.now().isoformat()}"
+    f"research/results/{file_name}_{instance_data.name}_{datetime.now().isoformat()}"
 )
 folder.mkdir(parents=True, exist_ok=True)
 

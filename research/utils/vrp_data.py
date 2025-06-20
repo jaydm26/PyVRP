@@ -18,6 +18,8 @@ class InstanceData(NamedTuple):
     name: str
     num_vehicles: int
     vehicle_capacity: float
+    vehicle_weight: float  # in kg
+    power_to_mass_ratio: float  # in kW/ton or W/kg
     velocity: float
     latest_due_date: int
     depots_data: list[VRPData]
