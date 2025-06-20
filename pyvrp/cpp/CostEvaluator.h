@@ -349,32 +349,40 @@ Cost CostEvaluator::distPenalty(Distance distance, Distance maxDistance) const
 double CostEvaluator::emissionCostPerTonPerHourConstantVelocity(
     double powerToMassRatio, double velocity) const
 {
-    double a, b, c, d, e;
-    a = 465.390;
-    b = 48.143 * powerToMassRatio;
-    c = (32.389 + 0.8931 * powerToMassRatio) * velocity;
-    d = (-0.4771 - 0.02559 * powerToMassRatio) * velocity * velocity;
-    e = (0.0008889 + 0.0004055 * powerToMassRatio) * velocity * velocity
-        * velocity;
+    double internaPowerToMassRatio
+        = powerToMassRatio * 1000;            // convert to KW per ton
+    double internaVelocity = velocity * 3.6;  // convert to km/hr
+    double a, b, c, d;
+    a = 465.390 + 48.143 * internaPowerToMassRatio;
+    b = (32.389 + 0.8931 * internaPowerToMassRatio) * internaVelocity;
+    c = (-0.4771 - 0.02559 * internaPowerToMassRatio) * internaVelocity
+        * internaVelocity;
+    d = (0.0008889 + 0.0004055 * internaPowerToMassRatio) * internaVelocity
+        * internaVelocity * internaVelocity;
 
-    return a + b + c + d + e;
+    return (a + b + c + d) / 1000.0;  // Convert to kg
 }
 
 double CostEvaluator::emissionCostPerTonPerHourNonLinearVelocity(
     double powerToMassRatio,
-    double duration,
-    double distance,
+    double duration,  // input in s
+    double distance,  // input in m
     double squaredVelocityIntegral,
     double cubedVelocityIntegral) const
 {
-    double a, b, c, d, e;
-    a = 465.390 * duration;
-    b = 48.143 * powerToMassRatio * duration;
-    c = (32.389 + 0.8931 * powerToMassRatio) * distance;
-    d = (-0.4771 - 0.02559 * powerToMassRatio) * squaredVelocityIntegral;
-    e = (0.0008889 + 0.0004055 * powerToMassRatio) * cubedVelocityIntegral;
+    double internaPowerToMassRatio
+        = powerToMassRatio * 1000;  // convert to KW per ton
+    double a, b, c, d;
+    a = (465.390 + 48.143 * internaPowerToMassRatio) * duration
+        / 3600.0;  // convert to hours
+    b = (32.389 + 0.8931 * internaPowerToMassRatio) * distance
+        / 1000.0;  // convert to km
+    c = (-0.4771 - 0.02559 * internaPowerToMassRatio) * squaredVelocityIntegral
+        * 3.6 * 3.6;  // convert to km/hr
+    d = (0.0008889 + 0.0004055 * internaPowerToMassRatio)
+        * cubedVelocityIntegral * 3.6 * 3.6 * 3.6;  // Convert to km/hr
 
-    return a + b + c + d + e;
+    return (a + b + c + d) / 1000.0;  // Convert to kg
 }
 /**
  * Calculate the fuel and emission cost where the velocity and congestion are a

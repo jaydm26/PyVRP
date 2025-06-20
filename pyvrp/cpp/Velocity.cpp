@@ -21,9 +21,12 @@ WLTCProfile::WLTCProfile(const std::string name,
     csv::CSVReader fullCsvFile(std::filesystem::absolute(path_).string());
     for (csv::CSVRow row : fullCsvFile)
     {
+        // WLTC profiles are expected to have two columns: time and velocity.
+        // WLTC profiles time in seconds and velocity in km/hr.
         double t = row["time"].get<double>();
         time_.push_back(t);
-        double v = row["velocity"].get<double>();
+        double v = row["velocity"].get<double>() * 1000.0
+                   / 3600.0;  // Convert to m/s
         velocity_.push_back(v);
     }
 
