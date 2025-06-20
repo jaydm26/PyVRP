@@ -393,12 +393,13 @@ Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
     Route const &route) const
 {
     double duration = route.duration().get();
-    pyvrp::ProblemData::VehicleType vehicleType
-        = data_.vehicleType(route.vehicleType());
+    auto vehicleType = data_.vehicleType(route.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     double emissionFactor
         = emissionCostPerTonPerHourConstantVelocity(
               vehicleType.powerToMassRatio, velocity_ * congestionFactor_)
-          * vehicleType.vehicleWeight * duration;
+          * vehicleWeightInTons * duration;
 
     double fuelAndEmissionCost
         = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -423,10 +424,12 @@ Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
 {
     double duration = route.duration().get();
     auto vehicleType = data_.vehicleType(route.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     double emissionFactor
         = emissionCostPerTonPerHourConstantVelocity(
               vehicleType.powerToMassRatio, velocity_ * congestionFactor_)
-          * vehicleType.vehicleWeight * duration;
+          * vehicleWeightInTons * duration;
     double fuelAndEmissionCost
         = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
 
@@ -440,10 +443,12 @@ Cost CostEvaluator::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
     auto const [duration, timeWarp] = proposal.duration();
     auto *route = proposal.route();
     auto vehicleType = data_.vehicleType(route->vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     double emissionFactor
         = emissionCostPerTonPerHourConstantVelocity(
               vehicleType.powerToMassRatio, velocity_ * congestionFactor_)
-          * vehicleType.vehicleWeight * duration.get();
+          * vehicleWeightInTons * duration.get();
     double fuelAndEmissionCost
         = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
 
@@ -465,6 +470,8 @@ Cost CostEvaluator::
 {
     double costForRoute = 0;
     auto vehicleType = data_.vehicleType(route.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
     auto durationMatrix = data_.durationMatrix(vehicleType.profile);
 
@@ -498,7 +505,7 @@ Cost CostEvaluator::
             double emissionFactor = emissionCostPerTonPerHourConstantVelocity(
                                         vehicleType.powerToMassRatio,
                                         velocityInSegment * congestionFactor_)
-                                    * vehicleType.vehicleWeight
+                                    * vehicleWeightInTons
                                     * durationOfSegment.get();
 
             double fuelAndEmissionCost
@@ -527,8 +534,7 @@ Cost CostEvaluator::
         double emissionFactor = emissionCostPerTonPerHourConstantVelocity(
                                     vehicleType.powerToMassRatio,
                                     velocityInSegment * congestionFactor_)
-                                * vehicleType.vehicleWeight
-                                * durationOfSegment.get();
+                                * vehicleWeightInTons * durationOfSegment.get();
 
         double fuelAndEmissionCost
             = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -558,6 +564,8 @@ Cost CostEvaluator::
         pyvrp::search::Route const &route) const
 {
     auto vehicleType = data_.vehicleType(route.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
     auto durationMatrix = data_.durationMatrix(vehicleType.profile);
 
@@ -587,8 +595,7 @@ Cost CostEvaluator::
         double emissionFactor = emissionCostPerTonPerHourConstantVelocity(
                                     vehicleType.powerToMassRatio,
                                     velocityInSegment * congestionFactor_)
-                                * vehicleType.vehicleWeight
-                                * durationOfSegment.get();
+                                * vehicleWeightInTons * durationOfSegment.get();
 
         double fuelAndEmissionCost
             = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -623,6 +630,8 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
 {
     double costForRoute = 0;
     auto vehicleType = data_.vehicleType(route.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
     auto durationMatrix = data_.durationMatrix(vehicleType.profile);
 
@@ -662,7 +671,7 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
                           durationOfSegment.get()),
                       velocityProfile.getCubedVelocityIntegral(
                           durationOfSegment.get()))
-                  * vehicleType.vehicleWeight;
+                  * vehicleWeightInTons;
 
             double fuelAndEmissionCost
                 = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -696,7 +705,7 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
                                         durationOfSegment.get()),
                                     velocityProfile.getCubedVelocityIntegral(
                                         durationOfSegment.get()))
-                                * vehicleType.vehicleWeight;
+                                * vehicleWeightInTons;
 
         double fuelAndEmissionCost
             = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -723,6 +732,8 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
 {
     double cost = 0;
     auto vehicleType = data_.vehicleType(route.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto distanceMatrix = data_.distanceMatrix(vehicleType.profile);
     auto durationMatrix = data_.durationMatrix(vehicleType.profile);
 
@@ -756,7 +767,7 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
                                         durationOfSegment.get()),
                                     velocityProfile.getCubedVelocityIntegral(
                                         durationOfSegment.get()))
-                                * vehicleType.vehicleWeight;
+                                * vehicleWeightInTons;
 
         double fuelAndEmissionCost
             = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
