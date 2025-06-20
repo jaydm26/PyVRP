@@ -19,7 +19,9 @@ HIGH_PROFILE_DISTANCE = 100_000
         (HIGH_PROFILE_DISTANCE, "high"),
     ],
 )
-def test_get_profile_based_on_distance(distance: float, expected_profile: str) -> None:
+def test_get_profile_based_on_distance(
+    distance: float, expected_profile: str
+) -> None:
     profile = get_profile_based_on_distance(distance)
     assert profile.name == expected_profile
 
@@ -58,7 +60,9 @@ class TestSlowProfile:
         self, slow_profile: WLTCProfile, time: float, expected_value: float
     ) -> None:
         assert_allclose(
-            slow_profile.get_squared_velocity_integral(time), expected_value, atol=1e-3
+            slow_profile.get_squared_velocity_integral(time),
+            expected_value,
+            atol=1e-3,
         )
 
     @pytest.mark.parametrize(
@@ -93,7 +97,10 @@ class TestMediumProfile:
         ],
     )
     def test_get_distance_for_travel_time(
-        self, medium_profile: WLTCProfile, time: float, expected_distance: float
+        self,
+        medium_profile: WLTCProfile,
+        time: float,
+        expected_distance: float,
     ) -> None:
         assert_allclose(
             medium_profile.get_distance_for_travel_time(time),
@@ -217,11 +224,12 @@ class TestWLTCProfile:
     def dummy_csv(self, dummy_csv_path: Path) -> Iterator[pd.DataFrame]:
         df = pd.DataFrame(
             {
-                "time": [0, 1, 2, 3, 4, 5],
-                "velocity": [0, 1, 2, 3, 4, 5],
+                "time": [0, 1, 2, 3, 4, 5],  # in hours
+                "velocity": [0, 1, 2, 3, 4, 5],  # in kmph
             }
         )
-        df["time"] *= 3600
+        df["time"] *= 3600  # convert to seconds
+        # Conversion to m/s happens in the WLTCProfile class
 
         df.to_csv(dummy_csv_path, index=False)
 
@@ -239,38 +247,43 @@ class TestWLTCProfile:
         dummy_wltc_profile: WLTCProfile,
         time: float,
     ) -> None:
-        expected_value = (time / 3600) * (time / 3600) / 2
+        expected_value = ((time / 3600) ** 2) / 2 * 1000  # in meters
         assert_allclose(
-            dummy_wltc_profile.get_distance_for_travel_time(time), expected_value
+            dummy_wltc_profile.get_distance_for_travel_time(time),
+            expected_value,
         )
 
     @pytest.mark.parametrize("time", [0, 1800, 3600, 5400, 7200, 9000])
     def test_get_squared_velocity_integral(
         self, dummy_wltc_profile: WLTCProfile, time: float
     ) -> None:
-        expected_value = ((time / 3600) ** 3) / 3
+        expected_value = (
+            ((time / 3600) ** 3) / 3 * 1000 * 1000 / 3600
+        )  # Convert to m^2/s
         assert_allclose(
             dummy_wltc_profile.get_squared_velocity_integral(time),
             expected_value,
-            atol=1e-6,
+            atol=1e-3,
         )
 
     @pytest.mark.parametrize("time", [0, 1800, 3600, 5400, 7200, 9000])
     def test_get_cubed_velocity_integral(
         self, dummy_wltc_profile: WLTCProfile, time: float
     ) -> None:
-        expected_value = ((time / 3600) ** 4) / 4
+        expected_value = (
+            ((time / 3600) ** 4) / 4 * 1000 * 1000 * 1000 / 3600 / 3600
+        )  # Convert to m^3/s^2
         assert_allclose(
             dummy_wltc_profile.get_cubed_velocity_integral(time),
             expected_value,
             atol=1e-3,
         )
 
-    @pytest.mark.parametrize("distance", [0, 0.125, 0.5, 1.125, 2, 3.125])
+    @pytest.mark.parametrize("distance", [0, 125, 500, 1125, 2000, 3125])
     def test_get_time_from_travel_distance(
         self, dummy_wltc_profile: WLTCProfile, distance: float
     ) -> None:
-        expected_value = ((2 * distance) ** 0.5) * 3600
+        expected_value = ((2 * (distance / 1000)) ** 0.5) * 3600
         assert_allclose(
             dummy_wltc_profile.get_time_for_travel_distance(distance),
             expected_value,

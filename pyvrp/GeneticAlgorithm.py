@@ -205,7 +205,7 @@ class GeneticAlgorithm:
             iters,
             end,
             data=self._data,
-            penalty_params=self._pm._params,
+            penalty_params=self._pm._params,  # noqa: SLF001
         )
 
         print_progress.end(res)
@@ -227,7 +227,10 @@ class GeneticAlgorithm:
 
         # Possibly repair if current solution is infeasible. In that case, we
         # penalise infeasibility more using a penalty booster.
-        if not sol.is_feasible() and self._rng.rand() < self._params.repair_probability:
+        if (
+            not sol.is_feasible()
+            and self._rng.rand() < self._params.repair_probability
+        ):
             sol = self._search(sol, self._pm.booster_cost_evaluator())
 
             if sol.is_feasible():

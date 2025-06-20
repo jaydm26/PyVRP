@@ -113,7 +113,7 @@ class CostEvaluator
     double congestionFactor_;
     std::vector<std::vector<double>> fuelCosts_;
     double wagePerHour_;
-    Duration minHoursPaid_;
+    double minHoursPaid_;
     /**
      * This variable controls how the cost is evaluated with regards to the fuel
      * and emission
@@ -140,7 +140,7 @@ public:
         double congestionFactor = 1.0,
         std::vector<std::vector<double>> fuelCosts = {},
         double wagePerHour = 0.0,
-        Duration minHoursPaid = Duration(0),
+        double minHoursPaid = 0,
         INTERNAL_CostBehaviour costBehaviour_
         = INTERNAL_CostBehaviour::ConstantVelocityWithConstantCongestion);
 
@@ -226,9 +226,9 @@ public:
      * Computes the wage cost for the given hours worked, wage per hour, and
      * minimum hours paid.
      */
-    [[nodiscard]] inline Cost wageCost(Duration hoursWorked,
-                                       double wagePerHour,
-                                       Duration minHoursPaid) const;
+    [[nodiscard]] inline Cost wageCost(double const &hoursWorked,
+                                       double const &wagePerHour,
+                                       double const &minHoursPaid) const;
 
     template <typename T>
     [[nodiscard]] inline Cost applyFuelAndEmissionCost(T const &route) const;
@@ -346,20 +346,18 @@ Cost CostEvaluator::distPenalty(Distance distance, Distance maxDistance) const
 }
 
 // Do not attempt to modify velocity here. Consider this as a utility function
-// Power To Mass Ratio is in KW per kg, velocity is in m/s, and the result is
-// factor per g of CO2.
+// Power To Mass Ratio is in W per kg (which is numerically equal to KW per
+// ton), velocity is in m/s, and the result is factor per g of CO2 per ton.
 double CostEvaluator::emissionCostPerTonPerHourConstantVelocity(
     double powerToMassRatio, double velocity) const
 {
-    double internaPowerToMassRatio
-        = powerToMassRatio * 1000;            // convert to KW per ton
     double internaVelocity = velocity * 3.6;  // convert to km/hr
     double a, b, c, d;
-    a = 465.390 + 48.143 * internaPowerToMassRatio;
-    b = (32.389 + 0.8931 * internaPowerToMassRatio) * internaVelocity;
-    c = (-0.4771 - 0.02559 * internaPowerToMassRatio) * internaVelocity
+    a = 465.390 + 48.143 * powerToMassRatio;
+    b = (32.389 + 0.8931 * powerToMassRatio) * internaVelocity;
+    c = (-0.4771 - 0.02559 * powerToMassRatio) * internaVelocity
         * internaVelocity;
-    d = (0.0008889 + 0.0004055 * internaPowerToMassRatio) * internaVelocity
+    d = (0.0008889 + 0.0004055 * powerToMassRatio) * internaVelocity
         * internaVelocity * internaVelocity;
 
     return (a + b + c + d) / 1000.0;  // Convert to kg
@@ -372,18 +370,17 @@ double CostEvaluator::emissionCostPerTonPerHourNonLinearVelocity(
     double squaredVelocityIntegral,
     double cubedVelocityIntegral) const
 {
-    double internaPowerToMassRatio
-        = powerToMassRatio * 1000;  // convert to KW per ton
     double a, b, c, d;
-    a = (465.390 + 48.143 * internaPowerToMassRatio) * duration
+    a = (465.390 + 48.143 * powerToMassRatio) * duration
         / 3600.0;  // convert to hours
-    b = (32.389 + 0.8931 * internaPowerToMassRatio) * distance
+    b = (32.389 + 0.8931 * powerToMassRatio) * distance
         / 1000.0;  // convert to km
-    c = (-0.4771 - 0.02559 * internaPowerToMassRatio) * squaredVelocityIntegral
-        * 3.6 * 3.6;  // convert to km/hr
-    d = (0.0008889 + 0.0004055 * internaPowerToMassRatio)
-        * cubedVelocityIntegral * 3.6 * 3.6 * 3.6;  // Convert to km/hr
+    c = (-0.4771 - 0.02559 * powerToMassRatio) * squaredVelocityIntegral / 1000
+        / 1000 * 3600;  // convert to km/hr
+    d = (0.0008889 + 0.0004055 * powerToMassRatio) * cubedVelocityIntegral
+        / 1000 / 1000 / 1000 * 3600 * 3600;  // Convert to km/hr
 
+    assert(a + b + c + d >= 0);       // Ensure the result is non-negative
     return (a + b + c + d) / 1000.0;  // Convert to kg
 }
 /**
@@ -484,14 +481,15 @@ Cost CostEvaluator::
             Duration durationOfSegment = durationMatrix(from, to);
             if (durationOfSegment == 0)
             {
-                std::cout
-                    << "Duration is 0. Velocity cannot be infinite. Did you "
-                       "provide a duration matrix? And if you did, check if "
-                       "the "
-                       "duration between client: "
-                           + std::to_string(from)
-                           + " and client: " + std::to_string(to) + " is not 0."
-                    << std::endl;
+                // std::cout
+                //     << "Duration is 0. Velocity cannot be infinite. Did you "
+                //        "provide a duration matrix? And if you did, check if "
+                //        "the "
+                //        "duration between client: "
+                //            + std::to_string(from)
+                //            + " and client: " + std::to_string(to) + " is not
+                //            0."
+                //     << std::endl;
                 return 0;  // return 0 as the cost for going from the node to
                            // itself is always 0.
             };
@@ -514,13 +512,13 @@ Cost CostEvaluator::
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            std::cout
-                << "Duration is 0. Velocity cannot be infinite. Did you "
-                   "provide a duration matrix? And if you did, check if the "
-                   "duration between client: "
-                       + std::to_string(from)
-                       + " and client: " + std::to_string(to) + " is not 0."
-                << std::endl;
+            // std::cout
+            //     << "Duration is 0. Velocity cannot be infinite. Did you "
+            //        "provide a duration matrix? And if you did, check if the "
+            //        "duration between client: "
+            //            + std::to_string(from)
+            //            + " and client: " + std::to_string(to) + " is not 0."
+            //     << std::endl;
             return 0;  // return 0 as the cost for going from the node to itself
                        // is always 0.
         };
@@ -574,13 +572,13 @@ Cost CostEvaluator::
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            std::cout
-                << "Duration is 0. Velocity cannot be infinite. Did you "
-                   "provide a duration matrix? And if you did, check if the "
-                   "duration between client: "
-                       + std::to_string(from)
-                       + " and client: " + std::to_string(to) + " is not 0."
-                << std::endl;
+            // std::cout
+            //     << "Duration is 0. Velocity cannot be infinite. Did you "
+            //        "provide a duration matrix? And if you did, check if the "
+            //        "duration between client: "
+            //            + std::to_string(from)
+            //            + " and client: " + std::to_string(to) + " is not 0."
+            //     << std::endl;
             return 0;  // return 0 as the cost for going from the node to itself
                        // is always 0.
         };
@@ -640,28 +638,31 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             Duration durationOfSegment = durationMatrix(from, to);
             if (durationOfSegment == 0)
             {
-                std::cout
-                    << "Duration is 0. Velocity cannot be infinite. Did you "
-                       "provide a duration matrix? And if you did, check if "
-                       "the "
-                       "duration between client: "
-                           + std::to_string(from)
-                           + " and client: " + std::to_string(to) + " is not 0."
-                    << std::endl;
+                // std::cout
+                //     << "Duration is 0. Velocity cannot be infinite. Did you "
+                //        "provide a duration matrix? And if you did, check if "
+                //        "the "
+                //        "duration between client: "
+                //            + std::to_string(from)
+                //            + " and client: " + std::to_string(to) + " is not
+                //            0."
+                //     << std::endl;
                 return 0;  // return 0 as the cost for going from the node to
                            // itself is always 0.
             };
             pyvrp::velocity::WLTCProfile velocityProfile
                 = pyvrp::velocity::getProfileBasedOnDistance(
                     distanceOfSegment.get());
-            double emissionFactor = emissionCostPerTonPerHourNonLinearVelocity(
-                vehicleType.powerToMassRatio,
-                durationOfSegment.get(),
-                distanceOfSegment.get(),
-                velocityProfile.getSquaredVelocityIntegral(
-                    durationOfSegment.get()),
-                velocityProfile.getCubedVelocityIntegral(
-                    durationOfSegment.get()));
+            double emissionFactor
+                = emissionCostPerTonPerHourNonLinearVelocity(
+                      vehicleType.powerToMassRatio,
+                      durationOfSegment.get(),
+                      distanceOfSegment.get(),
+                      velocityProfile.getSquaredVelocityIntegral(
+                          durationOfSegment.get()),
+                      velocityProfile.getCubedVelocityIntegral(
+                          durationOfSegment.get()))
+                  * vehicleType.vehicleWeight;
 
             double fuelAndEmissionCost
                 = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -674,13 +675,13 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            std::cout
-                << "Duration is 0. Velocity cannot be infinite. Did you "
-                   "provide a duration matrix? And if you did, check if the "
-                   "duration between client: "
-                       + std::to_string(from)
-                       + " and client: " + std::to_string(to) + " is not 0."
-                << std::endl;
+            // std::cout
+            //     << "Duration is 0. Velocity cannot be infinite. Did you "
+            //        "provide a duration matrix? And if you did, check if the "
+            //        "duration between client: "
+            //            + std::to_string(from)
+            //            + " and client: " + std::to_string(to) + " is not 0."
+            //     << std::endl;
             return 0;  // return 0 as the cost for going from the node to itself
                        // is always 0.
         };
@@ -688,11 +689,14 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             = pyvrp::velocity::getProfileBasedOnDistance(
                 distanceOfSegment.get());
         double emissionFactor = emissionCostPerTonPerHourNonLinearVelocity(
-            vehicleType.powerToMassRatio,
-            durationOfSegment.get(),
-            distanceOfSegment.get(),
-            velocityProfile.getSquaredVelocityIntegral(durationOfSegment.get()),
-            velocityProfile.getCubedVelocityIntegral(durationOfSegment.get()));
+                                    vehicleType.powerToMassRatio,
+                                    durationOfSegment.get(),
+                                    distanceOfSegment.get(),
+                                    velocityProfile.getSquaredVelocityIntegral(
+                                        durationOfSegment.get()),
+                                    velocityProfile.getCubedVelocityIntegral(
+                                        durationOfSegment.get()))
+                                * vehicleType.vehicleWeight;
 
         double fuelAndEmissionCost
             = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -731,13 +735,13 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            std::cout
-                << "Duration is 0. Velocity cannot be infinite. Did you "
-                   "provide a duration matrix? And if you did, check if the "
-                   "duration between client: "
-                       + std::to_string(from)
-                       + " and client: " + std::to_string(to) + " is not 0."
-                << std::endl;
+            // std::cout
+            //     << "Duration is 0. Velocity cannot be infinite. Did you "
+            //        "provide a duration matrix? And if you did, check if the "
+            //        "duration between client: "
+            //            + std::to_string(from)
+            //            + " and client: " + std::to_string(to) + " is not 0."
+            //     << std::endl;
             return 0;  // return 0 as the cost for going from the node to itself
                        // is always 0.
         };
@@ -745,11 +749,14 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             = pyvrp::velocity::getProfileBasedOnDistance(
                 distanceOfSegment.get());
         double emissionFactor = emissionCostPerTonPerHourNonLinearVelocity(
-            vehicleType.powerToMassRatio,
-            durationOfSegment.get(),
-            distanceOfSegment.get(),
-            velocityProfile.getSquaredVelocityIntegral(durationOfSegment.get()),
-            velocityProfile.getCubedVelocityIntegral(durationOfSegment.get()));
+                                    vehicleType.powerToMassRatio,
+                                    durationOfSegment.get(),
+                                    distanceOfSegment.get(),
+                                    velocityProfile.getSquaredVelocityIntegral(
+                                        durationOfSegment.get()),
+                                    velocityProfile.getCubedVelocityIntegral(
+                                        durationOfSegment.get()))
+                                * vehicleType.vehicleWeight;
 
         double fuelAndEmissionCost
             = (unitFuelCost_ + unitEmissionCost_) * emissionFactor;
@@ -776,14 +783,14 @@ Cost CostEvaluator::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
     return cost;
 }
 
-Cost CostEvaluator::wageCost(Duration hoursWorked,
-                             double wagePerHour,
-                             Duration minHoursPaid) const
+Cost CostEvaluator::wageCost(double const &hoursWorked,
+                             double const &wagePerHour,
+                             double const &minHoursPaid) const
 {
     // If the worked hours are less than the minimum paid hours, we pay
     // the minimum.
-    auto const paidHours = std::max<Duration>(hoursWorked, minHoursPaid);
-    return static_cast<Cost>(paidHours.get() * wagePerHour);
+    auto const paidHours = std::max<double>(hoursWorked, minHoursPaid);
+    return static_cast<Cost>(paidHours * wagePerHour);
 }
 
 template <typename T>
@@ -810,6 +817,8 @@ Cost CostEvaluator::applyFuelAndEmissionCost(T const &route) const
         cost += fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             route);
     }
+
+    assert(cost >= 0);
     return cost;
 }
 

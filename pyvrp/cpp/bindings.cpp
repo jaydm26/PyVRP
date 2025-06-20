@@ -1049,7 +1049,7 @@ PYBIND11_MODULE(_pyvrp, m)
                       double,
                       std::vector<std::vector<double>>,
                       double,
-                      pyvrp::Duration,
+                      double,
                       pyvrp::INTERNAL_CostBehaviour>(),
              py::arg("load_penalties"),
              py::arg("tw_penalty"),
@@ -1061,7 +1061,7 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("congestion_factor") = 1.0,
              py::arg("fuel_costs") = std::vector<std::vector<double>>(),
              py::arg("wage_per_hour") = 0.0,
-             py::arg("min_hours_paid") = pyvrp::Duration(0),
+             py::arg("min_hours_paid") = 0.0,
              py::arg("cost_behaviour") = pyvrp::INTERNAL_CostBehaviour::
                  ConstantVelocityWithConstantCongestion)
         .def("load_penalty",
