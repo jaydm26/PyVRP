@@ -1,5 +1,8 @@
 #include "Route.h"
+#include "../Congestion.h"
+#include "../Utils.h"
 
+#include <Velocity.h>
 #include <cmath>
 #include <numbers>
 #include <ostream>
@@ -356,6 +359,394 @@ void Route::update()
 #ifndef NDEBUG
     dirty = false;
 #endif
+}
+
+pyvrp::Cost const
+pyvrp::search::Route::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+    ProblemData const &data,
+    double const velocity,
+    double const congestion,
+    double const unitFuelCost,
+    double const unitEmissionCost) const
+{
+    Duration duration = this->duration();
+    pyvrp::ProblemData::VehicleType vehicleType
+        = data.vehicleType(this->vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    double emissionFactor
+        = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+              vehicleType.powerToMassRatio, velocity * congestion)
+          * vehicleWeightInTons * duration.get();
+    double fuelAndEmissionCost
+        = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+    return static_cast<Cost>(fuelAndEmissionCost);
+}
+
+pyvrp::Cost const pyvrp::search::Route::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    pyvrp::ProblemData::VehicleType vehicleType
+        = data.vehicleType(this->vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data.durationMatrix(vehicleType.profile);
+
+    double cost = 0;
+
+    size_t from, to;
+    from = this->startDepot();
+    for (size_t i = 1; i < this->size(); i++)
+    {
+        to = this->operator[](i)->client();
+        Distance distanceOfSegment = distanceMatrix(from, to);
+        Duration durationOfSegment = durationMatrix(from, to);
+        if (durationOfSegment == 0)
+        {
+            // std::cout
+            //     << "Duration is 0. Velocity cannot be infinite. Did you "
+            //        "provide a duration matrix? And if you did, check if the "
+            //        "duration between client: "
+            //            + std::to_string(from)
+            //            + " and client: " + std::to_string(to) + " is not 0."
+            //     << std::endl;
+            from = to;
+            continue;  // continue as the cost for going from the node to itself
+                       // is always 0.
+        };
+        double velocityInSegment
+            = distanceOfSegment.get() / durationOfSegment.get();
+        double emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+                  vehicleType.powerToMassRatio, velocityInSegment * congestion)
+              * vehicleWeightInTons * durationOfSegment.get();
+
+        double fuelAndEmissionCost
+            = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+        cost += fuelAndEmissionCost;
+        from = to;
+    }
+    return static_cast<Cost>(cost);
+}
+
+pyvrp::Cost const pyvrp::search::Route::
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    double cost = 0;
+    auto vehicleType = data.vehicleType(this->vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data.durationMatrix(vehicleType.profile);
+
+    size_t from, to;
+    from = this->startDepot();
+    for (size_t i = 1; i < this->size(); i++)
+    {
+        to = this->operator[](i)->client();
+        Distance distanceOfSegment = distanceMatrix(from, to);
+        Duration durationOfSegment = durationMatrix(from, to);
+        if (durationOfSegment == 0)
+        {
+            // std::cout
+            //     << "Duration is 0. Velocity cannot be infinite. Did you "
+            //        "provide a duration matrix? And if you did, check if the "
+            //        "duration between client: "
+            //            + std::to_string(from)
+            //            + " and client: " + std::to_string(to) + " is not 0."
+            //     << std::endl;
+            from = to;
+            continue;  // continue as cost of going from the node to
+                       // itself is always 0.
+        };
+        pyvrp::velocity::WLTCProfile velocityProfile
+            = pyvrp::velocity::getProfileBasedOnDistance(
+                distanceOfSegment.get());
+        double emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourNonLinearVelocity(
+                  vehicleType.powerToMassRatio,
+                  congestion,
+                  durationOfSegment.get(),
+                  distanceOfSegment.get(),
+                  velocityProfile.getSquaredVelocityIntegral(
+                      durationOfSegment.get()),
+                  velocityProfile.getCubedVelocityIntegral(
+                      durationOfSegment.get()))
+              * vehicleWeightInTons;
+
+        double fuelAndEmissionCost
+            = (unitFuelCost + unitEmissionCost) * emissionFactor;
+        cost += fuelAndEmissionCost;
+        from = to;
+    }
+    return static_cast<Cost>(cost);
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentBefore::
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const velocity,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    pyvrp::DurationSegment durationSegmentForSegment
+        = this->duration(route_.profile());
+    pyvrp::ProblemData::VehicleType vehicleType
+        = data.vehicleType(route_.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    double emissionFactor
+        = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+              vehicleType.powerToMassRatio, velocity * congestion)
+          * vehicleWeightInTons * durationSegmentForSegment.duration().get();
+
+    double fuelAndEmissionCost
+        = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+    return static_cast<Cost>(fuelAndEmissionCost);
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentBefore::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    // Here, the velocity in the segment is constant. We have pre-established
+    // the value of distance and duration. Thus, the only thing left to
+    // calculate is the segment (between two nodes) velocity.
+    pyvrp::ProblemData::VehicleType vehicleType
+        = data.vehicleType(route_.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data.durationMatrix(vehicleType.profile);
+
+    size_t from = this->first();
+    Cost cost = 0;
+    for (auto it = route_.begin(); (*it)->client() != this->last(); ++it)
+    {
+        size_t to = (*it)->client();
+        Distance distanceInSegment = distanceMatrix(from, to);
+        Duration durationInSegment = durationMatrix(from, to);
+        double velocityInSegment
+            = distanceInSegment.get() / durationInSegment.get();
+        double emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+                  vehicleType.powerToMassRatio, velocityInSegment * congestion)
+              * vehicleWeightInTons * durationInSegment.get();
+
+        cost += (unitFuelCost + unitEmissionCost) * emissionFactor;
+    }
+
+    return cost;
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentBefore::
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    // Here, the velocity is fully non-linear. Thus, the math changes.
+    // Thus, the only thing left to calculate is the segment (between two nodes)
+    // velocity.
+    pyvrp::ProblemData::VehicleType vehicleType
+        = data.vehicleType(route_.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data.durationMatrix(vehicleType.profile);
+
+    size_t from = this->first();
+    Cost cost = 0;
+    for (auto it = route_.begin(); (*it)->client() != this->last(); ++it)
+    {
+        size_t to = (*it)->client();
+        Distance distanceInSegment = distanceMatrix(from, to);
+        auto velocityProfile
+            = pyvrp::velocity::getProfileBasedOnDistance(distanceInSegment);
+        Duration durationInSegment = durationMatrix(from, to);
+        double velocityInSegment
+            = distanceInSegment.get() / durationInSegment.get();
+        double emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourNonLinearVelocity(
+                  vehicleType.powerToMassRatio,
+                  congestion,
+                  durationInSegment.get(),
+                  distanceInSegment.get(),
+                  velocityProfile.getSquaredVelocityIntegral(durationInSegment),
+                  velocityProfile.getCubedVelocityIntegral(durationInSegment))
+              * vehicleWeightInTons;
+
+        cost += (unitFuelCost + unitEmissionCost) * emissionFactor;
+    }
+
+    return cost;
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentBetween::
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const velocity,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    pyvrp::DurationSegment durationSegmentForSegment
+        = this->duration(route_.profile());
+    pyvrp::ProblemData::VehicleType vehicleType
+        = data.vehicleType(route_.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    double emissionFactor
+        = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+              vehicleType.powerToMassRatio, velocity * congestion)
+          * vehicleWeightInTons * durationSegmentForSegment.duration().get();
+
+    double fuelAndEmissionCost
+        = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+    return static_cast<Cost>(fuelAndEmissionCost);
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentBetween::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentBetween::
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentAfter::
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const velocity,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    pyvrp::DurationSegment durationSegmentForSegment
+        = this->duration(route_.profile());
+    pyvrp::ProblemData::VehicleType vehicleType
+        = data.vehicleType(route_.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    double emissionFactor
+        = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+              vehicleType.powerToMassRatio, velocity * congestion)
+          * vehicleWeightInTons * durationSegmentForSegment.duration().get();
+
+    double fuelAndEmissionCost
+        = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+    return static_cast<Cost>(fuelAndEmissionCost);
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentAfter::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentAfter::
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+}
+
+template <pyvrp::search::Segment... Segments>
+pyvrp::Cost const pyvrp::search::Route::Proposal<Segments...>::
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        ProblemData const &data,
+        double const velocity,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    auto getCostForSegment = [&](auto const &segment)
+    {
+        return segment
+            .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                data, velocity, congestion, unitFuelCost, unitEmissionCost);
+    };
+
+    auto sumCostForSegments = auto impl
+        = [&](auto... segment) { return (... + getCostForSegment(segment)); };
+
+    return std::apply(sumCostForSegments, segments_);
+}
+
+template <pyvrp::search::Segment... Segments>
+pyvrp::Cost const pyvrp::search::Route::Proposal<Segments...>::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    auto getCostForSegment = [&](auto const &segment)
+    {
+        return segment
+            .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                data, velocity, congestion, unitFuelCost, unitEmissionCost);
+    };
+
+    auto sumCostForSegments = auto impl
+        = [&](auto... segment) { return (... + getCostForSegment(segment)); };
+
+    return std::apply(sumCostForSegments, segments_);
+}
+
+template <pyvrp::search::Segment... Segments>
+pyvrp::Cost const pyvrp::search::Route::Proposal<Segments...>::
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    auto getCostForSegment = [&](auto const &segment)
+    {
+        return segment
+            .fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+                data, velocity, congestion, unitFuelCost, unitEmissionCost);
+    };
+
+    auto sumCostForSegments = auto impl
+        = [&](auto... segment) { return (... + getCostForSegment(segment)); };
+
+    return std::apply(sumCostForSegments, segments_);
 }
 
 std::ostream &operator<<(std::ostream &out, pyvrp::search::Route const &route)

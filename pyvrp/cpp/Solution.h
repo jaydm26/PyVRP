@@ -219,6 +219,41 @@ public:
      */
     [[nodiscard]] Duration timeWarp() const;
 
+    /**
+     * Return the fuel and emission cost for the solution when the velocity and
+     * congestion are constant.
+     */
+    [[nodiscard]] Cost const
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        ProblemData const &data,
+        double const velocity,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant in segments (between two nodes) and congestion is constant
+     * throughout.
+     */
+    [[nodiscard]] Cost const
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
+
+    /**
+     * Return the fuel and emission cost fofr the solution when the velocity is
+     * non-linear and congestion is constant throughout.
+     */
+    [[nodiscard]] Cost const
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
+
     bool operator==(Solution const &other) const;
 
     Solution(Solution const &other) = default;

@@ -113,6 +113,56 @@ Cost Solution::uncollectedPrizes() const { return uncollectedPrizes_; }
 
 Duration Solution::timeWarp() const { return timeWarp_; }
 
+Cost const Solution::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+    ProblemData const &data,
+    double const velocity,
+    double const congestion,
+    double const unitFuelCost,
+    double const unitEmissionCost) const
+{
+    Cost cost = 0;
+    for (Route route : this->routes())
+    {
+        cost += route.fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            data, velocity, congestion, unitFuelCost, unitEmissionCost);
+    }
+    return cost;
+}
+
+Cost const
+Solution::fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+    ProblemData const &data,
+    double const congestion,
+    double const unitFuelCost,
+    double const unitEmissionCost) const
+{
+    Cost cost = 0;
+    for (Route route : this->routes())
+    {
+        cost
+            += route
+                   .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                       data, congestion, unitFuelCost, unitEmissionCost);
+    }
+    return cost;
+}
+
+Cost const Solution::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+    ProblemData const &data,
+    double const congestion,
+    double const unitFuelCost,
+    double const unitEmissionCost) const
+{
+    Cost cost = 0;
+    for (Route route : this->routes())
+    {
+        cost
+            += route.fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+                data, congestion, unitFuelCost, unitEmissionCost);
+    }
+    return cost;
+}
+
 void Solution::makeNeighbours()
 {
     for (auto const &route : routes_)

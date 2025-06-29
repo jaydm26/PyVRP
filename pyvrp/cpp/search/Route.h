@@ -103,6 +103,28 @@ public:
          * Returns the segments of the proposed route.
          */
         std::tuple<Segments...> segments() const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            ProblemData const &data,
+            double const velocity,
+            double const congestion,
+            double const unitFuelCost,
+            double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+            ProblemData const &data,
+            double const congestion,
+            double const unitFuelCost,
+            double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+            ProblemData const &data,
+            double const congestion,
+            double const unitFueCost,
+            double const unitEmissionCost) const;
     };
 
     /**
@@ -233,6 +255,29 @@ private:
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment const &load(size_t dimension) const;
+        inline Duration const elapsedDuration() const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            ProblemData const &data,
+            double const velocity,
+            double const congestion,
+            double const unitFuelCost,
+            double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+            ProblemData const &data,
+            double const congestion,
+            double const unitFuelCost,
+            double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+            ProblemData const &data,
+            double const congestion,
+            double const unitFueCost,
+            double const unitEmissionCost) const;
     };
 
     /**
@@ -255,6 +300,29 @@ private:
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment const &load(size_t dimension) const;
+        inline Duration const elapsedDuration() const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            ProblemData const &data,
+            double const velocity,
+            double const congestion,
+            double const unitFuelCost,
+            double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+            ProblemData const &data,
+            double const congestion,
+            double const unitFuelCost,
+            double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+            ProblemData const &data,
+            double const congestion,
+            double const unitFueCost,
+            double const unitEmissionCost) const;
     };
 
     /**
@@ -279,6 +347,29 @@ private:
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment load(size_t dimension) const;
+        inline Duration const elapsedDuration() const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            ProblemData const &data,
+            double const velocity,
+            double const congestion,
+            double const unitFuelCost,
+            double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+            ProblemData const &data,
+            double const congestion,
+            double const unitFuelCost,
+            double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const
+        fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+            ProblemData const &data,
+            double const congestion,
+            double const unitFueCost,
+            double const unitEmissionCost) const;
     };
 
     ProblemData const &data;
@@ -571,6 +662,40 @@ public:
      * solution.
      */
     void update();
+
+    /**
+     * Return the cost for fuel and emission when the velocity and congestion
+     * are constant.
+     */
+    [[nodiscard]] Cost const
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        ProblemData const &data,
+        double const velocity,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
+
+    /**
+     * Return the cost for fuel and emission when the velocity is constant in
+     * segments (between nodes) and congestion is constant.
+     */
+    [[nodiscard]] Cost const
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
+
+    /**
+     * Return the cost for fuel and emission when the velocity is non-linear and
+     * the congestion is constant.
+     */
+    [[nodiscard]] Cost const
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
 
     Route(ProblemData const &data, size_t idx, size_t vehicleType);
     ~Route();
@@ -1027,6 +1152,9 @@ std::pair<Duration, Duration> Route::Proposal<Segments...>::duration() const
     };
 
     return std::apply(fn, detail::reverse(segments_));
+    // Duration must actually be done in a forward fashion as it is now required
+    // to know the exact duration elapsed prior to the merge as the edge
+    // duration will increase due to congestion.
 }
 
 template <Segment... Segments>

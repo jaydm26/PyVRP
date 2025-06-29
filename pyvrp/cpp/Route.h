@@ -370,6 +370,36 @@ public:
      */
     [[nodiscard]] bool hasTimeWarp() const;
 
+    /**
+     * Returns the cost of fuel and emission when the velocity and congestion is
+     * constant
+     */
+    [[nodiscard]] Cost const
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        ProblemData const &data,
+        double const velocity,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
+
+    /**
+     * Returns the cost of fuel and emission when the velocity is constant in
+     * segments (between one node to another) and congestion is constant
+     * throughout.
+     */
+    [[nodiscard]] Cost const
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
+
+    Cost fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const;
+
     bool operator==(Route const &other) const;
 
     Route &operator=(Route const &other) = default;

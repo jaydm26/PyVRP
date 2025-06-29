@@ -1,6 +1,9 @@
 #include "Route.h"
+#include "Congestion.h"
 #include "DurationSegment.h"
 #include "LoadSegment.h"
+#include "Utils.h"
+#include "Velocity.h"
 
 #include <algorithm>
 #include <cassert>
@@ -242,8 +245,8 @@ Route::Route(ProblemData const &data, Trips trips, size_t vehType)
         }
     }
 
-    // Duration statistics. We iterate in reverse, that is, from the last to
-    // the first visit.
+    // // Duration statistics. We iterate in reverse, that is, from the last to
+    // // the first visit.
     auto const &durations = data.durationMatrix(vehData.profile);
     DurationSegment ds = {vehData, vehData.twLate};
     for (auto trip = trips_.rbegin(); trip != trips_.rend(); ++trip)
@@ -271,6 +274,38 @@ Route::Route(ProblemData const &data, Trips trips, size_t vehType)
     }
 
     ds = DurationSegment::merge(0, {vehData, vehData.startLate}, ds);
+
+    // auto congestionProfie = pyvrp::congestion::getCongestionProfile();
+    // DurationSegment ds = {vehData, vehData.startLate};
+    // for (auto trip = trips_.begin(); trip != trips_.end(); ++trip)
+    // {
+    //     ProblemData::Depot const &start = data.location(trip->startDepot());
+    //     ds = DurationSegment::merge(0, ds, {start});
+
+    //     auto tripReleaseTime = trip->releaseTime();
+    //     size_t prevClient = trip->startDepot();
+    //     for (auto it = trip->begin(); it != trip->end(); ++it)
+    //     {
+    //         auto const client = *it;
+    //         double congestion = congestionProfie.getCongestionValue(
+    //             tripReleaseTime + ds.duration());
+    //         auto const edgeDuration = static_cast<Duration>(
+    //             durations(prevClient, client).get() / congestion);
+    //         ProblemData::Client const &clientData = data.location(client);
+
+    //         ds = DurationSegment::merge(edgeDuration, ds, {clientData});
+    //         prevClient = client;
+    //     }
+
+    //     double congestion = congestionProfie.getCongestionValue(
+    //         tripReleaseTime + ds.duration());
+    //     auto const edgeDuration = static_cast<Duration>(
+    //         durations(prevClient, trip->endDepot()).get() / congestion);
+    //     ProblemData::Depot const &end = data.location(trip->endDepot());
+
+    //     ds = DurationSegment::merge(edgeDuration, ds, {end});
+    //     ds = ds.finaliseBack();
+    // }
 
     duration_ = ds.duration();
     durationCost_ = vehData.unitDurationCost * static_cast<Cost>(duration_);
@@ -424,6 +459,221 @@ bool Route::hasExcessLoad() const
 bool Route::hasExcessDistance() const { return excessDistance_ > 0; }
 
 bool Route::hasTimeWarp() const { return timeWarp_ > 0; }
+
+Cost const
+pyvrp::Route::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+    ProblemData const &data,
+    double const velocity,
+    double const congestion,
+    double const unitFuelCost,
+    double const unitEmissionCost) const
+{
+    Duration duration = this->duration();
+    ProblemData::VehicleType vehicleType
+        = data.vehicleType(this->vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    double emissionFactor
+        = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+              vehicleType.powerToMassRatio, velocity * congestion)
+          * vehicleWeightInTons * duration.get();
+
+    double fuelAndEmissionCost
+        = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+    return static_cast<Cost>(fuelAndEmissionCost);
+}
+
+/**
+ * Calculate fuel and emission cost for a route by breaking it down into
+ * individual segments. For each segment, it is assumed that the velocity is
+ * constant and it is calculated by getting the distance of the segment and the
+ * duration to complete the segment.
+ * Note that the route must be associated with a vehicle that has the vehicle
+ * weight and power to mass ratio already defined. Otherwise, the value will be
+ * 0.
+ */
+Cost const pyvrp::Route::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+{
+    double costForRoute = 0;
+    auto vehicleType = data.vehicleType(this->vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data.durationMatrix(vehicleType.profile);
+
+    for (Trip trip : this->trips())
+    {
+        size_t from = trip.startDepot();
+        size_t to;
+
+        for (size_t client : trip.visits())
+        {
+            size_t to = client;
+
+            Distance distanceOfSegment = distanceMatrix(from, to);
+            Duration durationOfSegment = durationMatrix(from, to);
+            if (durationOfSegment == 0)
+            {
+                // std::cout
+                //     << "Duration is 0. Velocity cannot be infinite. Did you "
+                //        "provide a duration matrix? And if you did, check if "
+                //        "the "
+                //        "duration between client: "
+                //            + std::to_string(from)
+                //            + " and client: " + std::to_string(to) + " is not
+                //            0."
+                //     << std::endl;
+                from = to;
+                continue;  // continue as the cost for going from the node to
+                           // itself is always 0.
+            };
+            double velocityInSegment
+                = distanceOfSegment.get() / durationOfSegment.get();
+            double emissionFactor
+                = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+                      vehicleType.powerToMassRatio,
+                      velocityInSegment * congestion)
+                  * vehicleWeightInTons * durationOfSegment.get();
+
+            double fuelAndEmissionCost
+                = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+            costForRoute += fuelAndEmissionCost;
+            from = to;
+        }
+        to = trip.endDepot();
+        Distance distanceOfSegment = distanceMatrix(from, to);
+        Duration durationOfSegment = durationMatrix(from, to);
+        if (durationOfSegment == 0)
+        {
+            // std::cout
+            //     << "Duration is 0. Velocity cannot be infinite. Did you "
+            //        "provide a duration matrix? And if you did, check if the "
+            //        "duration between client: "
+            //            + std::to_string(from)
+            //            + " and client: " + std::to_string(to) + " is not 0."
+            //     << std::endl;
+            continue;  // continue as the cost for going from the node to itself
+                       // is always 0.
+        };
+        double velocityInSegment
+            = distanceOfSegment.get() / durationOfSegment.get();
+        double emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+                  vehicleType.powerToMassRatio, velocityInSegment * congestion)
+              * vehicleWeightInTons * durationOfSegment.get();
+
+        double fuelAndEmissionCost
+            = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+        costForRoute += fuelAndEmissionCost;
+    }
+
+    return static_cast<Cost>(costForRoute);
+}
+
+Cost pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+    ProblemData const &data,
+    double const congestion,
+    double const unitFuelCost,
+    double const unitEmissionCost) const
+{
+    double costForRoute = 0;
+    auto vehicleType = data.vehicleType(this->vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto durationMatrix = data.durationMatrix(vehicleType.profile);
+
+    for (Trip trip : this->trips())
+    {
+        size_t from = trip.startDepot();
+        size_t to;
+
+        for (size_t client : trip.visits())
+        {
+            size_t to = client;
+            Distance distanceOfSegment = distanceMatrix(from, to);
+            Duration durationOfSegment = durationMatrix(from, to);
+            if (durationOfSegment == 0)
+            {
+                // std::cout
+                //     << "Duration is 0. Velocity cannot be infinite. Did you "
+                //        "provide a duration matrix? And if you did, check if "
+                //        "the "
+                //        "duration between client: "
+                //            + std::to_string(from)
+                //            + " and client: " + std::to_string(to) + " is not
+                //            0."
+                //     << std::endl;
+                from = to;
+                continue;  // continue as the cost for going from the node to
+                           // itself is always 0.
+            };
+            pyvrp::velocity::WLTCProfile velocityProfile
+                = pyvrp::velocity::getProfileBasedOnDistance(
+                    distanceOfSegment.get());
+            double emissionFactor
+                = pyvrp::utils::emissionCostPerTonPerHourNonLinearVelocity(
+                      vehicleType.powerToMassRatio,
+                      congestion,
+                      durationOfSegment.get(),
+                      distanceOfSegment.get(),
+                      velocityProfile.getSquaredVelocityIntegral(
+                          durationOfSegment.get()),
+                      velocityProfile.getCubedVelocityIntegral(
+                          durationOfSegment.get()))
+                  * vehicleWeightInTons;
+
+            double fuelAndEmissionCost
+                = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+            costForRoute += fuelAndEmissionCost;
+            from = to;
+        }
+        to = trip.endDepot();
+        Distance distanceOfSegment = distanceMatrix(from, to);
+        Duration durationOfSegment = durationMatrix(from, to);
+        if (durationOfSegment == 0)
+        {
+            // std::cout
+            //     << "Duration is 0. Velocity cannot be infinite. Did you "
+            //        "provide a duration matrix? And if you did, check if the "
+            //        "duration between client: "
+            //            + std::to_string(from)
+            //            + " and client: " + std::to_string(to) + " is not 0."
+            //     << std::endl;
+            continue;  // continue as the cost for going from the node to itself
+                       // is always 0.
+        };
+        pyvrp::velocity::WLTCProfile velocityProfile
+            = pyvrp::velocity::getProfileBasedOnDistance(
+                distanceOfSegment.get());
+        double emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourNonLinearVelocity(
+                  vehicleType.powerToMassRatio,
+                  congestion,
+                  durationOfSegment.get(),
+                  distanceOfSegment.get(),
+                  velocityProfile.getSquaredVelocityIntegral(
+                      durationOfSegment.get()),
+                  velocityProfile.getCubedVelocityIntegral(
+                      durationOfSegment.get()))
+              * vehicleWeightInTons;
+
+        double fuelAndEmissionCost
+            = (unitFuelCost + unitEmissionCost) * emissionFactor;
+
+        costForRoute += fuelAndEmissionCost;
+    }
+    return static_cast<Cost>(costForRoute);
+}
 
 bool Route::operator==(Route const &other) const
 {

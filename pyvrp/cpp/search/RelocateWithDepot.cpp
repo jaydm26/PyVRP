@@ -45,6 +45,9 @@ public:
     {
         return {};
     }
+
+    // TODO: Insert the methods for fuel and emission costs (which will always
+    // be 0)
 };
 }  // namespace
 

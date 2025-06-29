@@ -127,6 +127,11 @@ double WLTCProfile::getSquaredVelocityIntegral(double const &time) const
     return value;
 }
 
+double WLTCProfile::getSquaredVelocityIntegral(Duration const &time) const
+{
+    return getSquaredVelocityIntegral(time.get());
+}
+
 double WLTCProfile::getCubedVelocityIntegral(double const &time) const
 {
     double value = std::floor(time / repeatableProfileTime_)
@@ -137,6 +142,11 @@ double WLTCProfile::getCubedVelocityIntegral(double const &time) const
             cubedSpline_, 0.0, remainingTime);
     value += remainingCubedVelocityIntegral;
     return value;
+}
+
+double WLTCProfile::getCubedVelocityIntegral(Duration const &time) const
+{
+    return getCubedVelocityIntegral(time.get());
 }
 
 /**
@@ -218,6 +228,11 @@ WLTCProfile getProfileBasedOnDistance(double const &distance)
     {
         return slowVelocityProfile;
     }
+}
+
+WLTCProfile getProfileBasedOnDistance(Distance const &distance)
+{
+    return getProfileBasedOnDistance(distance.get());
 }
 
 }  // namespace pyvrp::velocity

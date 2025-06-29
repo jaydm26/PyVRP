@@ -41,6 +41,9 @@ public:
     {
         return {data.location(client), dimension};
     }
+
+    // TODO: Insert the methods for fuel and emission costs (which will always
+    // be 0)
 };
 }  // namespace
 

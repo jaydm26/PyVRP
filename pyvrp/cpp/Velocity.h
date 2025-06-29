@@ -2,6 +2,8 @@
 #ifndef PYVRP_VELOCITY_H
 #define PYVRP_VELOCITY_H
 
+#include "Measure.h"
+
 #include <boost/math/interpolators/cardinal_cubic_b_spline.hpp>
 #include <filesystem>
 #include <vector>
@@ -37,7 +39,9 @@ public:
                 const int &endOffsetTime);
     double getDistanceForTravelTime(double const &time) const;
     double getSquaredVelocityIntegral(double const &time) const;
+    double getSquaredVelocityIntegral(Duration const &time) const;
     double getCubedVelocityIntegral(double const &time) const;
+    double getCubedVelocityIntegral(Duration const &time) const;
     double getTimeForTravelDistance(double const &distance) const;
 
     std::string name() const { return name_; }
@@ -80,6 +84,7 @@ public:
 // WLTCProfile slowVelocityProfile, mediumVelocityProfile, highVelocityProfile;
 
 WLTCProfile getProfileBasedOnDistance(double const &distance);
+WLTCProfile getProfileBasedOnDistance(Distance const &distance);
 }  // namespace pyvrp::velocity
 
 #endif  // PYVRP_VELOCITY_H
