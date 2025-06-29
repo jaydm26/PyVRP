@@ -16,10 +16,13 @@ class ReloadDepotSegment
 {
     pyvrp::ProblemData const &data_;
     size_t depot_;
+    size_t vehicleType_;
 
 public:
-    ReloadDepotSegment(pyvrp::ProblemData const &data, size_t depot)
-        : data_(data), depot_(depot)
+    ReloadDepotSegment(pyvrp::ProblemData const &data,
+                       size_t depot,
+                       size_t vehicleType)
+        : data_(data), depot_(depot), vehicleType_(vehicleType)
     {
         assert(depot < data.numDepots());  // must be an actual depot
     }
@@ -48,31 +51,37 @@ public:
 
     [[nodiscard]] pyvrp::Cost const
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        pyvrp::ProblemData const &data,
-        double const velocity,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data,
+        [[maybe_unused]] double const velocity,
+        [[maybe_unused]] double const congestion,
+        [[maybe_unused]] double const unitFuelCost,
+        [[maybe_unused]] double const unitEmissionCost) const
     {
         return 0;
     }
 
     [[nodiscard]] pyvrp::Cost const
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        pyvrp::ProblemData const &data,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data,
+        [[maybe_unused]] double const congestion,
+        [[maybe_unused]] double const unitFuelCost,
+        [[maybe_unused]] double const unitEmissionCost) const
     {
         return 0;
     }
 
     [[nodiscard]] pyvrp::Cost const
     fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-        pyvrp::ProblemData const &data,
-        double const congestion,
-        double const unitFueCost,
-        double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data,
+        [[maybe_unused]] double const congestion,
+        [[maybe_unused]] double const unitFueCost,
+        [[maybe_unused]] double const unitEmissionCost) const
+    {
+        return 0;
+    }
+
+    [[nodiscard]] pyvrp::Cost const
+    wageCost([[maybe_unused]] pyvrp::ProblemData const &data)
     {
         return 0;
     }

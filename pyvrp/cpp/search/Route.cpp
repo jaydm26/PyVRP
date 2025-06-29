@@ -362,6 +362,16 @@ void Route::update()
 }
 
 pyvrp::Cost const
+pyvrp::search::Route::wageCost(pyvrp::ProblemData const &data) const
+{
+    pyvrp::ProblemData::VehicleType const vehicleType
+        = data.vehicleType(this->vehicleType());
+    Duration const paidHours
+        = std::max(vehicleType.minHoursPaid, this->duration());
+    return paidHours.get() * vehicleType.wagePerHour.get();
+}
+
+pyvrp::Cost const
 pyvrp::search::Route::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
     ProblemData const &data,
     double const velocity,
@@ -493,6 +503,16 @@ pyvrp::Cost const pyvrp::search::Route::
     return static_cast<Cost>(cost);
 }
 
+pyvrp::Cost const pyvrp::search::Route::SegmentBefore::wageCost(
+    pyvrp::ProblemData const &data) const
+{
+    pyvrp::ProblemData::VehicleType const vehicleType
+        = data.vehicleType(route_.vehicleType());
+    Duration const paidHours = std::max(
+        vehicleType.minHoursPaid, this->duration(route_.profile()).duration());
+    return paidHours.get() * vehicleType.wagePerHour.get();
+}
+
 pyvrp::Cost const pyvrp::search::Route::SegmentBefore::
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
         pyvrp::ProblemData const &data,
@@ -599,6 +619,16 @@ pyvrp::Cost const pyvrp::search::Route::SegmentBefore::
     return cost;
 }
 
+pyvrp::Cost const pyvrp::search::Route::SegmentBetween::wageCost(
+    pyvrp::ProblemData const &data) const
+{
+    pyvrp::ProblemData::VehicleType const vehicleType
+        = data.vehicleType(route_.vehicleType());
+    Duration const paidHours = std::max(
+        vehicleType.minHoursPaid, this->duration(route_.profile()).duration());
+    return paidHours.get() * vehicleType.wagePerHour.get();
+}
+
 pyvrp::Cost const pyvrp::search::Route::SegmentBetween::
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
         pyvrp::ProblemData const &data,
@@ -640,6 +670,16 @@ pyvrp::Cost const pyvrp::search::Route::SegmentBetween::
         double const unitFuelCost,
         double const unitEmissionCost) const
 {
+}
+
+pyvrp::Cost const pyvrp::search::Route::SegmentAfter::wageCost(
+    pyvrp::ProblemData const &data) const
+{
+    pyvrp::ProblemData::VehicleType const vehicleType
+        = data.vehicleType(route_.vehicleType());
+    Duration const paidHours = std::max(
+        vehicleType.minHoursPaid, this->duration(route_.profile()).duration());
+    return paidHours.get() * vehicleType.wagePerHour.get();
 }
 
 pyvrp::Cost const pyvrp::search::Route::SegmentAfter::

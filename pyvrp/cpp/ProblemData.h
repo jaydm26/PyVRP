@@ -470,9 +470,13 @@ public:
         std::vector<Load> const initialLoad;     // Initially used capacity
         std::vector<size_t> const reloadDepots;  // Reload locations
         size_t const maxReloads;                 // Maximum number of reloads
-        double const vehicleWeight;              // Vehicle Weight in tons
+        double const vehicleWeight;              // Vehicle Weight in kilos
         double const powerToMassRatio;  // PowerToMassRatio (KW per ton)
-        char const *name;               // Type name (for reference)
+        Duration const
+            minHoursPaid;  // Minimum hours paid to the driver of the vehicle
+        Cost const
+            wagePerHour;   // Wages paid for the driver of the vehicle per hour
+        char const *name;  // Type name (for reference)
 
         VehicleType(size_t numAvailable = 1,
                     std::vector<Load> capacity = {},
@@ -492,6 +496,8 @@ public:
                     size_t maxReloads = std::numeric_limits<size_t>::max(),
                     double vehicleWeight = 0,
                     double powerToMassRatio = 0,
+                    Duration minHoursPaid = 0,
+                    Cost wagePerHour = 0,
                     std::string name = "");
 
         bool operator==(VehicleType const &other) const;
@@ -558,6 +564,8 @@ private:
     size_t const numVehicles_;
     size_t const numLoadDimensions_;
     bool const hasTimeWindows_;
+    double const unitFuelCost_;
+    double const unitEmissionCost_;
 
 public:
     bool operator==(ProblemData const &other) const = default;

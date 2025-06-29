@@ -138,6 +138,7 @@ void Route::makeSchedule(ProblemData const &data)
 
     auto const &vehData = data.vehicleType(vehicleType_);
     auto const &durations = data.durationMatrix(vehData.profile);
+    auto const congestionProfile = pyvrp::congestion::getCongestionProfile();
 
     auto now = startTime_;
     auto const handle
@@ -172,15 +173,20 @@ void Route::makeSchedule(ProblemData const &data)
         size_t prevClient = trip.startDepot();
         for (auto const client : trip)
         {
-            now += durations(prevClient, client);
+            auto const congestion = congestionProfile.getCongestionValue(now);
+            auto const edgeDur = durations(prevClient, client).get()
+                                 / congestion;  // Insert congestion here
+            now += edgeDur;
 
             ProblemData::Client const &clientData = data.location(client);
             handle(clientData, client, tripIdx, clientData.serviceDuration);
 
             prevClient = client;
         }
-
-        now += durations(prevClient, trip.endDepot());
+        auto const congestion = congestionProfile.getCongestionValue(now);
+        auto const edgeDur
+            = durations(prevClient, trip.endDepot()).get() / congestion;
+        now += edgeDur;
     }
 
     ProblemData::Depot const &end = data.location(endDepot_);
@@ -673,6 +679,14 @@ Cost pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         costForRoute += fuelAndEmissionCost;
     }
     return static_cast<Cost>(costForRoute);
+}
+
+Cost pyvrp::Route::wageCost(ProblemData const &data) const
+{
+    pyvrp::ProblemData::VehicleType const vehicleType
+        = data.vehicleType(this->vehicleType());
+    auto const hoursPaid = std::max(this->duration(), vehicleType.minHoursPaid);
+    return hoursPaid.get() * vehicleType.wagePerHour.get();
 }
 
 bool Route::operator==(Route const &other) const

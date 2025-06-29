@@ -59,6 +59,24 @@ emissionCostPerTonPerHourNonLinearVelocity(double const powerToMassRatio,
     assert(a + b + c + d >= 0);       // Ensure the result is non-negative
     return (a + b + c + d) / 1000.0;  // Convert to kg
 }
+
+/**
+ * Internal Enumeration to quickly ascertain the cost function to use
+ */
+enum VelocityBehaviour
+{
+    ConstantVelocity,
+    ConstantVelocityInSegment,
+    VariableVelocity,
+};
+
+enum CongestionBehaviour
+{
+    ConstantCongestion,
+    ConstantCongestionInSegment,
+    VariableCongestion,
+}
+
 }  // namespace pyvrp::utils
 
 #endif  // PYVRP_UTILS_H

@@ -394,11 +394,14 @@ public:
         double const unitFuelCost,
         double const unitEmissionCost) const;
 
-    Cost fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+    [[nodiscard]] Cost
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         ProblemData const &data,
         double const congestion,
         double const unitFuelCost,
         double const unitEmissionCost) const;
+
+    [[nodiscard]] Cost wageCost(ProblemData const &data) const;
 
     bool operator==(Route const &other) const;
 

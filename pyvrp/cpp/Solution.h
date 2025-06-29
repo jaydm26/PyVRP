@@ -254,6 +254,8 @@ public:
         double const unitFuelCost,
         double const unitEmissionCost) const;
 
+    [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
+
     bool operator==(Solution const &other) const;
 
     Solution(Solution const &other) = default;

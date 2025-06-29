@@ -259,6 +259,8 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
                                       size_t maxReloads,
                                       double vehicleWeight,
                                       double powerToMassRatio,
+                                      Duration minHoursPaid,
+                                      Cost wagePerHour,
                                       std::string name)
     : numAvailable(numAvailable),
       startDepot(startDepot),
@@ -278,6 +280,8 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
       maxReloads(maxReloads),
       vehicleWeight(vehicleWeight),
       powerToMassRatio(powerToMassRatio),
+      minHoursPaid(minHoursPaid),
+      wagePerHour(wagePerHour),
       name(duplicate(name.data()))
 {
     if (numAvailable == 0)
@@ -386,6 +390,8 @@ ProblemData::VehicleType ProblemData::VehicleType::replace(
     std::optional<size_t> maxReloads,
     std::optional<double> vehicleWeight,
     std::optional<double> powerToMassRatio,
+    std::optional<Duration> minHoursPaid,
+    std::optional<Cost> wagePerHour,
     std::optional<std::string> name) const
 {
     return {numAvailable.value_or(this->numAvailable),
@@ -406,6 +412,8 @@ ProblemData::VehicleType ProblemData::VehicleType::replace(
             maxReloads.value_or(this->maxReloads),
             vehicleWeight.value_or(this->vehicleWeight),
             powerToMassRatio.value_or(this->powerToMassRatio),
+            minHoursPaid.value_or(this->minHoursPaid),
+            wagePerHour.value_or(this->wagePerHour),
             name.value_or(this->name)};
 }
 

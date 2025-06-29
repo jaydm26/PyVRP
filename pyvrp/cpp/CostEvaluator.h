@@ -15,23 +15,6 @@
 
 namespace pyvrp
 {
-
-/**
- * Internal Enumeration to quickly ascertain the cost function to use
- */
-enum INTERNAL_CostBehaviour
-{
-    ConstantVelocityWithConstantCongestion,
-    ConstantVelocityWithConstantInSegmentCongestion,
-    ConstantVelocityWithVariableCongestion,
-    ConstantVelocityInSegmentWithConstantCongestion,
-    ConstantVelocityInSegmentWithConstantInSegmentCongestion,
-    ConstantVelocityInSegmentWithVariableCongestion,
-    VariableVelocityWithConstantCongestion,
-    VariableVelocityWithConstantInSegmentCongestion,
-    VariableVelocityWithVariableCongestion,
-};
-
 // The following methods must be implemented for a type to be evaluatable by
 // the CostEvaluator.
 template <typename T>
@@ -115,12 +98,6 @@ class CostEvaluator
     std::vector<std::vector<double>> fuelCosts_;
     double wagePerHour_;
     double minHoursPaid_;
-    /**
-     * This variable controls how the cost is evaluated with regards to the fuel
-     * and emission
-     */
-    INTERNAL_CostBehaviour costBehaviour_
-        = INTERNAL_CostBehaviour::ConstantVelocityWithConstantCongestion;
 
     /**
      * Computes the cost penalty incurred from the given excess loads. This is
@@ -130,20 +107,17 @@ class CostEvaluator
     excessLoadPenalties(std::vector<Load> const &excessLoads) const;
 
 public:
-    CostEvaluator(
-        std::vector<double> loadPenalties,
-        double twPenalty,
-        double distPenalty,
-        ProblemData data,
-        double unitFuelCost = 0.0,
-        double unitEmissionCost = 0.0,
-        double velocity = 0.0,
-        double congestionFactor = 1.0,
-        std::vector<std::vector<double>> fuelCosts = {},
-        double wagePerHour = 0.0,
-        double minHoursPaid = 0,
-        INTERNAL_CostBehaviour costBehaviour_
-        = INTERNAL_CostBehaviour::ConstantVelocityWithConstantCongestion);
+    CostEvaluator(std::vector<double> loadPenalties,
+                  double twPenalty,
+                  double distPenalty,
+                  ProblemData data,
+                  double unitFuelCost = 0.0,
+                  double unitEmissionCost = 0.0,
+                  double velocity = 0.0,
+                  double congestionFactor = 1.0,
+                  std::vector<std::vector<double>> fuelCosts = {},
+                  double wagePerHour = 0.0,
+                  double minHoursPaid = 0);
 
     /**
      * Computes the total excess load penalty for the given load and vehicle
@@ -163,15 +137,7 @@ public:
     [[nodiscard]] inline Cost distPenalty(Distance distance,
                                           Distance maxDistance) const;
 
-    /**
-     * Computes the wage cost for the given hours worked, wage per hour, and
-     * minimum hours paid.
-     */
-    [[nodiscard]] Cost wageCost(const double &hoursWorked,
-                                const double &wagePerHour,
-                                const double &minHoursPaid) const;
-
-    template <typename T>
+        template <typename T>
     [[nodiscard]] inline Cost applyFuelAndEmissionCost(T const &route) const;
 
     /**

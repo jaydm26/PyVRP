@@ -125,6 +125,8 @@ public:
             double const congestion,
             double const unitFueCost,
             double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost wageCost(ProblemData const &data) const;
     };
 
     /**
@@ -278,6 +280,8 @@ private:
             double const congestion,
             double const unitFueCost,
             double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
     };
 
     /**
@@ -323,6 +327,8 @@ private:
             double const congestion,
             double const unitFueCost,
             double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
     };
 
     /**
@@ -370,6 +376,8 @@ private:
             double const congestion,
             double const unitFueCost,
             double const unitEmissionCost) const;
+
+        [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
     };
 
     ProblemData const &data;
@@ -696,6 +704,8 @@ public:
         double const congestion,
         double const unitFuelCost,
         double const unitEmissionCost) const;
+
+    [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
 
     Route(ProblemData const &data, size_t idx, size_t vehicleType);
     ~Route();

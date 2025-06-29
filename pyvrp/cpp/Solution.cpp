@@ -163,6 +163,16 @@ Cost const Solution::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
     return cost;
 }
 
+Cost const Solution::wageCost(ProblemData const &data) const
+{
+    Cost cost = 0;
+    for (Route route : this->routes())
+    {
+        cost += route.wageCost(data);
+    }
+    return cost;
+}
+
 void Solution::makeNeighbours()
 {
     for (auto const &route : routes_)

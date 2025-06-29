@@ -12,10 +12,13 @@ class ClientSegment
 {
     pyvrp::ProblemData const &data;
     size_t client;
+    size_t vehicleType;
 
 public:
-    ClientSegment(pyvrp::ProblemData const &data, size_t client)
-        : data(data), client(client)
+    ClientSegment(pyvrp::ProblemData const &data,
+                  size_t client,
+                  size_t vehicleType)
+        : data(data), client(client), vehicleType(vehicleType)
     {
         assert(client >= data.numDepots());  // must be an actual client
     }
@@ -44,33 +47,41 @@ public:
 
     [[nodiscard]] pyvrp::Cost const
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        pyvrp::ProblemData const &data,
-        double const velocity,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data,
+        [[maybe_unused]] double const velocity,
+        [[maybe_unused]] double const congestion,
+        [[maybe_unused]] double const unitFuelCost,
+        [[maybe_unused]] double const unitEmissionCost) const
     {
         return 0;
     }
 
     [[nodiscard]] pyvrp::Cost const
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        pyvrp::ProblemData const &data,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data,
+        [[maybe_unused]] double const congestion,
+        [[maybe_unused]] double const unitFuelCost,
+        [[maybe_unused]] double const unitEmissionCost) const
     {
         return 0;
     }
 
     [[nodiscard]] pyvrp::Cost const
     fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-        pyvrp::ProblemData const &data,
-        double const congestion,
-        double const unitFueCost,
-        double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data,
+        [[maybe_unused]] double const congestion,
+        [[maybe_unused]] double const unitFueCost,
+        [[maybe_unused]] double const unitEmissionCost) const
     {
         return 0;
+    }
+
+    [[nodiscard]] pyvrp::Cost const wageCost(pyvrp::ProblemData const &data)
+    {
+        pyvrp::ProblemData::Client const &clientData = data.location(client);
+        pyvrp::ProblemData::VehicleType const vehicleType
+            = data.vehicleType(this->vehicleType);
+        return clientData.serviceDuration.get() * vehicleType.wagePerHour.get();
     }
 };
 }  // namespace
@@ -92,7 +103,7 @@ pyvrp::Cost pyvrp::search::insertCost(Route::Node *U,
     costEvaluator.deltaCost<true>(
         deltaCost,
         Route::Proposal(route->before(V->idx()),
-                        ClientSegment(data, U->client()),
+                        ClientSegment(data, U->client(), route->vehicleType()),
                         route->after(V->idx() + 1)));
 
     return deltaCost;
