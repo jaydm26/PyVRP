@@ -42,8 +42,36 @@ public:
         return {data.location(client), dimension};
     }
 
-    // TODO: Insert the methods for fuel and emission costs (which will always
-    // be 0)
+    [[nodiscard]] pyvrp::Cost const
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const velocity,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+    {
+        return 0;
+    }
+
+    [[nodiscard]] pyvrp::Cost const
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const congestion,
+        double const unitFuelCost,
+        double const unitEmissionCost) const
+    {
+        return 0;
+    }
+
+    [[nodiscard]] pyvrp::Cost const
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        pyvrp::ProblemData const &data,
+        double const congestion,
+        double const unitFueCost,
+        double const unitEmissionCost) const
+    {
+        return 0;
+    }
 };
 }  // namespace
 
