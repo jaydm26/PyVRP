@@ -6,13 +6,14 @@ namespace pyvrp::utils
 {
 // Do not attempt to modify velocity here. Consider this as a utility function
 // Power To Mass Ratio is in W per kg (which is numerically equal to KW per
-// ton), velocity is in m/s, and the result is factor per g of CO2 per ton.
+// ton), velocity is in m/s, and the result is factor per g of CO2 per ton per
+// hour.
 /**
  * Get the emission cost per ton per hour when the velocity is constant. For
  * cases where one must provide congestion, provide the congested velocity
  * instead of the uncongested velocity.
  */
-double const
+inline double
 emissionCostPerTonPerHourConstantVelocity(double const powerToMassRatio,
                                           double const velocity)
 {
@@ -38,13 +39,13 @@ emissionCostPerTonPerHourConstantVelocity(double const powerToMassRatio,
  * which then provides duration. Squared velocity integral and cubed velocity
  * integral are obtained directly from the WLTCProfile.
  */
-double const
-emissionCostPerTonPerHourNonLinearVelocity(double const powerToMassRatio,
-                                           double const congestion,
-                                           double const duration,  // input in s
-                                           double const distance,  // input in m
-                                           double const squaredVelocityIntegral,
-                                           double const cubedVelocityIntegral)
+inline double
+emissionFactorPerTonNonLinearVelocity(double const powerToMassRatio,
+                                      double const congestion,
+                                      double const duration,  // input in s
+                                      double const distance,  // input in m
+                                      double const squaredVelocityIntegral,
+                                      double const cubedVelocityIntegral)
 {
     double a, b, c, d;
     a = (465.390 + 48.143 * powerToMassRatio) * duration
@@ -59,24 +60,6 @@ emissionCostPerTonPerHourNonLinearVelocity(double const powerToMassRatio,
     assert(a + b + c + d >= 0);       // Ensure the result is non-negative
     return (a + b + c + d) / 1000.0;  // Convert to kg
 }
-
-/**
- * Internal Enumeration to quickly ascertain the cost function to use
- */
-enum VelocityBehaviour
-{
-    ConstantVelocity,
-    ConstantVelocityInSegment,
-    VariableVelocity,
-};
-
-enum CongestionBehaviour
-{
-    ConstantCongestion,
-    ConstantCongestionInSegment,
-    VariableCongestion,
-}
-
 }  // namespace pyvrp::utils
 
 #endif  // PYVRP_UTILS_H

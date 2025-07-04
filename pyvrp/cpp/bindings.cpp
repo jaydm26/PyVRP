@@ -242,6 +242,12 @@ PYBIND11_MODULE(_pyvrp, m)
                       size_t,
                       double,
                       double,
+                      pyvrp::Duration,
+                      pyvrp::Cost,
+                      double,
+                      double,
+                      double,
+                      double,
                       char const *>(),
              py::arg("num_available") = 1,
              py::arg("capacity") = py::list(),
@@ -263,6 +269,12 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("max_reloads") = std::numeric_limits<size_t>::max(),
              py::arg("vehicle_weight") = 0.0,
              py::arg("power_to_mass_ratio") = 0.0,
+             py::arg("min_hours_paid") = 0,
+             py::arg("wage_per_hour") = 0,
+             py::arg("velocity") = 1.0,
+             py::arg("congestion") = 1.0,
+             py::arg("unit_fuel_cost") = 0.0,
+             py::arg("unit_emission_cost") = 0.0,
              py::kw_only(),
              py::arg("name") = "")
         .def_readonly("num_available", &ProblemData::VehicleType::numAvailable)
@@ -315,6 +327,12 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("max_reloads") = py::none(),
              py::arg("vehicle_weight") = py::none(),
              py::arg("power_to_mass_ratio") = py::none(),
+             py::arg("min_hours_paid") =py::none(),
+             py::arg("wage_per_hour") =py::none(),
+             py::arg("velocity") = py::none(),
+             py::arg("congestion") = py::none(),
+             py::arg("unit_fuel_cost") = py::none(),
+             py::arg("unit_emission_cost") = py::none(),
              py::kw_only(),
              py::arg("name") = py::none(),
              DOC(pyvrp, ProblemData, VehicleType, replace))
@@ -361,7 +379,13 @@ PYBIND11_MODULE(_pyvrp, m)
                     t[15].cast<size_t>(),                    // max reloads
                     t[16].cast<double>(),                   // vehicle weight in tons
                     t[17].cast<double>(),                   // power to mass ratio in kw per tons
-                    t[18].cast<std::string>());              // name
+                    t[18].cast<pyvrp::Duration>(), // min hours paid
+                    t[19].cast<pyvrp::Cost>(), // wage per hour
+                    t[20].cast<double>(), // velocity
+                    t[21].cast<double>(), // congegstion
+                    t[22].cast<pyvrp::Cost>(), // unit fuel cost
+                    t[23].cast<pyvrp::Cost>(), // unit emission cost
+                    t[24].cast<std::string>());              // name
 
                 return vehicleType;
             }))
@@ -377,12 +401,16 @@ PYBIND11_MODULE(_pyvrp, m)
                       std::vector<ProblemData::VehicleType>,
                       std::vector<Matrix<pyvrp::Distance>>,
                       std::vector<Matrix<pyvrp::Duration>>,
+                      pyvrp::congestion::CongestionBehaviour,
+                      pyvrp::velocity::VelocityBehaviour,
                       std::vector<ProblemData::ClientGroup>>(),
              py::arg("clients"),
              py::arg("depots"),
              py::arg("vehicle_types"),
              py::arg("distance_matrices"),
              py::arg("duration_matrices"),
+             py::arg("congestion_behaviour"),
+             py::arg("velocity_behaviour"),
              py::arg("groups") = py::list())
         .def("replace",
              &ProblemData::replace,
@@ -391,6 +419,8 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("vehicle_types") = py::none(),
              py::arg("distance_matrices") = py::none(),
              py::arg("duration_matrices") = py::none(),
+             py::arg("congestion_behaviour") = py::none(),
+             py::arg("velocity_behaviour") = py::none(),
              py::arg("groups") = py::none(),
              DOC(pyvrp, ProblemData, replace))
         .def_property_readonly("num_clients",
@@ -494,6 +524,8 @@ PYBIND11_MODULE(_pyvrp, m)
                                       data.vehicleTypes(),
                                       data.distanceMatrices(),
                                       data.durationMatrices(),
+                                          data.congestionBehaviour(),
+                                          data.velocityBehaviour(),
                                       data.groups());
             },
             [](py::tuple t) {  // __setstate__
@@ -509,7 +541,9 @@ PYBIND11_MODULE(_pyvrp, m)
                                  t[2].cast<VehicleTypes>(),
                                  t[3].cast<DistMats>(),
                                  t[4].cast<DurMats>(),
-                                 t[5].cast<Groups>());
+                                 t[5].cast<pyvrp::congestion::CongestionBehaviour>(),
+                                 t[6].cast<pyvrp::velocity::VelocityBehaviour>(),
+                                 t[7].cast<Groups>());
 
                 return data;
             }));
@@ -588,7 +622,7 @@ PYBIND11_MODULE(_pyvrp, m)
                                       trip.pickup(),
                                       trip.load(),
                                       trip.excessLoad(),
-                                      trip.travelDuration(),
+                                   //    trip.travelDuration(), // Disabling to prevent the pickling as this needs additional parameters
                                       trip.serviceDuration(),
                                       trip.releaseTime(),
                                       trip.prizes(),
@@ -966,10 +1000,14 @@ PYBIND11_MODULE(_pyvrp, m)
              &pyvrp::velocity::WLTCProfile::getDistanceForTravelTime,
              py::arg("time"))
         .def("get_squared_velocity_integral",
-             &pyvrp::velocity::WLTCProfile::getSquaredVelocityIntegral,
+             static_cast<double (pyvrp::velocity::WLTCProfile::*)(
+                 double const &) const>(
+                 &pyvrp::velocity::WLTCProfile::getSquaredVelocityIntegral),
              py::arg("time"))
         .def("get_cubed_velocity_integral",
-             &pyvrp::velocity::WLTCProfile::getCubedVelocityIntegral,
+             static_cast<double (pyvrp::velocity::WLTCProfile::*)(
+                 double const &) const>(
+                 &pyvrp::velocity::WLTCProfile::getCubedVelocityIntegral),
              py::arg("time"))
         .def("get_time_for_travel_distance",
              &pyvrp::velocity::WLTCProfile::getTimeForTravelDistance,
@@ -1005,65 +1043,17 @@ PYBIND11_MODULE(_pyvrp, m)
                                &pyvrp::velocity::WLTCProfile::splineVelocity);
 
     m.def("get_profile_based_on_distance",
-          &pyvrp::velocity::getProfileBasedOnDistance,
+          static_cast<pyvrp::velocity::WLTCProfile (*)(double const &)>(
+              &pyvrp::velocity::getProfileBasedOnDistance),
           py::arg("distance"));
 
-    py::enum_<pyvrp::INTERNAL_CostBehaviour>(m, "InternalCostBehaviour")
-        .value("ConstantVelocityWithConstantCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   ConstantVelocityWithConstantCongestion)
-        .value("ConstantVelocityWithConstantInSegmentCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   ConstantVelocityWithConstantInSegmentCongestion)
-        .value("ConstantVelocityWithVariableCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   ConstantVelocityWithVariableCongestion)
-        .value("ConstantVelocityInSegmentWithConstantCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   ConstantVelocityInSegmentWithConstantCongestion)
-        .value("ConstantVelocityInSegmentWithConstantInSegmentCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   ConstantVelocityInSegmentWithConstantInSegmentCongestion)
-        .value("ConstantVelocityInSegmentWithVariableCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   ConstantVelocityInSegmentWithVariableCongestion)
-        .value("VariableVelocityWithConstantCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   VariableVelocityWithConstantCongestion)
-        .value("VariableVelocityWithConstantInSegmentCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   VariableVelocityWithConstantInSegmentCongestion)
-        .value("VariableVelocityWithVariableCongestion",
-               pyvrp::INTERNAL_CostBehaviour::
-                   VariableVelocityWithVariableCongestion)
-        .export_values();
-
     py::class_<CostEvaluator>(m, "CostEvaluator", DOC(pyvrp, CostEvaluator))
-        .def(py::init<std::vector<double>,
-                      double,
-                      double,
-                      pyvrp::ProblemData,
-                      double,
-                      double,
-                      double,
-                      double,
-                      std::vector<std::vector<double>>,
-                      double,
-                      double,
-                      pyvrp::INTERNAL_CostBehaviour>(),
-             py::arg("load_penalties"),
-             py::arg("tw_penalty"),
-             py::arg("dist_penalty"),
-             py::arg("data"),
-             py::arg("unit_fuel_cost") = 0.0,
-             py::arg("unit_emission_cost") = 0.0,
-             py::arg("velocity") = 0.0,
-             py::arg("congestion_factor") = 1.0,
-             py::arg("fuel_costs") = std::vector<std::vector<double>>(),
-             py::arg("wage_per_hour") = 0.0,
-             py::arg("min_hours_paid") = 0.0,
-             py::arg("cost_behaviour") = pyvrp::INTERNAL_CostBehaviour::
-                 ConstantVelocityWithConstantCongestion)
+        .def(
+            py::init<std::vector<double>, double, double, pyvrp::ProblemData>(),
+            py::arg("load_penalties"),
+            py::arg("tw_penalty"),
+            py::arg("dist_penalty"),
+            py::arg("data"))
         .def("load_penalty",
              &CostEvaluator::loadPenalty,
              py::arg("load"),
@@ -1083,101 +1073,6 @@ PYBIND11_MODULE(_pyvrp, m)
              &CostEvaluator::penalisedCost<Solution>,
              py::arg("solution"),
              DOC(pyvrp, CostEvaluator, penalisedCost))
-        .def(
-            "fuel_and_emission_cost_with_constant_velocity_constant_"
-            "congestion",
-            [](const CostEvaluator &self, Solution const &solution)
-            {
-                return self
-                    .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-                        solution);
-            },
-            py::arg("solution"))
-        .def(
-            "fuel_and_emission_cost_with_constant_velocity_constant_"
-            "congestion",
-            [](const CostEvaluator &self, Route const &route)
-            {
-                return self
-                    .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-                        route);
-            },
-            py::arg("route"))
-        .def(
-            "fuel_and_emission_cost_with_constant_velocity_constant_"
-            "congestion",
-            [](const CostEvaluator &self, pyvrp::search::Route const &route)
-            {
-                return self
-                    .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-                        route);
-            },
-            py::arg("route"))
-        .def(
-            "fuel_and_emission_cost_with_constant_velocity_in_segments_"
-            "constant_congestion",
-            [](const CostEvaluator &self, Solution const &solution)
-            {
-                return self
-                    .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                        solution);
-            },
-            py::arg("solution"))
-        .def(
-            "fuel_and_emission_cost_with_constant_velocity_in_segments_"
-            "constant_congestion",
-            [](const CostEvaluator &self, Route const &route)
-            {
-                return self
-                    .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                        route);
-            },
-            py::arg("route"))
-        .def(
-            "fuel_and_emission_cost_with_constant_velocity_in_segments_"
-            "constant_congestion",
-            [](const CostEvaluator &self, pyvrp::search::Route const &route)
-            {
-                return self
-                    .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                        route);
-            },
-            py::arg("route"))
-        .def(
-            "fuel_and_emission_cost_with_non_linear_velocity_constant_"
-            "congestion",
-            [](const CostEvaluator &self, Solution const &solution)
-            {
-                return self
-                    .fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-                        solution);
-            },
-            py::arg("solution"))
-        .def(
-            "fuel_and_emission_cost_with_non_linear_velocity_constant_"
-            "congestion",
-            [](CostEvaluator &self, Route const &route)
-            {
-                return self
-                    .fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-                        route);
-            },
-            py::arg("route"))
-        .def(
-            "fuel_and_emission_cost_with_non_linear_velocity_constant_"
-            "congestion",
-            [](CostEvaluator &self, pyvrp::search::Route const &route)
-            {
-                return self
-                    .fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-                        route);
-            },
-            py::arg("route"))
-        .def("wage_cost",
-             &CostEvaluator::wageCost,
-             py::arg("hours_worked"),
-             py::arg("wage_per_hour"),
-             py::arg("min_hours_paid"))
         .def("cost",
              &CostEvaluator::cost<Solution>,
              py::arg("solution"),

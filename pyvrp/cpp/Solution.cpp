@@ -113,59 +113,49 @@ Cost Solution::uncollectedPrizes() const { return uncollectedPrizes_; }
 
 Duration Solution::timeWarp() const { return timeWarp_; }
 
-Cost const Solution::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-    ProblemData const &data,
-    double const velocity,
-    double const congestion,
-    double const unitFuelCost,
-    double const unitEmissionCost) const
+double Solution::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+    ProblemData const &data) const
 {
-    Cost cost = 0;
+    double cost = 0;
     for (Route route : this->routes())
     {
         cost += route.fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            data, velocity, congestion, unitFuelCost, unitEmissionCost);
+            data);
     }
     return cost;
 }
 
-Cost const
+double
 Solution::fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-    ProblemData const &data,
-    double const congestion,
-    double const unitFuelCost,
-    double const unitEmissionCost) const
+    ProblemData const &data) const
 {
-    Cost cost = 0;
+    double cost = 0;
     for (Route route : this->routes())
     {
         cost
             += route
                    .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                       data, congestion, unitFuelCost, unitEmissionCost);
+                       data);
     }
     return cost;
 }
 
-Cost const Solution::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-    ProblemData const &data,
-    double const congestion,
-    double const unitFuelCost,
-    double const unitEmissionCost) const
+double Solution::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+    ProblemData const &data) const
 {
-    Cost cost = 0;
+    double cost = 0;
     for (Route route : this->routes())
     {
         cost
             += route.fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-                data, congestion, unitFuelCost, unitEmissionCost);
+                data);
     }
     return cost;
 }
 
-Cost const Solution::wageCost(ProblemData const &data) const
+double Solution::wageCost(ProblemData const &data) const
 {
-    Cost cost = 0;
+    double cost = 0;
     for (Route route : this->routes())
     {
         cost += route.wageCost(data);

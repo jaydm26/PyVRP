@@ -1,8 +1,10 @@
 #ifndef PYVRP_PROBLEMDATA_H
 #define PYVRP_PROBLEMDATA_H
 
+#include "Congestion.h"
 #include "Matrix.h"
 #include "Measure.h"
+#include "Velocity.h"
 
 #include <cassert>
 #include <iosfwd>
@@ -475,8 +477,15 @@ public:
         Duration const
             minHoursPaid;  // Minimum hours paid to the driver of the vehicle
         Cost const
-            wagePerHour;   // Wages paid for the driver of the vehicle per hour
-        char const *name;  // Type name (for reference)
+            wagePerHour;  // Wages paid for the driver of the vehicle per hour
+        double const
+            velocity;  // Velocity of the vehicle, if using constant velocity
+        double const congestion;        // Congestion for the vehicle, if using
+                                        // constant congestion
+        double const unitFuelCost;      // Cost for one unit of fuel (per liter)
+        double const unitEmissionCost;  // Cost for one unit of emission (per
+                                        // kg of CO2 emission)
+        char const *name;               // Type name (for reference)
 
         VehicleType(size_t numAvailable = 1,
                     std::vector<Load> capacity = {},
@@ -498,6 +507,10 @@ public:
                     double powerToMassRatio = 0,
                     Duration minHoursPaid = 0,
                     Cost wagePerHour = 0,
+                    double velocity = 1,
+                    double congestion = 1,
+                    Cost unitFuelCost = 0,
+                    Cost unitEmissionCost = 0,
                     std::string name = "");
 
         bool operator==(VehicleType const &other) const;
@@ -532,6 +545,12 @@ public:
                             std::optional<size_t> maxReloads,
                             std::optional<double> vehicleWeight,
                             std::optional<double> powerToMassRatio,
+                            std::optional<Duration> minHoursPaid,
+                            std::optional<Cost> wagePerHour,
+                            std::optional<double> velocity,
+                            std::optional<double> congestion,
+                            std::optional<Cost> unitFuelCost,
+                            std::optional<Cost> unitEmissionCost,
                             std::optional<std::string> name) const;
 
         /**
@@ -564,8 +583,11 @@ private:
     size_t const numVehicles_;
     size_t const numLoadDimensions_;
     bool const hasTimeWindows_;
-    double const unitFuelCost_;
-    double const unitEmissionCost_;
+
+    pyvrp::congestion::CongestionBehaviour const
+        congestionBehaviour_;  // Congestion behaviour for the problem
+    pyvrp::velocity::VelocityBehaviour const
+        velocityBehaviour_;  // Velocity behaviour for the problem
 
 public:
     bool operator==(ProblemData const &other) const = default;
@@ -734,6 +756,17 @@ public:
     [[nodiscard]] size_t numLoadDimensions() const;
 
     /**
+     * Velocity Behaviour for the problem.
+     */
+    [[nodiscard]] pyvrp::velocity::VelocityBehaviour velocityBehaviour() const;
+
+    /**
+     * Congestion Behaviour for the problem.
+     */
+    [[nodiscard]] pyvrp::congestion::CongestionBehaviour
+    congestionBehaviour() const;
+
+    /**
      * Returns a new ProblemData instance with the same data as this instance,
      * except for the given parameters, which are used instead.
      *
@@ -757,18 +790,24 @@ public:
      * ProblemData
      *    A new ProblemData instance with possibly replaced data.
      */
-    ProblemData replace(std::optional<std::vector<Client>> &clients,
-                        std::optional<std::vector<Depot>> &depots,
-                        std::optional<std::vector<VehicleType>> &vehicleTypes,
-                        std::optional<std::vector<Matrix<Distance>>> &distMats,
-                        std::optional<std::vector<Matrix<Duration>>> &durMats,
-                        std::optional<std::vector<ClientGroup>> &groups) const;
+    ProblemData
+    replace(std::optional<std::vector<Client>> &clients,
+            std::optional<std::vector<Depot>> &depots,
+            std::optional<std::vector<VehicleType>> &vehicleTypes,
+            std::optional<std::vector<Matrix<Distance>>> &distMats,
+            std::optional<std::vector<Matrix<Duration>>> &durMats,
+            std::optional<pyvrp::congestion::CongestionBehaviour>
+                congestionBehaviour,
+            std::optional<pyvrp::velocity::VelocityBehaviour> velocityBehaviour,
+            std::optional<std::vector<ClientGroup>> &groups) const;
 
     ProblemData(std::vector<Client> clients,
                 std::vector<Depot> depots,
                 std::vector<VehicleType> vehicleTypes,
                 std::vector<Matrix<Distance>> distMats,
                 std::vector<Matrix<Duration>> durMats,
+                pyvrp::congestion::CongestionBehaviour congestionBehaviour,
+                pyvrp::velocity::VelocityBehaviour velocityBheaviour,
                 std::vector<ClientGroup> groups = {});
 
     ProblemData() = delete;

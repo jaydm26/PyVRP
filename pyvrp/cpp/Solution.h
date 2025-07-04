@@ -223,38 +223,28 @@ public:
      * Return the fuel and emission cost for the solution when the velocity and
      * congestion are constant.
      */
-    [[nodiscard]] Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        ProblemData const &data,
-        double const velocity,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const;
+        ProblemData const &data) const;
 
     /**
      * Return the fuel and emission cost for the solution when the velocity is
      * constant in segments (between two nodes) and congestion is constant
      * throughout.
      */
-    [[nodiscard]] Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        ProblemData const &data,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const;
+        ProblemData const &data) const;
 
     /**
      * Return the fuel and emission cost fofr the solution when the velocity is
      * non-linear and congestion is constant throughout.
      */
-    [[nodiscard]] Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-        ProblemData const &data,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const;
+        ProblemData const &data) const;
 
-    [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
+    [[nodiscard]] double wageCost(ProblemData const &data) const;
 
     bool operator==(Solution const &other) const;
 

@@ -261,6 +261,10 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
                                       double powerToMassRatio,
                                       Duration minHoursPaid,
                                       Cost wagePerHour,
+                                      double velocity,
+                                      double congestion,
+                                      Cost unitFuelCost,
+                                      Cost unitEmissionCost,
                                       std::string name)
     : numAvailable(numAvailable),
       startDepot(startDepot),
@@ -282,6 +286,10 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
       powerToMassRatio(powerToMassRatio),
       minHoursPaid(minHoursPaid),
       wagePerHour(wagePerHour),
+      velocity(velocity),
+      congestion(congestion),
+      unitFuelCost(unitFuelCost),
+      unitEmissionCost(unitEmissionCost),
       name(duplicate(name.data()))
 {
     if (numAvailable == 0)
@@ -341,6 +349,12 @@ ProblemData::VehicleType::VehicleType(VehicleType const &vehicleType)
       maxReloads(vehicleType.maxReloads),
       vehicleWeight(vehicleType.vehicleWeight),
       powerToMassRatio(vehicleType.powerToMassRatio),
+      minHoursPaid(vehicleType.minHoursPaid),
+      wagePerHour(vehicleType.wagePerHour),
+      velocity(vehicleType.velocity),
+      congestion(vehicleType.congestion),
+      unitFuelCost(vehicleType.unitFuelCost),
+      unitEmissionCost(vehicleType.unitEmissionCost),
       name(duplicate(vehicleType.name))
 {
 }
@@ -364,6 +378,12 @@ ProblemData::VehicleType::VehicleType(VehicleType &&vehicleType)
       maxReloads(vehicleType.maxReloads),
       vehicleWeight(vehicleType.vehicleWeight),
       powerToMassRatio(vehicleType.powerToMassRatio),
+      minHoursPaid(vehicleType.minHoursPaid),
+      wagePerHour(vehicleType.wagePerHour),
+      velocity(vehicleType.velocity),
+      congestion(vehicleType.congestion),
+      unitFuelCost(vehicleType.unitFuelCost),
+      unitEmissionCost(vehicleType.unitEmissionCost),
       name(vehicleType.name)  // we can steal
 {
     vehicleType.name = nullptr;  // stolen
@@ -392,6 +412,10 @@ ProblemData::VehicleType ProblemData::VehicleType::replace(
     std::optional<double> powerToMassRatio,
     std::optional<Duration> minHoursPaid,
     std::optional<Cost> wagePerHour,
+    std::optional<double> velocity,
+    std::optional<double> congestion,
+    std::optional<Cost> unitFuelCost,
+    std::optional<Cost> unitEmissionCost,
     std::optional<std::string> name) const
 {
     return {numAvailable.value_or(this->numAvailable),
@@ -414,6 +438,10 @@ ProblemData::VehicleType ProblemData::VehicleType::replace(
             powerToMassRatio.value_or(this->powerToMassRatio),
             minHoursPaid.value_or(this->minHoursPaid),
             wagePerHour.value_or(this->wagePerHour),
+            velocity.value_or(this->velocity),
+            congestion.value_or(this->congestion),
+            unitFuelCost.value_or(this->unitFuelCost),
+            unitEmissionCost.value_or(this->unitEmissionCost),
             name.value_or(this->name)};
 }
 
@@ -515,8 +543,44 @@ size_t ProblemData::numProfiles() const
 
 size_t ProblemData::numLoadDimensions() const { return numLoadDimensions_; }
 
+pyvrp::velocity::VelocityBehaviour pyvrp::ProblemData::velocityBehaviour() const
+{
+    return velocityBehaviour_;
+}
+
+pyvrp::congestion::CongestionBehaviour
+pyvrp::ProblemData::congestionBehaviour() const
+{
+    return congestionBehaviour_;
+}
+
 void ProblemData::validate() const
 {
+
+    // Checks for constant cases for velocity and congestion
+    if (velocityBehaviour_
+        == pyvrp::velocity::VelocityBehaviour::ConstantVelocity)
+    {
+        for (auto const &vehicleType : vehicleTypes_)
+            if (vehicleType.velocity == 0)
+            {
+                auto const *msg = "Velocity cannot be 0 when constant velocity "
+                                  "behaviour is used.";
+                throw std::invalid_argument(msg);
+            }
+    }
+    if (congestionBehaviour_
+        == pyvrp::congestion::CongestionBehaviour::ConstantCongestion)
+    {
+        for (auto const &vehicleType : vehicleTypes_)
+            if (vehicleType.congestion == 0)
+            {
+                auto const *msg
+                    = "Congestion cannot be 0 when constant congestion "
+                      "behaviour is used.";
+                throw std::invalid_argument(msg);
+            }
+    }
     // Client checks.
     for (size_t idx = numDepots(); idx != numLocations(); ++idx)
     {
@@ -650,28 +714,35 @@ void ProblemData::validate() const
     }
 }
 
-ProblemData
-ProblemData::replace(std::optional<std::vector<Client>> &clients,
-                     std::optional<std::vector<Depot>> &depots,
-                     std::optional<std::vector<VehicleType>> &vehicleTypes,
-                     std::optional<std::vector<Matrix<Distance>>> &distMats,
-                     std::optional<std::vector<Matrix<Duration>>> &durMats,
-                     std::optional<std::vector<ClientGroup>> &groups) const
+ProblemData ProblemData::replace(
+    std::optional<std::vector<Client>> &clients,
+    std::optional<std::vector<Depot>> &depots,
+    std::optional<std::vector<VehicleType>> &vehicleTypes,
+    std::optional<std::vector<Matrix<Distance>>> &distMats,
+    std::optional<std::vector<Matrix<Duration>>> &durMats,
+    std::optional<pyvrp::congestion::CongestionBehaviour> congestionBehaviour,
+    std::optional<pyvrp::velocity::VelocityBehaviour> velocityBehaviour,
+    std::optional<std::vector<ClientGroup>> &groups) const
 {
     return {clients.value_or(clients_),
             depots.value_or(depots_),
             vehicleTypes.value_or(vehicleTypes_),
             distMats.value_or(dists_),
             durMats.value_or(durs_),
+            congestionBehaviour.value_or(congestionBehaviour_),
+            velocityBehaviour.value_or(velocityBehaviour_),
             groups.value_or(groups_)};
 }
 
-ProblemData::ProblemData(std::vector<Client> clients,
-                         std::vector<Depot> depots,
-                         std::vector<VehicleType> vehicleTypes,
-                         std::vector<Matrix<Distance>> distMats,
-                         std::vector<Matrix<Duration>> durMats,
-                         std::vector<ClientGroup> groups)
+ProblemData::ProblemData(
+    std::vector<Client> clients,
+    std::vector<Depot> depots,
+    std::vector<VehicleType> vehicleTypes,
+    std::vector<Matrix<Distance>> distMats,
+    std::vector<Matrix<Duration>> durMats,
+    pyvrp::congestion::CongestionBehaviour congestionBehaviour,
+    pyvrp::velocity::VelocityBehaviour velocityBehaviour,
+    std::vector<ClientGroup> groups)
     : centroid_({0, 0}),
       dists_(std::move(distMats)),
       durs_(std::move(durMats)),
@@ -697,7 +768,9 @@ ProblemData::ProblemData(std::vector<Client> clients,
           || std::any_of(depots_.begin(), depots_.end(), hasTimeWindow<Depot>)
           || std::any_of(vehicleTypes_.begin(),
                          vehicleTypes_.end(),
-                         hasTimeWindow<VehicleType>))
+                         hasTimeWindow<VehicleType>)),
+      congestionBehaviour_(congestionBehaviour),
+      velocityBehaviour_(velocityBehaviour)
 {
     for (auto const &client : clients_)
     {

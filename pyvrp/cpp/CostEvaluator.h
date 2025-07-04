@@ -91,14 +91,6 @@ class CostEvaluator
     double twPenalty_;
     double distPenalty_;
     ProblemData data_;
-    double unitFuelCost_;
-    double unitEmissionCost_;
-    double velocity_;
-    double congestionFactor_;
-    std::vector<std::vector<double>> fuelCosts_;
-    double wagePerHour_;
-    double minHoursPaid_;
-
     /**
      * Computes the cost penalty incurred from the given excess loads. This is
      * a convenient shorthand for calling ``loadPenalty`` for each dimension.
@@ -110,14 +102,7 @@ public:
     CostEvaluator(std::vector<double> loadPenalties,
                   double twPenalty,
                   double distPenalty,
-                  ProblemData data,
-                  double unitFuelCost = 0.0,
-                  double unitEmissionCost = 0.0,
-                  double velocity = 0.0,
-                  double congestionFactor = 1.0,
-                  std::vector<std::vector<double>> fuelCosts = {},
-                  double wagePerHour = 0.0,
-                  double minHoursPaid = 0);
+                  ProblemData data);
 
     /**
      * Computes the total excess load penalty for the given load and vehicle
@@ -137,8 +122,8 @@ public:
     [[nodiscard]] inline Cost distPenalty(Distance distance,
                                           Distance maxDistance) const;
 
-        template <typename T>
-    [[nodiscard]] inline Cost applyFuelAndEmissionCost(T const &route) const;
+    template <typename T>
+    [[nodiscard]] inline double applyFuelAndEmissionCost(T const &route) const;
 
     /**
      * Computes a smoothed objective (penalised cost) for a given solution.
@@ -252,44 +237,61 @@ Cost CostEvaluator::distPenalty(Distance distance, Distance maxDistance) const
     return static_cast<Cost>(excessDistance.get() * distPenalty_);
 }
 
-Cost CostEvaluator::wageCost(double const &hoursWorked,
-                             double const &wagePerHour,
-                             double const &minHoursPaid) const
-{
-    // If the worked hours are less than the minimum paid hours, we pay
-    // the minimum.
-    auto const paidHours = std::max<double>(hoursWorked, minHoursPaid);
-    return static_cast<Cost>(paidHours * wagePerHour);
-}
-
 template <typename T>
-Cost CostEvaluator::applyFuelAndEmissionCost(T const &route) const
+double CostEvaluator::applyFuelAndEmissionCost(T const &arg) const
 {
-    if (costBehaviour_
-        == INTERNAL_CostBehaviour::ConstantVelocityWithConstantCongestion)
+    if (data_.velocityBehaviour()
+            == pyvrp::velocity::VelocityBehaviour::ConstantVelocity
+        && data_.congestionBehaviour()
+               == pyvrp::congestion::CongestionBehaviour::ConstantCongestion)
     {
-        return route.fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            data_,
-            velocity_,
-            congestionFactor_,
-            unitFuelCost_,
-            unitEmissionCost_);
+        return arg.fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+            data_);
     }
-    else if (costBehaviour_
-             == INTERNAL_CostBehaviour::
-                 ConstantVelocityInSegmentWithConstantCongestion)
+    else if (
+        data_.velocityBehaviour()
+            == pyvrp::velocity::VelocityBehaviour::ConstantVelocityInSegment
+        && data_.congestionBehaviour()
+               == pyvrp::congestion::CongestionBehaviour::ConstantCongestion)
     {
-        return route
+        return arg
             .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                data_, congestionFactor_, unitFuelCost_, unitEmissionCost_);
+                data_);
     }
-    else if (costBehaviour_
-             == INTERNAL_CostBehaviour::VariableVelocityWithConstantCongestion)
+    else if (data_.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::VariableVelocity
+             && data_.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestion)
     {
-        return route.fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-            data_, congestionFactor_, unitFuelCost_, unitEmissionCost_);
+        return arg.fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+            data_);
     }
-    return nullptr;
+    else if (data_.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::ConstantVelocity
+             && data_.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestionInSegment)
+    {
+    }
+    else if (data_.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::
+                     ConstantVelocityInSegment
+             && data_.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestionInSegment)
+    {
+        return 0.0;  // TODO: implement
+    }
+    else if (data_.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::VariableVelocity
+             && data_.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestionInSegment)
+    {
+        return 0.0;  // TODO: implement
+    }
+    return 0.0;
 }
 
 template <CostEvaluatable T>
@@ -305,9 +307,7 @@ Cost CostEvaluator::penalisedCost(T const &arg) const
     if constexpr (PrizeCostEvaluatable<T>)
         cost += arg.uncollectedPrizes();
 
-    cost += wageCost(std::ceil<Duration>(arg.duration().get() / 3600),
-                     wagePerHour_,
-                     minHoursPaid_);
+    cost += arg.wageCost(data_);
 
     cost += applyFuelAndEmissionCost(arg);
 
@@ -340,10 +340,7 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
     out -= route->durationCost();
     out -= twPenalty(route->timeWarp());
 
-    auto const routeDuration = route->duration();
-    out -= wageCost(std::ceil<Duration>(routeDuration.get() / 3600),
-                    wagePerHour_,
-                    minHoursPaid_);
+    out -= route->wageCost(data_);
 
     out -= applyFuelAndEmissionCost(*route);
 
@@ -366,9 +363,7 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
     out += route->unitDurationCost() * static_cast<Cost>(duration);
     out += twPenalty(timeWarp);
 
-    out += wageCost(std::ceil<Duration>(duration.get() / 3600),
-                    wagePerHour_,
-                    minHoursPaid_);
+    out += proposal.wageCost(data_);
 
     out += applyFuelAndEmissionCost(proposal);
 
@@ -407,14 +402,8 @@ bool CostEvaluator::deltaCost(Cost &out,
     out -= vRoute->durationCost();
     out -= twPenalty(vRoute->timeWarp());
 
-    auto const uRouteDuration = uRoute->duration();
-    out -= wageCost(std::ceil<Duration>(uRouteDuration.get() / 3600),
-                    wagePerHour_,
-                    minHoursPaid_);
-    auto const vRouteDuration = vRoute->duration();
-    out -= wageCost(std::ceil<Duration>(vRouteDuration.get() / 3600),
-                    wagePerHour_,
-                    minHoursPaid_);
+    out -= uRoute->wageCost(data_);
+    out -= vRoute->wageCost(data_);
 
     out -= applyFuelAndEmissionCost(*uRoute);
     out -= applyFuelAndEmissionCost(*vRoute);
@@ -449,18 +438,14 @@ bool CostEvaluator::deltaCost(Cost &out,
     auto const [uDuration, uTimeWarp] = uProposal.duration();
     out += uRoute->unitDurationCost() * static_cast<Cost>(uDuration);
     out += twPenalty(uTimeWarp);
-    out += wageCost(std::ceil<Duration>(uDuration.get() / 3600),
-                    wagePerHour_,
-                    minHoursPaid_);
+    out += uProposal.wageCost(data_);
 
     out += applyFuelAndEmissionCost(uProposal);
 
     auto const [vDuration, vTimeWarp] = vProposal.duration();
     out += vRoute->unitDurationCost() * static_cast<Cost>(vDuration);
     out += twPenalty(vTimeWarp);
-    out += wageCost(std::ceil<Duration>(vDuration.get() / 3600),
-                    wagePerHour_,
-                    minHoursPaid_);
+    out += vProposal.wageCost(data_);
     out += applyFuelAndEmissionCost(vProposal);
 
     return true;

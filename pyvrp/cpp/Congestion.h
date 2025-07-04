@@ -9,10 +9,18 @@
 
 namespace pyvrp::congestion
 {
+
+enum CongestionBehaviour
+{
+    ConstantCongestion,
+    ConstantCongestionInSegment,
+    // VariableCongestion, // Disabled for now. Will enable once needed.
+};
+
 class CongestionProfile
 {
     std::string name_;
-    std::filesystem::path path_;
+    std::filesystem::path const path_;
     std::vector<double> time_;
     std::vector<double> congestion_;
     boost::math::interpolators::cardinal_cubic_b_spline<double> spline_;
@@ -40,7 +48,8 @@ public:
     }
 };
 
-CongestionProfile getCongestionProfile();
+CongestionProfile const getCongestionProfile(
+    [[maybe_unused]] CongestionBehaviour const congestionBehaviour);
 }  // namespace pyvrp::congestion
 
 #endif  // PYVRP_CONGESTION_H

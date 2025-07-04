@@ -16,13 +16,10 @@ class ReloadDepotSegment
 {
     pyvrp::ProblemData const &data_;
     size_t depot_;
-    size_t vehicleType_;
 
 public:
-    ReloadDepotSegment(pyvrp::ProblemData const &data,
-                       size_t depot,
-                       size_t vehicleType)
-        : data_(data), depot_(depot), vehicleType_(vehicleType)
+    ReloadDepotSegment(pyvrp::ProblemData const &data, size_t depot)
+        : data_(data), depot_(depot)
     {
         assert(depot < data.numDepots());  // must be an actual depot
     }
@@ -49,41 +46,31 @@ public:
         return {};
     }
 
-    [[nodiscard]] pyvrp::Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        [[maybe_unused]] pyvrp::ProblemData const &data,
-        [[maybe_unused]] double const velocity,
-        [[maybe_unused]] double const congestion,
-        [[maybe_unused]] double const unitFuelCost,
-        [[maybe_unused]] double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data) const
     {
-        return 0;
+        return 0.0;
     }
 
-    [[nodiscard]] pyvrp::Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        [[maybe_unused]] pyvrp::ProblemData const &data,
-        [[maybe_unused]] double const congestion,
-        [[maybe_unused]] double const unitFuelCost,
-        [[maybe_unused]] double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data) const
     {
-        return 0;
+        return 0.0;
     }
 
-    [[nodiscard]] pyvrp::Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-        [[maybe_unused]] pyvrp::ProblemData const &data,
-        [[maybe_unused]] double const congestion,
-        [[maybe_unused]] double const unitFueCost,
-        [[maybe_unused]] double const unitEmissionCost) const
+        [[maybe_unused]] pyvrp::ProblemData const &data) const
     {
-        return 0;
+        return 0.0;
     }
 
-    [[nodiscard]] pyvrp::Cost const
-    wageCost([[maybe_unused]] pyvrp::ProblemData const &data)
+    [[nodiscard]] double
+    wageCost([[maybe_unused]] pyvrp::ProblemData const &data) const
     {
-        return 0;
+        return 0.0;  // TODO: implement
     }
 };
 }  // namespace

@@ -21,7 +21,8 @@ CongestionProfile::CongestionProfile(const std::filesystem::path &path)
     spline_ = boost::math::interpolators::cardinal_cubic_b_spline<double>(
         congestion_.begin(), congestion_.end(), time_.front(), stepSize);
 }
-CongestionProfile getCongestionProfile()
+CongestionProfile const getCongestionProfile(
+    [[maybe_unused]] CongestionBehaviour const congestionBehaviour)
 {
     std::filesystem::path currentFile = __FILE__;
     // We run this in the pyvrp folder (you can see

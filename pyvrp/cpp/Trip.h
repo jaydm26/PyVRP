@@ -105,7 +105,8 @@ public:
     /**
      * Total duration of travel on this trip.
      */
-    [[nodiscard]] Duration travelDuration() const;
+    [[nodiscard]] Duration travelDuration(double now,
+                                          ProblemData const &data) const;
 
     /**
      * Earliest time at which this trip can leave the depot. Follows from the

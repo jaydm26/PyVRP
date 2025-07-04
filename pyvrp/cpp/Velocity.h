@@ -10,6 +10,17 @@
 
 namespace pyvrp::velocity
 {
+
+/**
+ * Internal Enumeration to quickly ascertain the cost function to use
+ */
+enum VelocityBehaviour
+{
+    ConstantVelocity,
+    ConstantVelocityInSegment,
+    VariableVelocity,
+};
+
 class WLTCProfile
 {
     std::string name_;

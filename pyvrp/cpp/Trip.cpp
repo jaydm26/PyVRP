@@ -67,7 +67,8 @@ Trip::Trip(ProblemData const &data,
     for (size_t prevClient = startDepot_; auto const client : visits_)
     {
         distance_ += distances(prevClient, client);
-        travel_ += durations(prevClient, client);
+        travel_ += durations(prevClient,
+                             client);  // Must change to account for congestion
 
         ProblemData::Client const &clientData = data.location(client);
 
@@ -87,7 +88,9 @@ Trip::Trip(ProblemData const &data,
 
     auto const last = empty() ? startDepot_ : visits_.back();
     distance_ += distances(last, endDepot_);
-    travel_ += durations(last, endDepot_);
+
+    travel_
+        += durations(last, endDepot_);  // Must change to account for congestion
 
     for (size_t dim = 0; dim != data.numLoadDimensions(); ++dim)
     {
@@ -161,7 +164,32 @@ std::vector<Load> const &Trip::excessLoad() const { return excessLoad_; }
 
 Duration Trip::serviceDuration() const { return service_; }
 
-Duration Trip::travelDuration() const { return travel_; }
+Duration Trip::travelDuration(double now, ProblemData const &data) const
+{
+    double tripDuration = 0.0;
+    auto const congestionProfile
+        = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
+    auto const &vehData = data.vehicleType(vehicleType_);
+    auto durations = data.durationMatrix(vehData.profile);
+
+    for (size_t prevClient = startDepot_; auto const client : visits_)
+    {
+        double congestion = congestionProfile.getCongestionValue(now);
+        double edgeDur = durations(prevClient, client).get() / congestion;
+        ProblemData::Client const &clientData = data.location(client);
+        tripDuration += edgeDur;
+        now += edgeDur;
+        tripDuration += clientData.serviceDuration.get();
+        now += clientData.serviceDuration.get();
+    }
+    double congestion = congestionProfile.getCongestionValue(now);
+    auto const last = empty() ? startDepot_ : visits_.back();
+    double edgeDur = durations(last, endDepot_).get() / congestion;
+    tripDuration += edgeDur;
+    now += edgeDur;
+
+    return tripDuration;
+}
 
 Duration Trip::releaseTime() const { return release_; }
 

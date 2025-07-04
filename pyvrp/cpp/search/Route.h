@@ -104,29 +104,67 @@ public:
          */
         std::tuple<Segments...> segments() const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            ProblemData const &data,
-            double const velocity,
-            double const congestion,
-            double const unitFuelCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const
+        {
+            auto getCostForSegment = [&](auto const &segment)
+            {
+                return segment
+                    .fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+                        data);
+            };
 
-        [[nodiscard]] Cost const
+            auto sumCostForSegments = [&](auto... segment)
+            { return (... + getCostForSegment(segment)); };
+
+            return std::apply(sumCostForSegments, segments_);
+        }
+
+        [[nodiscard]] double
         fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-            ProblemData const &data,
-            double const congestion,
-            double const unitFuelCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const
+        {
+            auto getCostForSegment = [&](auto const &segment)
+            {
+                return segment
+                    .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+                        data);
+            };
 
-        [[nodiscard]] Cost const
+            auto sumCostForSegments = [&](auto... segment)
+            { return (... + getCostForSegment(segment)); };
+
+            return std::apply(sumCostForSegments, segments_);
+        }
+
+        [[nodiscard]] double
         fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-            ProblemData const &data,
-            double const congestion,
-            double const unitFueCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const
+        {
+            auto getCostForSegment = [&](auto const &segment)
+            {
+                return segment
+                    .fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+                        data);
+            };
 
-        [[nodiscard]] Cost wageCost(ProblemData const &data) const;
+            auto sumCostForSegments = [&](auto... segment)
+            { return (... + getCostForSegment(segment)); };
+
+            return std::apply(sumCostForSegments, segments_);
+        }
+
+        [[nodiscard]] double wageCost(ProblemData const &data) const
+        {
+            auto getCostForSegment
+                = [&](auto const &segment) { return segment.wageCost(data); };
+
+            auto sumCostForSegments = [&](auto... segment)
+            { return (... + getCostForSegment(segment)); };
+
+            return std::apply(sumCostForSegments, segments_);
+        }
     };
 
     /**
@@ -257,31 +295,20 @@ private:
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment const &load(size_t dimension) const;
-        inline Duration const elapsedDuration() const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            ProblemData const &data,
-            double const velocity,
-            double const congestion,
-            double const unitFuelCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-            ProblemData const &data,
-            double const congestion,
-            double const unitFuelCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-            ProblemData const &data,
-            double const congestion,
-            double const unitFueCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
+        [[nodiscard]] double wageCost(ProblemData const &data) const;
     };
 
     /**
@@ -304,31 +331,20 @@ private:
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment const &load(size_t dimension) const;
-        inline Duration const elapsedDuration() const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            ProblemData const &data,
-            double const velocity,
-            double const congestion,
-            double const unitFuelCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-            ProblemData const &data,
-            double const congestion,
-            double const unitFuelCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-            ProblemData const &data,
-            double const congestion,
-            double const unitFueCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
+        [[nodiscard]] double wageCost(ProblemData const &data) const;
     };
 
     /**
@@ -353,31 +369,20 @@ private:
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment load(size_t dimension) const;
-        inline Duration const elapsedDuration() const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            ProblemData const &data,
-            double const velocity,
-            double const congestion,
-            double const unitFuelCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-            ProblemData const &data,
-            double const congestion,
-            double const unitFuelCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const
+        [[nodiscard]] double
         fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-            ProblemData const &data,
-            double const congestion,
-            double const unitFueCost,
-            double const unitEmissionCost) const;
+            ProblemData const &data) const;
 
-        [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
+        [[nodiscard]] double wageCost(ProblemData const &data) const;
     };
 
     ProblemData const &data;
@@ -675,37 +680,27 @@ public:
      * Return the cost for fuel and emission when the velocity and congestion
      * are constant.
      */
-    [[nodiscard]] Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        ProblemData const &data,
-        double const velocity,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const;
+        ProblemData const &data) const;
 
     /**
      * Return the cost for fuel and emission when the velocity is constant in
      * segments (between nodes) and congestion is constant.
      */
-    [[nodiscard]] Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        ProblemData const &data,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const;
+        ProblemData const &data) const;
 
     /**
      * Return the cost for fuel and emission when the velocity is non-linear and
      * the congestion is constant.
      */
-    [[nodiscard]] Cost const
+    [[nodiscard]] double
     fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-        ProblemData const &data,
-        double const congestion,
-        double const unitFuelCost,
-        double const unitEmissionCost) const;
+        ProblemData const &data) const;
 
-    [[nodiscard]] Cost const wageCost(ProblemData const &data) const;
+    [[nodiscard]] double wageCost(ProblemData const &data) const;
 
     Route(ProblemData const &data, size_t idx, size_t vehicleType);
     ~Route();
