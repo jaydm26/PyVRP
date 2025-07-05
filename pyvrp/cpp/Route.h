@@ -180,6 +180,81 @@ private:
     Depot startDepot_;                    // Assigned start depot
     Depot endDepot_;                      // Assigned end depot
 
+    /**
+     * Return the fuel and emission cost for the solution when the velocity and
+     * congestion are constant.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant in segments (between two nodes) and congestion is constant
+     * throughout.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost fofr the solution when the velocity is
+     * non-linear and congestion is constant throughout.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant and congestion in constant within a segment (between two nodes).
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityConstantCongestionInSegments(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant in segments (between two nodes) and congestion is constant
+     * within a segment (between two nodes).
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestionInSegments(
+        ProblemData const &data) const;
+
+    /**
+     * Returns the fuel and emission cost for the solution when the velocity is
+     * non-linear and congestion is constant within a segment (between two
+     * nodes).
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestionInSegments(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant and congestion is non-linear.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant in segments and congestion is non-linear.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityInSegmentsNonLinearCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * non-linear and congestion is non-linear.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
+        ProblemData const &data) const;
+
 public:
     [[nodiscard]] bool empty() const;
 
@@ -371,26 +446,13 @@ public:
     [[nodiscard]] bool hasTimeWarp() const;
 
     /**
-     * Returns the cost of fuel and emission when the velocity and congestion is
-     * constant
+     * Returns the cost of fuel and emissions for this solution.
      */
-    [[nodiscard]] double
-    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        ProblemData const &data) const;
+    [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
 
     /**
-     * Returns the cost of fuel and emission when the velocity is constant in
-     * segments (between one node to another) and congestion is constant
-     * throughout.
+     * Returns the cost of wages for this solution.
      */
-    [[nodiscard]] double
-    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        ProblemData const &data) const;
-
-    [[nodiscard]] double
-    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-        ProblemData const &data) const;
-
     [[nodiscard]] double wageCost(ProblemData const &data) const;
 
     bool operator==(Route const &other) const;

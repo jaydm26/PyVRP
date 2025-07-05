@@ -693,6 +693,140 @@ double pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
     return costForRoute;
 }
 
+double pyvrp::Route::
+    fuelAndEmissionCostWithConstantVelocityConstantCongestionInSegments(
+        [[maybe_unused]] ProblemData const &data) const
+{
+    // TODO: Implement this function.
+    return 0.0;
+}
+
+double pyvrp::Route::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestionInSegments(
+        [[maybe_unused]] ProblemData const &data) const
+{
+    // TODO: Implement this function.
+    return 0.0;
+}
+
+double pyvrp::Route::
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestionInSegments(
+        [[maybe_unused]] ProblemData const &data) const
+{
+    // TODO: Implement this function.
+    return 0.0;
+}
+
+double pyvrp::Route::fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
+    [[maybe_unused]] ProblemData const &data) const
+{
+    // TODO: Implement this function.
+    return 0.0;
+}
+
+double pyvrp::Route::
+    fuelAndEmissionCostWithConstantVelocityInSegmentsNonLinearCongestion(
+        [[maybe_unused]] ProblemData const &data) const
+{
+    // TODO: Implement this function.
+    return 0.0;
+}
+
+double
+pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
+    [[maybe_unused]] ProblemData const &data) const
+{
+    // TODO: Implement this function.
+    return 0.0;
+}
+
+double pyvrp::Route::fuelAndEmissionCost(ProblemData const &data) const
+{
+    if (data.velocityBehaviour()
+            == pyvrp::velocity::VelocityBehaviour::ConstantVelocity
+        && data.congestionBehaviour()
+               == pyvrp::congestion::CongestionBehaviour::ConstantCongestion)
+    {
+        return fuelAndEmissionCostWithConstantVelocityConstantCongestion(data);
+    }
+    else if (
+        data.velocityBehaviour()
+            == pyvrp::velocity::VelocityBehaviour::ConstantVelocityInSegment
+        && data.congestionBehaviour()
+               == pyvrp::congestion::CongestionBehaviour::ConstantCongestion)
+    {
+        return fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+            data);
+    }
+    else if (data.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::VariableVelocity
+             && data.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestion)
+    {
+        return fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(data);
+    }
+    else if (data.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::ConstantVelocity
+             && data.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestionInSegment)
+    {
+        return fuelAndEmissionCostWithConstantVelocityConstantCongestionInSegments(
+            data);
+    }
+    else if (data.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::
+                     ConstantVelocityInSegment
+             && data.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestionInSegment)
+    {
+        return fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestionInSegments(
+            data);
+    }
+    else if (data.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::VariableVelocity
+             && data.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestionInSegment)
+    {
+        return fuelAndEmissionCostWithNonLinearVelocityConstantCongestionInSegments(
+            data);
+    }
+    else if (data.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::ConstantVelocity
+             && data.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        VariableCongestion)
+    {
+        return fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(data);
+    }
+    else if (
+        data.velocityBehaviour()
+            == pyvrp::velocity::VelocityBehaviour::ConstantVelocityInSegment
+        && data.congestionBehaviour()
+               == pyvrp::congestion::CongestionBehaviour::VariableCongestion)
+    {
+        return fuelAndEmissionCostWithConstantVelocityInSegmentsNonLinearCongestion(
+            data);
+    }
+    else if (data.velocityBehaviour()
+                 == pyvrp::velocity::VelocityBehaviour::VariableVelocity
+             && data.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        VariableCongestion)
+    {
+        return fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
+            data);
+    }
+    else
+    {
+        throw std::runtime_error(
+            "Unknown velocity and congestion behaviour combination.");
+    }
+}
+
 double pyvrp::Route::wageCost(ProblemData const &data) const
 {
     pyvrp::ProblemData::VehicleType const vehicleType
