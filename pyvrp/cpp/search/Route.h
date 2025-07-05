@@ -117,13 +117,16 @@ public:
 
         [[nodiscard]] double wageCost(ProblemData const &data) const
         {
-            auto getCostForSegment
-                = [&](auto const &segment) { return segment.wageCost(data); };
+            auto getDurationForSegment
+                = [&](auto const &segment) { return segment.duration(); };
 
-            auto sumCostForSegments = [&](auto... segment)
-            { return (... + getCostForSegment(segment)); };
+            auto sumDurationForSegments = [&](auto... segment)
+            { return (... + getDurationForSegment(segment)); };
 
-            return std::apply(sumCostForSegments, segments_);
+            auto const duration = std::apply(sumDurationForSegments, segments_);
+            auto const vehType = route()->vehicleType();
+            auto const &vehData = data.vehicleType(vehType);
+            return vehData.wagePerHour * (duration.get() / 3600.0);
         }
     };
 
@@ -333,8 +336,6 @@ private:
         inline LoadSegment const &load(size_t dimension) const;
 
         [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
-
-        [[nodiscard]] double wageCost(ProblemData const &data) const;
     };
 
     /**
@@ -435,8 +436,6 @@ private:
         inline LoadSegment const &load(size_t dimension) const;
 
         [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
-
-        [[nodiscard]] double wageCost(ProblemData const &data) const;
     };
 
     /**
@@ -539,8 +538,6 @@ private:
         inline LoadSegment load(size_t dimension) const;
 
         [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
-
-        [[nodiscard]] double wageCost(ProblemData const &data) const;
     };
 
     ProblemData const &data;

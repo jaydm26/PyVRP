@@ -831,8 +831,11 @@ double pyvrp::Route::wageCost(ProblemData const &data) const
 {
     pyvrp::ProblemData::VehicleType const vehicleType
         = data.vehicleType(this->vehicleType());
-    auto const hoursPaid = std::max(this->duration(), vehicleType.minHoursPaid);
-    return hoursPaid.get() * vehicleType.wagePerHour.get();
+    double durationInHours
+        = this->duration().get() / 3600.0;  // convert to hours
+    auto const hoursPaid
+        = std::max<double>(durationInHours, vehicleType.minHoursPaid.get());
+    return hoursPaid * vehicleType.wagePerHour.get();
 }
 
 bool Route::operator==(Route const &other) const

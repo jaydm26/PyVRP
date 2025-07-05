@@ -42,21 +42,15 @@ public:
         return {data.location(client), dimension};
     }
 
+    /**
+     * Return the fuel and emission cost for this client segment. Since the
+     * vehicle never moves, we assume that it is turned off and thus, has no
+     * fuel or emission cost.
+     */
     [[nodiscard]] double
     fuelAndEmissionCost([[maybe_unused]] pyvrp::ProblemData const &data) const
     {
-        return 0.0;  // TODO: implement
-    }
-
-    [[nodiscard]] double
-    wageCost([[maybe_unused]] pyvrp::ProblemData const &data) const
-    {
-        // pyvrp::ProblemData::Client const &clientData = data.location(client);
-        // pyvrp::ProblemData::VehicleType const vehicleType
-        //     = data.vehicleType(this->vehicleType);
-        // return clientData.serviceDuration.get() *
-        // vehicleType.wagePerHour.get();
-        return 0.0;  // TODO: Implement wage cost for client segment
+        return 0.0;
     }
 };
 }  // namespace

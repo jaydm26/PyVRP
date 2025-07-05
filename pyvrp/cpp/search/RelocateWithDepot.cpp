@@ -46,16 +46,15 @@ public:
         return {};
     }
 
+    /**
+     * Return the fuel and emission cost for the reload depot segment.
+     * This is always zero, because the reload depot does not incur any fuel or
+     * emission costs.
+     */
     [[nodiscard]] double
     fuelAndEmissionCost([[maybe_unused]] pyvrp::ProblemData const &data) const
     {
-        return 0.0;  // TODO: implement
-    }
-
-    [[nodiscard]] double
-    wageCost([[maybe_unused]] pyvrp::ProblemData const &data) const
-    {
-        return 0.0;  // TODO: implement
+        return 0.0;
     }
 };
 }  // namespace
