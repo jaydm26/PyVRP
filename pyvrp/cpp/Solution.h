@@ -73,6 +73,81 @@ class Solution
     Solution &operator=(Solution const &other) = default;
     Solution &operator=(Solution &&other) = default;
 
+    /**
+     * Return the fuel and emission cost for the solution when the velocity and
+     * congestion are constant.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant in segments (between two nodes) and congestion is constant
+     * throughout.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost fofr the solution when the velocity is
+     * non-linear and congestion is constant throughout.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant and congestion in constant within a segment (between two nodes).
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityConstantCongestionInSegments(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant in segments (between two nodes) and congestion is constant
+     * within a segment (between two nodes).
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestionInSegments(
+        ProblemData const &data) const;
+
+    /**
+     * Returns the fuel and emission cost for the solution when the velocity is
+     * non-linear and congestion is constant within a segment (between two
+     * nodes).
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithNonLinearVelocityConstantCongestionInSegments(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant and congestion is non-linear.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * constant in segments and congestion is non-linear.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithConstantVelocityInSegmentsNonLinearCongestion(
+        ProblemData const &data) const;
+
+    /**
+     * Return the fuel and emission cost for the solution when the velocity is
+     * non-linear and congestion is non-linear.
+     */
+    [[nodiscard]] double
+    fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
+        ProblemData const &data) const;
+
 public:
     // Solution is empty when it has no routes and no clients.
     [[nodiscard]] bool empty() const;
@@ -220,30 +295,13 @@ public:
     [[nodiscard]] Duration timeWarp() const;
 
     /**
-     * Return the fuel and emission cost for the solution when the velocity and
-     * congestion are constant.
+     * Returns the cost of fuel and emissions for this solution.
      */
-    [[nodiscard]] double
-    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        ProblemData const &data) const;
+    [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
 
     /**
-     * Return the fuel and emission cost for the solution when the velocity is
-     * constant in segments (between two nodes) and congestion is constant
-     * throughout.
+     * Returns the cost of wages for this solution.
      */
-    [[nodiscard]] double
-    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        ProblemData const &data) const;
-
-    /**
-     * Return the fuel and emission cost fofr the solution when the velocity is
-     * non-linear and congestion is constant throughout.
-     */
-    [[nodiscard]] double
-    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-        ProblemData const &data) const;
-
     [[nodiscard]] double wageCost(ProblemData const &data) const;
 
     bool operator==(Solution const &other) const;

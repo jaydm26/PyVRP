@@ -14,7 +14,7 @@ enum CongestionBehaviour
 {
     ConstantCongestion,
     ConstantCongestionInSegment,
-    // VariableCongestion, // Disabled for now. Will enable once needed.
+    VariableCongestion,  // Disabled for now. Will enable once needed.
 };
 
 class CongestionProfile
