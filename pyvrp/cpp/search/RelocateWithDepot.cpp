@@ -47,24 +47,9 @@ public:
     }
 
     [[nodiscard]] double
-    fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-        [[maybe_unused]] pyvrp::ProblemData const &data) const
+    fuelAndEmissionCost([[maybe_unused]] pyvrp::ProblemData const &data) const
     {
-        return 0.0;
-    }
-
-    [[nodiscard]] double
-    fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-        [[maybe_unused]] pyvrp::ProblemData const &data) const
-    {
-        return 0.0;
-    }
-
-    [[nodiscard]] double
-    fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-        [[maybe_unused]] pyvrp::ProblemData const &data) const
-    {
-        return 0.0;
+        return 0.0;  // TODO: implement
     }
 
     [[nodiscard]] double
