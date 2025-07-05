@@ -237,63 +237,6 @@ Cost CostEvaluator::distPenalty(Distance distance, Distance maxDistance) const
     return static_cast<Cost>(excessDistance.get() * distPenalty_);
 }
 
-template <typename T>
-double CostEvaluator::applyFuelAndEmissionCost(T const &arg) const
-{
-    if (data_.velocityBehaviour()
-            == pyvrp::velocity::VelocityBehaviour::ConstantVelocity
-        && data_.congestionBehaviour()
-               == pyvrp::congestion::CongestionBehaviour::ConstantCongestion)
-    {
-        return arg.fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            data_);
-    }
-    else if (
-        data_.velocityBehaviour()
-            == pyvrp::velocity::VelocityBehaviour::ConstantVelocityInSegment
-        && data_.congestionBehaviour()
-               == pyvrp::congestion::CongestionBehaviour::ConstantCongestion)
-    {
-        return arg
-            .fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-                data_);
-    }
-    else if (data_.velocityBehaviour()
-                 == pyvrp::velocity::VelocityBehaviour::VariableVelocity
-             && data_.congestionBehaviour()
-                    == pyvrp::congestion::CongestionBehaviour::
-                        ConstantCongestion)
-    {
-        return arg.fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-            data_);
-    }
-    else if (data_.velocityBehaviour()
-                 == pyvrp::velocity::VelocityBehaviour::ConstantVelocity
-             && data_.congestionBehaviour()
-                    == pyvrp::congestion::CongestionBehaviour::
-                        ConstantCongestionInSegment)
-    {
-    }
-    else if (data_.velocityBehaviour()
-                 == pyvrp::velocity::VelocityBehaviour::
-                     ConstantVelocityInSegment
-             && data_.congestionBehaviour()
-                    == pyvrp::congestion::CongestionBehaviour::
-                        ConstantCongestionInSegment)
-    {
-        return 0.0;  // TODO: implement
-    }
-    else if (data_.velocityBehaviour()
-                 == pyvrp::velocity::VelocityBehaviour::VariableVelocity
-             && data_.congestionBehaviour()
-                    == pyvrp::congestion::CongestionBehaviour::
-                        ConstantCongestionInSegment)
-    {
-        return 0.0;  // TODO: implement
-    }
-    return 0.0;
-}
-
 template <CostEvaluatable T>
 Cost CostEvaluator::penalisedCost(T const &arg) const
 {
@@ -307,9 +250,9 @@ Cost CostEvaluator::penalisedCost(T const &arg) const
     if constexpr (PrizeCostEvaluatable<T>)
         cost += arg.uncollectedPrizes();
 
-    cost += arg.wageCost(data_);
+    cost += std::round(arg.wageCost(data_));
 
-    cost += applyFuelAndEmissionCost(arg);
+    cost += std::round(arg.fuelAndEmissionCost(data_));
 
     return cost;
 };
@@ -342,7 +285,7 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
 
     out -= route->wageCost(data_);
 
-    out -= applyFuelAndEmissionCost(*route);
+    out -= route->fuelAndEmissionCost(data_);
 
     auto const distance = proposal.distance();
     out += route->unitDistanceCost() * static_cast<Cost>(distance);
@@ -365,7 +308,7 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
 
     out += proposal.wageCost(data_);
 
-    out += applyFuelAndEmissionCost(proposal);
+    out += proposal.fuelAndEmissionCost(data_);
 
     return true;
 }
@@ -405,8 +348,8 @@ bool CostEvaluator::deltaCost(Cost &out,
     out -= uRoute->wageCost(data_);
     out -= vRoute->wageCost(data_);
 
-    out -= applyFuelAndEmissionCost(*uRoute);
-    out -= applyFuelAndEmissionCost(*vRoute);
+    out -= uRoute->fuelAndEmissionCost(data_);
+    out -= vRoute->fuelAndEmissionCost(data_);
 
     auto const uDist = uProposal.distance();
     out += uRoute->unitDistanceCost() * static_cast<Cost>(uDist);
@@ -440,13 +383,13 @@ bool CostEvaluator::deltaCost(Cost &out,
     out += twPenalty(uTimeWarp);
     out += uProposal.wageCost(data_);
 
-    out += applyFuelAndEmissionCost(uProposal);
+    out += uProposal.fuelAndEmissionCost(data_);
 
     auto const [vDuration, vTimeWarp] = vProposal.duration();
     out += vRoute->unitDurationCost() * static_cast<Cost>(vDuration);
     out += twPenalty(vTimeWarp);
     out += vProposal.wageCost(data_);
-    out += applyFuelAndEmissionCost(vProposal);
+    out += vProposal.fuelAndEmissionCost(data_);
 
     return true;
 }
