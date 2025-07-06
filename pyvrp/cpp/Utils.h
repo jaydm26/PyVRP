@@ -12,6 +12,12 @@ namespace pyvrp::utils
  * Get the emission cost per ton per hour when the velocity is constant. For
  * cases where one must provide congestion, provide the congested velocity
  * instead of the uncongested velocity.
+ *
+ * The result of the function is in kg of CO2 per ton per hour. To obtain the kg
+ * of CO2 per ton, multiply by the congested duration in hours. Since the
+ * congestion and velocity for these calculations is constant (in segments or
+ * throughout), congested duration would be obtained by dividing the uncongested
+ * duration by congestion.
  */
 inline double
 emissionCostPerTonPerHourConstantVelocity(double const powerToMassRatio,
@@ -38,6 +44,11 @@ emissionCostPerTonPerHourConstantVelocity(double const powerToMassRatio,
  * In the above, the we know t_i, v_ij(t) and d_ij. Thus, we can solve for t_j
  * which then provides duration. Squared velocity integral and cubed velocity
  * integral are obtained directly from the WLTCProfile.
+ *
+ * In this, we expect congestion to be constant (either in segment or
+ * throughout). Duration is always in the congested form. Distance and the
+ * subsequent high power integrals of velocity are also obtained in the
+ * congested form.
  */
 inline double
 emissionFactorPerTonNonLinearVelocity(double const powerToMassRatio,
@@ -53,9 +64,10 @@ emissionFactorPerTonNonLinearVelocity(double const powerToMassRatio,
     b = (32.389 + 0.8931 * powerToMassRatio) * distance * congestion
         / 1000.0;  // convert to km
     c = (-0.4771 - 0.02559 * powerToMassRatio) * squaredVelocityIntegral
-        * congestion / 1000 / 1000 * 3600;  // convert to km/hr
+        * congestion * congestion / 1000 / 1000 * 3600;  // convert to km/hr
     d = (0.0008889 + 0.0004055 * powerToMassRatio) * cubedVelocityIntegral
-        * congestion / 1000 / 1000 / 1000 * 3600 * 3600;  // Convert to km/hr
+        * congestion * congestion * congestion / 1000 / 1000 / 1000 * 3600
+        * 3600;  // Convert to km/hr
 
     assert(a + b + c + d >= 0);       // Ensure the result is non-negative
     return (a + b + c + d) / 1000.0;  // Convert to kg

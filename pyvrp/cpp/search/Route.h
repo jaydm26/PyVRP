@@ -117,8 +117,9 @@ public:
 
         [[nodiscard]] double wageCost(ProblemData const &data) const
         {
-            auto getDurationForSegment
-                = [&](auto const &segment) { return segment.duration(); };
+            size_t vehicleProfile = route()->profile();
+            auto getDurationForSegment = [&](auto const &segment)
+            { return segment.duration(vehicleProfile).duration().get(); };
 
             auto sumDurationForSegments = [&](auto... segment)
             { return (... + getDurationForSegment(segment)); };
@@ -126,7 +127,7 @@ public:
             auto const duration = std::apply(sumDurationForSegments, segments_);
             auto const vehType = route()->vehicleType();
             auto const &vehData = data.vehicleType(vehType);
-            return vehData.wagePerHour * (duration.get() / 3600.0);
+            return vehData.wagePerHour.get() * (duration / 3600.0);
         }
     };
 
@@ -238,14 +239,10 @@ public:
 private:
     using LoadSegments = std::vector<LoadSegment>;
 
-    /**
-     * Class storing data related to the route segment starting at ``start``,
-     * and ending at the end depot (inclusive).
-     */
-    class SegmentAfter
+    template <typename Derived> class SegmentBase
     {
+    protected:
         Route const &route_;
-        size_t const start;
 
         /**
          * Return the fuel and emission cost for the solution when the velocity
@@ -324,118 +321,72 @@ private:
             ProblemData const &data) const;
 
     public:
-        inline Route const *route() const;
+        inline SegmentBase(Route const &route) : route_(route) {}
+        inline Route const *route() const { return &route_; }
 
-        inline size_t first() const;  // client at start
-        inline size_t last() const;   // end depot
-        inline size_t size() const;
+        inline size_t first() const
+        {
+            return static_cast<const Derived *>(this)->first();
+        }  // client at start
+        inline size_t last() const
+        {
+            return static_cast<const Derived *>(this)->first();
+        }  // end depot
+        inline size_t size() const
+        {
+            return static_cast<const Derived *>(this)->size();
+        }
 
-        inline SegmentAfter(Route const &route, size_t start);
-        inline Distance distance(size_t profile) const;
-        inline DurationSegment duration(size_t profile) const;
-        inline LoadSegment const &load(size_t dimension) const;
+        inline Distance distance(size_t profile) const
+        {
+            return static_cast<const Derived *>(this)->distance(profile);
+        };
+        inline DurationSegment duration(size_t profile) const
+        {
+            return static_cast<const Derived *>(this)->duration(profile);
+        };
+        inline LoadSegment const &load(size_t dimension) const
+        {
+            return static_cast<const Derived *>(this)->load(dimension);
+        };
 
         [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
+    };
+
+    /**
+     * Class storing data related to the route segment starting at ``start``,
+     * and ending at the end depot (inclusive).
+     */
+    class SegmentAfter : public SegmentBase<SegmentAfter>
+    {
+        size_t const start;
+
+    public:
+        inline SegmentAfter(Route const &route, size_t start);
+        size_t first() const;
+        size_t last() const;
+        size_t size() const;
+        Distance distance(size_t profile) const;
+        DurationSegment duration(size_t profile) const;
+        LoadSegment const &load(size_t dimension) const;
     };
 
     /**
      * Class storing data related to the route segment starting at the start
      * depot, and ending at ``end`` (inclusive).
      */
-    class SegmentBefore
+    class SegmentBefore : public SegmentBase<SegmentBefore>
     {
-        Route const &route_;
         size_t const end;
 
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * and congestion are constant.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant in segments (between two nodes) and congestion is
-         * constant throughout.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost fofr the solution when the velocity
-         * is non-linear and congestion is constant throughout.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant and congestion in constant within a segment (between two
-         * nodes).
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityConstantCongestionInSegments(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant in segments (between two nodes) and congestion is
-         * constant within a segment (between two nodes).
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestionInSegments(
-            ProblemData const &data) const;
-
-        /**
-         * Returns the fuel and emission cost for the solution when the velocity
-         * is non-linear and congestion is constant within a segment (between
-         * two nodes).
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithNonLinearVelocityConstantCongestionInSegments(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant and congestion is non-linear.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant in segments and congestion is non-linear.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityInSegmentsNonLinearCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is non-linear and congestion is non-linear.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
-            ProblemData const &data) const;
-
     public:
-        inline Route const *route() const;
-
-        inline size_t first() const;  // start depot
-        inline size_t last() const;   // client at end
-        inline size_t size() const;
-
         inline SegmentBefore(Route const &route, size_t end);
-        inline Distance distance(size_t profile) const;
-        inline DurationSegment duration(size_t profile) const;
-        inline LoadSegment const &load(size_t dimension) const;
-
-        [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
+        size_t first() const;
+        size_t last() const;
+        size_t size() const;
+        Distance distance(size_t profile) const;
+        DurationSegment duration(size_t profile) const;
+        LoadSegment const &load(size_t dimension) const;
     };
 
     /**
@@ -443,101 +394,19 @@ private:
      * and ending at ``end`` (inclusive). The segment must consist of a single
      * trip, possibly including its ending depot.
      */
-    class SegmentBetween
+    class SegmentBetween : public SegmentBase<SegmentBetween>
     {
-        Route const &route_;
         size_t const start;
         size_t const end;
 
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * and congestion are constant.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityConstantCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant in segments (between two nodes) and congestion is
-         * constant throughout.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost fofr the solution when the velocity
-         * is non-linear and congestion is constant throughout.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant and congestion in constant within a segment (between two
-         * nodes).
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityConstantCongestionInSegments(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant in segments (between two nodes) and congestion is
-         * constant within a segment (between two nodes).
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestionInSegments(
-            ProblemData const &data) const;
-
-        /**
-         * Returns the fuel and emission cost for the solution when the velocity
-         * is non-linear and congestion is constant within a segment (between
-         * two nodes).
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithNonLinearVelocityConstantCongestionInSegments(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant and congestion is non-linear.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is constant in segments and congestion is non-linear.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithConstantVelocityInSegmentsNonLinearCongestion(
-            ProblemData const &data) const;
-
-        /**
-         * Return the fuel and emission cost for the solution when the velocity
-         * is non-linear and congestion is non-linear.
-         */
-        [[nodiscard]] double
-        fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
-            ProblemData const &data) const;
-
     public:
-        inline Route const *route() const;
-
-        inline size_t first() const;  // client at start
-        inline size_t last() const;   // client at end
-        inline size_t size() const;
-
         inline SegmentBetween(Route const &route, size_t start, size_t end);
-        inline Distance distance(size_t profile) const;
-        inline DurationSegment duration(size_t profile) const;
-        inline LoadSegment load(size_t dimension) const;
-
-        [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
+        size_t first() const;
+        size_t last() const;
+        size_t size() const;
+        Distance distance(size_t profile) const;
+        DurationSegment duration(size_t profile) const;
+        LoadSegment const &load(size_t dimension) const;
     };
 
     ProblemData const &data;
@@ -972,13 +841,13 @@ bool Route::Node::isReloadDepot() const
 }
 
 Route::SegmentAfter::SegmentAfter(Route const &route, size_t start)
-    : route_(route), start(start)
+    : SegmentBase(route), start(start)
 {
     assert(start < route.size());
 }
 
 Route::SegmentBefore::SegmentBefore(Route const &route, size_t end)
-    : route_(route), end(end)
+    : SegmentBase(route), end(end)
 {
     assert(end < route.size());
 }
@@ -986,7 +855,7 @@ Route::SegmentBefore::SegmentBefore(Route const &route, size_t end)
 Route::SegmentBetween::SegmentBetween(Route const &route,
                                       size_t start,
                                       size_t end)
-    : route_(route), start(start), end(end)
+    : SegmentBase(route), start(start), end(end)
 {
     assert(start <= end && end < route.size());
 
@@ -1032,17 +901,14 @@ LoadSegment const &Route::SegmentBefore::load(size_t dimension) const
     return route_.loadBefore[dimension][end];
 }
 
-Route const *Route::SegmentBefore::route() const { return &route_; }
 size_t Route::SegmentBefore::first() const { return route_.visits.front(); }
 size_t Route::SegmentBefore::last() const { return route_.visits[end]; }
 size_t Route::SegmentBefore::size() const { return end + 1; }
 
-Route const *Route::SegmentAfter::route() const { return &route_; }
 size_t Route::SegmentAfter::first() const { return route_.visits[start]; }
 size_t Route::SegmentAfter::last() const { return route_.visits.back(); }
 size_t Route::SegmentAfter::size() const { return route_.size() - start; }
 
-Route const *Route::SegmentBetween::route() const { return &route_; }
 size_t Route::SegmentBetween::first() const { return route_.visits[start]; }
 size_t Route::SegmentBetween::last() const { return route_.visits[end]; }
 size_t Route::SegmentBetween::size() const { return end - start + 1; }
@@ -1088,15 +954,9 @@ Route::SegmentBetween::duration([[maybe_unused]] size_t profile) const
     return durSegment;
 }
 
-LoadSegment Route::SegmentBetween::load(size_t dimension) const
+LoadSegment const &Route::SegmentBetween::load(size_t dimension) const
 {
-    auto const &loads = route_.loadAt[dimension];
-
-    auto loadSegment = loads[start];
-    for (size_t step = start; step != end; ++step)
-        loadSegment = LoadSegment::merge(loadSegment, loads[step + 1]);
-
-    return loadSegment;
+    return route_.loadAt[dimension][start];
 }
 
 bool Route::isFeasible() const

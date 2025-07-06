@@ -712,7 +712,6 @@ double pyvrp::Route::
 {
     double now = 0;
     double cost = 0;
-    double travelDuration = 0;
     auto const vehicleType = data.vehicleType(this->vehicleType());
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
@@ -739,7 +738,6 @@ double pyvrp::Route::
 
             cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
                     * emissionFactor;
-            travelDuration += congestedDuration;
             now += congestedDuration + clientData.serviceDuration.get();
             from = to;
         }
@@ -756,7 +754,6 @@ double pyvrp::Route::
 
         cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
                 * emissionFactor;
-        travelDuration += congestedDuration;
         now += congestedDuration;
     }
 
@@ -769,7 +766,6 @@ double pyvrp::Route::
 {
     double now = 0;
     double cost = 0;
-    double travelDuration = 0;
 
     auto const vehicleType = data.vehicleType(this->vehicleType());
     auto const vehicleWeightInTons
@@ -806,7 +802,6 @@ double pyvrp::Route::
 
             cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
                     * emissionFactor;
-            travelDuration += congestedDuration;
             now += congestedDuration + clientData.serviceDuration.get();
             from = to;
         }
@@ -830,7 +825,6 @@ double pyvrp::Route::
 
         cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
                 * emissionFactor;
-        travelDuration += congestedDuration;
         now += congestedDuration;
     }
     return cost;
@@ -842,7 +836,6 @@ double pyvrp::Route::
 {
     double now = 0;
     double cost = 0;
-    double travelDuration = 0;
 
     auto const vehicleType = data.vehicleType(this->vehicleType());
     auto const vehicleWeightInTons
@@ -884,7 +877,6 @@ double pyvrp::Route::
                   * vehicleWeightInTons;
             cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
                     * emissionFactor;
-            travelDuration += congestedDuration;
             now += congestedDuration + clientData.serviceDuration.get();
             from = to;
         }
@@ -911,7 +903,6 @@ double pyvrp::Route::
               * vehicleWeightInTons;
         cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
                 * emissionFactor;
-        travelDuration += congestedDuration;
         now += congestedDuration;
     }
 
