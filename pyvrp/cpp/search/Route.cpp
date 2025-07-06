@@ -286,15 +286,30 @@ void Route::update()
 
     durBefore.resize(nodes.size());
     durBefore[0] = durAt[0];
+    auto congestionProfile
+        = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
+    double now = durAt[0].startEarly().get();
+    std::vector<double> congestedDurations_(nodes.size() - 1);
     for (size_t idx = 1; idx != nodes.size(); ++idx)
     {
         auto const prev = idx - 1;
         auto const before = nodes[prev]->isReloadDepot()
                                 ? durBefore[prev].finaliseBack()
                                 : durBefore[prev];
+        // Congestion is applied to the edge duration, so we need to compute it
 
+        auto const congestion = congestionProfile.getCongestionValue(now);
         auto const edgeDur = durations(visits[prev], visits[idx]);
-        durBefore[idx] = DurationSegment::merge(edgeDur, before, durAt[idx]);
+        // Due to congestion, the duration increases (divided by the congestion
+        // [< 1])
+        double const congestedDuration = edgeDur.get() / congestion;
+        congestedDurations_[prev] = congestedDuration;
+        durBefore[idx]
+            = DurationSegment::merge(congestedDuration, before, durAt[idx]);
+        // Now gets updated to the end of the current segment.
+        // We add the congested duration to the current tim and the service
+        // duration for the client.
+        now += congestedDuration + durAt[idx].duration().get();
     }
 
     durAfter.resize(nodes.size());
@@ -306,8 +321,11 @@ void Route::update()
                                ? durAfter[next].finaliseFront()
                                : durAfter[next];
 
-        auto const edgeDur = durations(visits[idx], visits[next]);
-        durAfter[idx] = DurationSegment::merge(edgeDur, durAt[idx], after);
+        // auto const edgeDur = durations(visits[idx], visits[next]);
+        auto const congestedDuration
+            = congestedDurations_[idx];  // already computed above
+        durAfter[idx]
+            = DurationSegment::merge(congestedDuration, durAt[idx], after);
     }
 
     // Load.
@@ -873,18 +891,6 @@ double pyvrp::search::Route::SegmentBefore::fuelAndEmissionCost(
     }
 }
 
-double pyvrp::search::Route::SegmentBefore::wageCost(
-    pyvrp::ProblemData const &data) const
-{
-    pyvrp::ProblemData::VehicleType const vehicleType
-        = data.vehicleType(route_.vehicleType());
-    Duration duration = this->duration(route_.profile()).duration();
-    double durationInHours = duration.get() / 3600.0;
-    Duration const paidHours
-        = std::max<Duration>(vehicleType.minHoursPaid, durationInHours);
-    return paidHours.get() * vehicleType.wagePerHour.get();
-}
-
 double pyvrp::search::Route::SegmentBetween::
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
         pyvrp::ProblemData const &data) const
@@ -913,24 +919,138 @@ double pyvrp::search::Route::SegmentBetween::
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
         [[maybe_unused]] pyvrp::ProblemData const &data) const
 {
-    // TODO: Implement this function.
-    return 0.0;
+    // Get the route. SegmentBetween is a segment between two nodes in the
+    // route. All information about the segment can thus be fetched from the
+    // data. Just need the iterator from the first node to the last node.
+    auto it = route_.begin();
+    // No-op till the start node.
+    for (; (*it)->client() != this->first(); ++it)
+        ;
+    auto const distanceMatrix = data.distanceMatrix(route_.profile());
+    auto const durationMatrix = data.durationMatrix(route_.profile());
+    size_t from = this->first();
+    double cost = 0;
+    for (; (*it)->client() != this->last(); ++it)
+    {
+        size_t to = (*it)->client();
+        auto distanceInSegment
+            = distanceMatrix((*it)->client(), (*std::next(it))->client());
+        auto durationInSegment
+            = durationMatrix((*it)->client(), (*std::next(it))->client());
+        if (durationInSegment == 0)
+        {
+            from = to;
+            continue;  // continue as cost of going from the node to itself is
+                       // always 0.
+        }
+        auto velocityInSegment
+            = distanceInSegment.get() / durationInSegment.get();
+        double durationInHours = durationInSegment.get() / 3600;
+        double emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+                  data.vehicleType(route_.vehicleType()).powerToMassRatio,
+                  velocityInSegment
+                      * data.vehicleType(route_.vehicleType()).congestion)
+              * (data.vehicleType(route_.vehicleType()).vehicleWeight
+                 / 1000.0  // convert to tons
+                 * durationInHours);
+        cost += (data.vehicleType(route_.vehicleType()).unitFuelCost
+                 + data.vehicleType(route_.vehicleType()).unitEmissionCost)
+                * emissionFactor;
+    }
+
+    return cost;
 }
 
 double pyvrp::search::Route::SegmentBetween::
     fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         [[maybe_unused]] ProblemData const &data) const
 {
-    // TODO: Implement this function.
-    return 0.0;
+    // Get the route. SegmentBetween is a segment between two nodes in the
+    // route. All information about the segment can thus be fetched from the
+    // data. Just need the iterator from the first node to the last node.
+    auto it = route_.begin();
+    // No-op till the start node.
+    for (; (*it)->client() != this->first(); ++it)
+        ;
+    auto const distanceMatrix = data.distanceMatrix(route_.profile());
+    auto const durationMatrix = data.durationMatrix(route_.profile());
+    size_t from = this->first();
+    double cost = 0;
+    for (; (*it)->client() != this->last(); ++it)
+    {
+        size_t to = (*it)->client();
+        auto distanceInSegment
+            = distanceMatrix((*it)->client(), (*std::next(it))->client());
+        auto durationInSegment
+            = durationMatrix((*it)->client(), (*std::next(it))->client());
+        if (durationInSegment == 0)
+        {
+            from = to;
+            continue;  // continue as cost of going from the node to itself is
+                       // always 0.
+        }
+        auto velocityProfile
+            = pyvrp::velocity::getProfileBasedOnDistance(distanceInSegment);
+        double emissionFactor
+            = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
+                  data.vehicleType(route_.vehicleType()).powerToMassRatio,
+                  data.vehicleType(route_.vehicleType()).congestion,
+                  durationInSegment.get(),
+                  distanceInSegment.get(),
+                  velocityProfile.getSquaredVelocityIntegral(
+                      durationInSegment.get()),
+                  velocityProfile.getCubedVelocityIntegral(
+                      durationInSegment.get()))
+              * (data.vehicleType(route_.vehicleType()).vehicleWeight
+                 / 1000.0);  // convert to tons
+
+        cost += (data.vehicleType(route_.vehicleType()).unitFuelCost
+                 + data.vehicleType(route_.vehicleType()).unitEmissionCost)
+                * emissionFactor;
+    }
+
+    return cost;
 }
 
 double pyvrp::search::Route::SegmentBetween::
     fuelAndEmissionCostWithConstantVelocityConstantCongestionInSegments(
         [[maybe_unused]] ProblemData const &data) const
 {
-    // TODO: Implement this function.
-    return 0.0;
+    // Get the route. SegmentBetween is a segment between two nodes in the
+    // route. All information about the segment can thus be fetched from the
+    // data. Just need the iterator from the first node to the last node.
+    auto it = route_.begin();
+    // No-op till the start node.
+    // Start time is the release time of any node on the route + the duration
+    // that has elapsed since the start of the route till the point we are ready
+    // to leave the first node.
+    pyvrp::ProblemData::Client firstClient = data.location(this->first());
+    auto const vehicleType = data.vehicleType(route_.vehicleType());
+    auto startTime = firstClient.releaseTime;
+    startTime += route_.before(this->first())
+                     .duration(vehicleType.profile)
+                     .duration();
+    for (; (*it)->client() != this->first(); ++it)
+        ;
+
+    size_t from = this->first();
+    double cost = 0;
+    for (; (*it)->client() != this->last(); ++it)
+    {
+        size_t to = (*it)->client();
+        auto congestionProfile = pyvrp::congestion::getCongestionProfile(
+            data.congestionBehaviour());
+        auto congestion = congestionProfile.getCongestionValue(startTime);
+        auto emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+                  vehicleType.powerToMassRatio,
+                  vehicleType.velocity * congestion)
+              * vehicleType.vehicleWeight / 1000.0;  // convert to tons
+        cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
+                * emissionFactor;
+    }
+    return cost;
 }
 
 double pyvrp::search::Route::SegmentBetween::
@@ -1059,18 +1179,6 @@ double pyvrp::search::Route::SegmentBetween::fuelAndEmissionCost(
         throw std::runtime_error(
             "Unknown velocity and congestion behaviour combination.");
     }
-}
-
-double pyvrp::search::Route::SegmentBetween::wageCost(
-    pyvrp::ProblemData const &data) const
-{
-    pyvrp::ProblemData::VehicleType const vehicleType
-        = data.vehicleType(route_.vehicleType());
-    Duration durationSegment = this->duration(route_.profile()).duration();
-    double durationInHours = durationSegment.get() / 3600;
-    double const paidHours
-        = std::max<double>(vehicleType.minHoursPaid.get(), durationInHours);
-    return paidHours * vehicleType.wagePerHour.get();
 }
 
 double pyvrp::search::Route::SegmentAfter::
@@ -1247,18 +1355,6 @@ double pyvrp::search::Route::SegmentAfter::fuelAndEmissionCost(
         throw std::runtime_error(
             "Unknown velocity and congestion behaviour combination.");
     }
-}
-
-double pyvrp::search::Route::SegmentAfter::wageCost(
-    pyvrp::ProblemData const &data) const
-{
-    pyvrp::ProblemData::VehicleType const vehicleType
-        = data.vehicleType(route_.vehicleType());
-    Duration duration = this->duration(route_.profile()).duration();
-    double durationInHours = duration.get() / 3600;
-    Duration const paidHours
-        = std::max<Duration>(vehicleType.minHoursPaid, durationInHours);
-    return paidHours.get() * vehicleType.wagePerHour.get();
 }
 
 std::ostream &operator<<(std::ostream &out, pyvrp::search::Route const &route)
