@@ -363,12 +363,12 @@ private:
 
     public:
         inline SegmentAfter(Route const &route, size_t start);
-        size_t first() const;
-        size_t last() const;
-        size_t size() const;
-        Distance distance(size_t profile) const;
-        DurationSegment duration(size_t profile) const;
-        LoadSegment const &load(size_t dimension) const;
+        inline size_t first() const;
+        inline size_t last() const;
+        inline size_t size() const;
+        inline Distance distance(size_t profile) const;
+        inline DurationSegment duration(size_t profile) const;
+        inline LoadSegment const &load(size_t dimension) const;
     };
 
     /**
@@ -381,12 +381,12 @@ private:
 
     public:
         inline SegmentBefore(Route const &route, size_t end);
-        size_t first() const;
-        size_t last() const;
-        size_t size() const;
-        Distance distance(size_t profile) const;
-        DurationSegment duration(size_t profile) const;
-        LoadSegment const &load(size_t dimension) const;
+        inline size_t first() const;
+        inline size_t last() const;
+        inline size_t size() const;
+        inline Distance distance(size_t profile) const;
+        inline DurationSegment duration(size_t profile) const;
+        inline LoadSegment const &load(size_t dimension) const;
     };
 
     /**
@@ -401,12 +401,12 @@ private:
 
     public:
         inline SegmentBetween(Route const &route, size_t start, size_t end);
-        size_t first() const;
-        size_t last() const;
-        size_t size() const;
-        Distance distance(size_t profile) const;
-        DurationSegment duration(size_t profile) const;
-        LoadSegment const &load(size_t dimension) const;
+        inline size_t first() const;
+        inline size_t last() const;
+        inline size_t size() const;
+        inline Distance distance(size_t profile) const;
+        inline DurationSegment duration(size_t profile) const;
+        inline LoadSegment const &load(size_t dimension) const;
     };
 
     ProblemData const &data;
@@ -865,55 +865,69 @@ Route::SegmentBetween::SegmentBetween(Route const &route,
     assert(route[end]->trip() - route[start]->trip() <= route[end]->isDepot());
 }
 
-Distance Route::SegmentAfter::distance([[maybe_unused]] size_t profile) const
+inline Distance
+Route::SegmentAfter::distance([[maybe_unused]] size_t profile) const
 {
     assert(profile == route_.profile());
     return {route_.cumDist.back() - route_.cumDist[start]};
 }
 
-DurationSegment
+inline DurationSegment
 Route::SegmentAfter::duration([[maybe_unused]] size_t profile) const
 {
     assert(profile == route_.profile());
     return route_.durAfter[start];
 }
 
-LoadSegment const &Route::SegmentAfter::load(size_t dimension) const
+inline LoadSegment const &Route::SegmentAfter::load(size_t dimension) const
 {
     return route_.loadAfter[dimension][start];
 }
 
-Distance Route::SegmentBefore::distance([[maybe_unused]] size_t profile) const
+inline Distance
+Route::SegmentBefore::distance([[maybe_unused]] size_t profile) const
 {
     assert(profile == route_.profile());
     return route_.cumDist[end];
 }
 
-DurationSegment
+inline DurationSegment
 Route::SegmentBefore::duration([[maybe_unused]] size_t profile) const
 {
     assert(profile == route_.profile());
     return route_.durBefore[end];
 }
 
-LoadSegment const &Route::SegmentBefore::load(size_t dimension) const
+inline LoadSegment const &Route::SegmentBefore::load(size_t dimension) const
 {
     return route_.loadBefore[dimension][end];
 }
 
-size_t Route::SegmentBefore::first() const { return route_.visits.front(); }
-size_t Route::SegmentBefore::last() const { return route_.visits[end]; }
-size_t Route::SegmentBefore::size() const { return end + 1; }
+inline size_t Route::SegmentBefore::first() const
+{
+    return route_.visits.front();
+}
+inline size_t Route::SegmentBefore::last() const { return route_.visits[end]; }
+inline size_t Route::SegmentBefore::size() const { return end + 1; }
 
-size_t Route::SegmentAfter::first() const { return route_.visits[start]; }
-size_t Route::SegmentAfter::last() const { return route_.visits.back(); }
-size_t Route::SegmentAfter::size() const { return route_.size() - start; }
+inline size_t Route::SegmentAfter::first() const
+{
+    return route_.visits[start];
+}
+inline size_t Route::SegmentAfter::last() const { return route_.visits.back(); }
+inline size_t Route::SegmentAfter::size() const
+{
+    return route_.size() - start;
+}
 
-size_t Route::SegmentBetween::first() const { return route_.visits[start]; }
-size_t Route::SegmentBetween::last() const { return route_.visits[end]; }
-size_t Route::SegmentBetween::size() const { return end - start + 1; }
+inline size_t Route::SegmentBetween::first() const
+{
+    return route_.visits[start];
+}
+inline size_t Route::SegmentBetween::last() const { return route_.visits[end]; }
+inline size_t Route::SegmentBetween::size() const { return end - start + 1; }
 
-Distance Route::SegmentBetween::distance(size_t profile) const
+inline Distance Route::SegmentBetween::distance(size_t profile) const
 {
     if (profile != route_.profile())  // then we have to compute the distance
     {                                 // segment from scratch.
@@ -937,7 +951,7 @@ Distance Route::SegmentBetween::distance(size_t profile) const
     return endDist - startDist;
 }
 
-DurationSegment
+inline DurationSegment
 Route::SegmentBetween::duration([[maybe_unused]] size_t profile) const
 {
     auto const &mat = route_.data.durationMatrix(profile);
@@ -954,7 +968,7 @@ Route::SegmentBetween::duration([[maybe_unused]] size_t profile) const
     return durSegment;
 }
 
-LoadSegment const &Route::SegmentBetween::load(size_t dimension) const
+inline LoadSegment const &Route::SegmentBetween::load(size_t dimension) const
 {
     return route_.loadAt[dimension][start];
 }

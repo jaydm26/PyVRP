@@ -90,6 +90,23 @@ public:
         return std::vector<double>(velocity_.begin() + startOffsetTime_,
                                    velocity_.end() - endOffsetTime_);
     }
+
+    boost::math::interpolators::cardinal_cubic_b_spline<double> spline() const
+    {
+        return spline_;
+    };
+
+    boost::math::interpolators::cardinal_cubic_b_spline<double>
+    squaredSpline() const
+    {
+        return squaredSpline_;
+    };
+
+    boost::math::interpolators::cardinal_cubic_b_spline<double>
+    cubedSpline() const
+    {
+        return cubedSpline_;
+    };
 };
 
 // WLTCProfile slowVelocityProfile, mediumVelocityProfile, highVelocityProfile;

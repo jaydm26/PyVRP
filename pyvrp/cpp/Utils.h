@@ -50,24 +50,46 @@ emissionCostPerTonPerHourConstantVelocity(double const powerToMassRatio,
  * subsequent high power integrals of velocity are also obtained in the
  * congested form.
  */
-inline double
-emissionFactorPerTonNonLinearVelocity(double const powerToMassRatio,
-                                      double const congestion,
-                                      double const duration,  // input in s
-                                      double const distance,  // input in m
-                                      double const squaredVelocityIntegral,
-                                      double const cubedVelocityIntegral)
+inline double emissionFactorPerTonNonLinearVelocity(
+    double const powerToMassRatio,
+    double const constantTerm,  // if velocity, provide in m/s, if congestion,
+                                // provide in fraction
+    double const congestedDuration,  // input in s
+    double const linearIntegral,     // input in m
+    double const squaredIntegral,
+    double const cubedIntegral)
 {
     double a, b, c, d;
-    a = (465.390 + 48.143 * powerToMassRatio) * duration
+    a = (465.390 + 48.143 * powerToMassRatio) * congestedDuration
         / 3600.0;  // convert to hours
-    b = (32.389 + 0.8931 * powerToMassRatio) * distance * congestion
+    b = (32.389 + 0.8931 * powerToMassRatio) * linearIntegral * constantTerm
         / 1000.0;  // convert to km
-    c = (-0.4771 - 0.02559 * powerToMassRatio) * squaredVelocityIntegral
-        * congestion * congestion / 1000 / 1000 * 3600;  // convert to km/hr
-    d = (0.0008889 + 0.0004055 * powerToMassRatio) * cubedVelocityIntegral
-        * congestion * congestion * congestion / 1000 / 1000 / 1000 * 3600
+    c = (-0.4771 - 0.02559 * powerToMassRatio) * squaredIntegral * constantTerm
+        * constantTerm / 1000 / 1000 * 3600;  // convert to km/hr
+    d = (0.0008889 + 0.0004055 * powerToMassRatio) * cubedIntegral
+        * constantTerm * constantTerm * constantTerm / 1000 / 1000 / 1000 * 3600
         * 3600;  // Convert to km/hr
+
+    assert(a + b + c + d >= 0);       // Ensure the result is non-negative
+    return (a + b + c + d) / 1000.0;  // Convert to kg
+}
+
+inline double emissionFactorPerTonNonLinearVelocityAndCongestion(
+    double const powerToMassRatio,
+    double const congestedDuration,  // input in s
+    double const linearIntegral,     // input in m
+    double const squaredIntegral,
+    double const cubedIntegral)
+{
+    double a, b, c, d;
+    a = (465.390 + 48.143 * powerToMassRatio) * congestedDuration
+        / 3600.0;  // convert to hours
+    b = (32.389 + 0.8931 * powerToMassRatio) * linearIntegral
+        / 1000.0;  // convert to km
+    c = (-0.4771 - 0.02559 * powerToMassRatio) * squaredIntegral / 1000 / 1000
+        * 3600;  // convert to km/hr
+    d = (0.0008889 + 0.0004055 * powerToMassRatio) * cubedIntegral / 1000 / 1000
+        / 1000 * 3600 * 3600;  // Convert to km/hr
 
     assert(a + b + c + d >= 0);       // Ensure the result is non-negative
     return (a + b + c + d) / 1000.0;  // Convert to kg
