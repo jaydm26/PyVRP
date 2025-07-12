@@ -1057,8 +1057,90 @@ double
 pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
     [[maybe_unused]] ProblemData const &data) const
 {
-    // TODO: Implement this function.
-    return 0.0;
+    double now = 0;
+    double cost = 0;
+    auto const vehicleType = data.vehicleType(this->vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto const &durationMatrix = data.durationMatrix(vehicleType.profile);
+    auto const congestionProfile
+        = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
+
+    for (auto &trip : trips_)
+    {
+        size_t from = trip.startDepot();
+        for (auto &to : trip.visits())
+        {
+            pyvrp::ProblemData::Client const &clientData = data.location(to);
+            auto edgeDistance = distanceMatrix(from, to);
+            auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+                edgeDistance.get());
+            auto congestedVelocityProfile
+                = pyvrp::congestedVelocity::CongestedWLTCProfile(
+                    velocityProfile, congestionProfile);
+            auto edgeDuration
+                = congestedVelocityProfile.getCongestedTravelTimeForDistance(
+                    edgeDistance.get(), now);
+            if (edgeDuration == 0)
+            {
+                from = to;
+                continue;  // continue as the cost for going from the node to
+                           // itself is always 0.
+            };
+            double congestedDuration = edgeDuration;
+            double emissionFactor
+                = pyvrp::utils::
+                      emissionFactorPerTonNonLinearVelocityAndCongestion(
+                          vehicleType.powerToMassRatio,
+                          congestedDuration,
+                          congestionProfile.getCongestionIntegral(
+                              now, now + congestedDuration),
+                          congestionProfile.getSquareCongestionIntegral(
+                              now, now + congestedDuration),
+                          congestionProfile.getCubedCongestionIntegral(
+                              now, now + congestedDuration))
+                  * vehicleWeightInTons;
+
+            cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
+                    * emissionFactor;
+            now += congestedDuration + clientData.serviceDuration.get();
+            from = to;
+        }
+        size_t to = trip.endDepot();
+        auto edgeDistance = distanceMatrix(from, to);
+        auto velocityProfile
+            = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance.get());
+        auto congestedVelocityProfile
+            = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
+                                                             congestionProfile);
+        auto edgeDuration
+            = congestedVelocityProfile.getCongestedTravelTimeForDistance(
+                edgeDistance.get(), now);
+        if (edgeDuration == 0)
+        {
+            continue;  // continue as the cost for going from the node to itself
+                       // is always 0.
+        };
+        double congestedDuration = edgeDuration;
+        double emissionFactor
+            = pyvrp::utils::emissionFactorPerTonNonLinearVelocityAndCongestion(
+                  vehicleType.powerToMassRatio,
+                  congestedDuration,
+                  congestionProfile.getCongestionIntegral(
+                      now, now + congestedDuration),
+                  congestionProfile.getSquareCongestionIntegral(
+                      now, now + congestedDuration),
+                  congestionProfile.getCubedCongestionIntegral(
+                      now, now + congestedDuration))
+              * vehicleWeightInTons;
+
+        cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
+                * emissionFactor;
+        now += congestedDuration;
+    }
+
+    return cost;
 }
 
 double pyvrp::Route::fuelAndEmissionCost(ProblemData const &data) const
