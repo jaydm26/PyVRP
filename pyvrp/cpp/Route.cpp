@@ -924,7 +924,7 @@ double pyvrp::Route::fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
                       congestedDuration,
                       congestionProfile.getCongestionIntegral(
                           now, now + congestedDuration),
-                      congestionProfile.getSquareCongestionIntegral(
+                      congestionProfile.getSquaredCongestionIntegral(
                           now, now + congestedDuration),
                       congestionProfile.getCubedCongestionIntegral(
                           now, now + congestedDuration))
@@ -946,7 +946,7 @@ double pyvrp::Route::fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
                   congestedDuration,
                   congestionProfile.getCongestionIntegral(
                       now, now + congestedDuration),
-                  congestionProfile.getSquareCongestionIntegral(
+                  congestionProfile.getSquaredCongestionIntegral(
                       now, now + congestedDuration),
                   congestionProfile.getCubedCongestionIntegral(
                       now, now + congestedDuration))
@@ -1004,7 +1004,7 @@ double pyvrp::Route::
                       congestedDuration,
                       congestionProfile.getCongestionIntegral(
                           now, now + congestedDuration),
-                      congestionProfile.getSquareCongestionIntegral(
+                      congestionProfile.getSquaredCongestionIntegral(
                           now, now + congestedDuration),
                       congestionProfile.getCubedCongestionIntegral(
                           now, now + congestedDuration))
@@ -1039,7 +1039,7 @@ double pyvrp::Route::
                   congestedDuration,
                   congestionProfile.getCongestionIntegral(
                       now, now + congestedDuration),
-                  congestionProfile.getSquareCongestionIntegral(
+                  congestionProfile.getSquaredCongestionIntegral(
                       now, now + congestedDuration),
                   congestionProfile.getCubedCongestionIntegral(
                       now, now + congestedDuration))
@@ -1096,7 +1096,7 @@ pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
                           congestedDuration,
                           congestionProfile.getCongestionIntegral(
                               now, now + congestedDuration),
-                          congestionProfile.getSquareCongestionIntegral(
+                          congestionProfile.getSquaredCongestionIntegral(
                               now, now + congestedDuration),
                           congestionProfile.getCubedCongestionIntegral(
                               now, now + congestedDuration))
@@ -1129,7 +1129,7 @@ pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
                   congestedDuration,
                   congestionProfile.getCongestionIntegral(
                       now, now + congestedDuration),
-                  congestionProfile.getSquareCongestionIntegral(
+                  congestionProfile.getSquaredCongestionIntegral(
                       now, now + congestedDuration),
                   congestionProfile.getCubedCongestionIntegral(
                       now, now + congestedDuration))

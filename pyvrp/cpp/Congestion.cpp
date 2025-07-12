@@ -63,8 +63,8 @@ double CongestionProfile::getSquaredCongestionIntegral(double const &from,
     return boost::math::quadrature::trapezoidal(squaredSpline_, from, to);
 }
 
-double CongestionProfile::getSquareCongestionIntegral(Duration const &from,
-                                                      Duration const &to) const
+double CongestionProfile::getSquaredCongestionIntegral(Duration const &from,
+                                                       Duration const &to) const
 {
     return getSquaredCongestionIntegral(static_cast<double>(from),
                                         static_cast<double>(to));

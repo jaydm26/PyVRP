@@ -42,8 +42,8 @@ public:
                                  Duration const &to) const;
     double getSquaredCongestionIntegral(double const &from,
                                         double const &to) const;
-    double getSquareCongestionIntegral(Duration const &from,
-                                       Duration const &to) const;
+    double getSquaredCongestionIntegral(Duration const &from,
+                                        Duration const &to) const;
     double getCubedCongestionIntegral(double const &from,
                                       double const &time) const;
     double getCubedCongestionIntegral(Duration const &from,
