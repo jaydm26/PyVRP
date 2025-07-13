@@ -1403,8 +1403,54 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
         [[maybe_unused]] ProblemData const &data) const
 {
-    // TODO: Implement this function.
-    return 0.0;
+    auto it = route_.begin();
+    ProblemData::Client firstClient = data.location(this->first());
+    size_t from = this->first();
+    auto const &vehicleType = data.vehicleType(route_.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto const &durationMatrix = data.durationMatrix(route_.profile());
+    auto congestionProfile
+        = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
+    double cost = 0;
+
+    // No-op till we reach the first node in the segment.
+    for (; (*it)->client() != this->first(); ++it)
+        ;
+
+    double now = firstClient.releaseTime.get();
+    now += route_.before(this->first())
+               .duration(route_.profile())
+               .duration()
+               .get();
+
+    // Now we are at the first node in the segment
+    for (; (*it)->client() != this->last(); ++it)
+    {
+        size_t to = (*it)->client();
+        ProblemData::Client const &client = data.location(to);
+        Duration durationInSegment = durationMatrix(from, to);
+        if (durationInSegment == 0)
+        {
+            from = to;
+            continue;
+        }
+        double congestion = congestionProfile.getCongestionValue(now);
+        double congestedVelocity = vehicleType.velocity * congestion;
+        double congestedDuration = durationInSegment.get() / congestion;
+        double congestedDurationInHours
+            = congestedDuration / 3600.0;  // convert to hours
+        double emissionFactor
+            = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
+                  vehicleType.powerToMassRatio, congestedVelocity)
+              * vehicleWeightInTons * congestedDurationInHours;
+        cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
+                * emissionFactor;
+        now += congestedDuration + client.serviceDuration.get();
+        from = to;
+    }
+
+    return cost;
 }
 
 template <typename Derived>
@@ -1412,8 +1458,73 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithConstantVelocityInSegmentsNonLinearCongestion(
         [[maybe_unused]] ProblemData const &data) const
 {
-    // TODO: Implement this function.
-    return 0.0;
+    auto it = route_.begin();
+    ProblemData::Client firstClient = data.location(this->first());
+    size_t from = this->first();
+    auto const &vehicleType = data.vehicleType(route_.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto const &distanceMatrix = data.distanceMatrix(route_.profile());
+    auto const &durationMatrix = data.durationMatrix(route_.profile());
+    auto congestionProfile
+        = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
+    double cost = 0;
+
+    // No-op till we reach the first node in the segment.
+    for (; (*it)->client() != this->first(); ++it)
+        ;
+
+    double now = firstClient.releaseTime.get();
+    now += route_.before(this->first())
+               .duration(route_.profile())
+               .duration()
+               .get();
+
+    // Now we are at the first node in the segment
+    for (; (*it)->client() != this->last(); ++it)
+    {
+        size_t to = (*it)->client();
+        ProblemData::Client const &client = data.location(to);
+        Distance distanceInSegment = distanceMatrix(from, to);
+        auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+            distanceInSegment.get());
+        auto congestedVelocityProfile
+            = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
+                                                             congestionProfile);
+        auto edgeDuration
+            = congestedVelocityProfile.getCongestedTravelTimeForDistance(
+                distanceInSegment.get(), now);
+        if (edgeDuration == 0)
+        {
+            from = to;
+            continue;  // continue as cost of going from the node to itself is
+                       // always 0.
+        }
+        double velocityInSegment = distanceInSegment.get() / edgeDuration;
+        double congestedDuration = edgeDuration;
+        double congestedDurationInHours
+            = congestedDuration / 3600.0;  // convert to hours
+        double emissionFactor
+            = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
+                  vehicleType.powerToMassRatio,
+                  velocityInSegment,
+                  congestedDuration,
+                  congestionProfile.getCongestionIntegral(
+                      now, now + congestedDuration),
+                  congestionProfile.getSquaredCongestionIntegral(
+                      now, now + congestedDuration),
+                  congestionProfile.getCubedCongestionIntegral(
+                      now, now + congestedDuration))
+              * vehicleWeightInTons;
+        cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
+                * emissionFactor;
+        // Technically, a distinction between client and depot should be made,
+        // but it is fine as the serviceDuration would be set to 0.
+        now += congestedDuration + client.serviceDuration.get();
+        from = to;
+    }
+
+    return cost;
 }
 
 template <typename Derived>
@@ -1421,8 +1532,74 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
         [[maybe_unused]] ProblemData const &data) const
 {
-    // TODO: Implement this function.
-    return 0.0;
+    auto it = route_.begin();
+    ProblemData::Client firstClient = data.location(this->first());
+    size_t from = this->first();
+    auto const &vehicleType = data.vehicleType(route_.vehicleType());
+    double vehicleWeightInTons
+        = vehicleType.vehicleWeight / 1000.0;  // convert to tons
+    auto const &distanceMatrix = data.distanceMatrix(route_.profile());
+    auto const &durationMatrix = data.durationMatrix(route_.profile());
+    auto congestionProfile
+        = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
+    double cost = 0;
+
+    // No-op till we reach the first node in the segment.
+    for (; (*it)->client() != this->first(); ++it)
+        ;
+
+    double now = firstClient.releaseTime.get();
+    now += route_.before(this->first())
+               .duration(route_.profile())
+               .duration()
+               .get();
+
+    // Now we are at the first node in the segment
+    for (; (*it)->client() != this->last(); ++it)
+    {
+        size_t to = (*it)->client();
+        ProblemData::Client const &client = data.location(to);
+        Distance distanceInSegment = distanceMatrix(from, to);
+        auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+            distanceInSegment.get());
+        auto congestedVelocityProfile
+            = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
+                                                             congestionProfile);
+        auto edgeDuration
+            = congestedVelocityProfile.getCongestedTravelTimeForDistance(
+                distanceInSegment.get(), now);
+        if (edgeDuration == 0)
+        {
+            from = to;
+            continue;  // continue as cost of going from the node to itself is
+                       // always 0.
+        }
+        double velocityInSegment = distanceInSegment.get() / edgeDuration;
+        double congestedDuration = edgeDuration;
+        double congestedDurationInHours
+            = congestedDuration / 3600.0;  // convert to hours
+        double emissionFactor
+            = pyvrp::utils::emissionFactorPerTonNonLinearVelocityAndCongestion(
+                  vehicleType.powerToMassRatio,
+                  congestedDuration,
+                  congestedVelocityProfile.getDistanceForCongestedTravelTime(
+                      now, now + congestedDuration),
+                  congestedVelocityProfile
+                      .getSquaredVelocityIntegralForCongestedTravelTime(
+                          now, now + congestedDuration),
+                  congestedVelocityProfile
+                      .getCubedVelocityIntegralForCongestedTravelTime(
+                          now, now + congestedDuration))
+              * vehicleWeightInTons;
+        cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
+                * emissionFactor;
+        // Technically, a distinction between client and depot should be made,
+        // but it is fine as the serviceDuration would be set to 0.
+        now += congestedDuration + client.serviceDuration.get();
+        from = to;
+    }
+
+    return cost;
 }
 
 template <typename Derived>
