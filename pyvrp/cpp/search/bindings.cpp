@@ -458,7 +458,15 @@ PYBIND11_MODULE(_search, m)
             py::keep_alive<1, 3>(),  // keep node alive
             py::keep_alive<3, 1>())  // keep route alive
         .def_static("swap", &Route::swap, py::arg("first"), py::arg("second"))
-        .def("update", &Route::update);
+        .def("update", &Route::update)
+        .def("fuel_and_emission_cost",
+             &Route::fuelAndEmissionCost,
+             py::arg("data"),
+             py::keep_alive<1, 2>())
+        .def("wage_cost",
+             &Route::wageCost,
+             py::arg("data"),
+             py::keep_alive<1, 2>());
 
     py::class_<Route::Node>(m, "Node", DOC(pyvrp, search, Route, Node))
         .def(py::init<size_t>(), py::arg("loc"))

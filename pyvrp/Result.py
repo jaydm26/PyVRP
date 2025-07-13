@@ -57,14 +57,6 @@ class Result:
             0,
             0,
             self.data,
-            unit_fuel_cost=self.penalty_params.unit_fuel_cost,
-            unit_emission_cost=self.penalty_params.unit_emission_cost,
-            velocity=self.penalty_params.velocity,
-            congestion_factor=self.penalty_params.congestion_factor,
-            fuel_costs=self.penalty_params.fuel_costs,
-            wage_per_hour=self.penalty_params.wage_per_hour,
-            min_hours_paid=self.penalty_params.min_hours_paid,
-            cost_behaviour=self.penalty_params.cost_behaviour,
         ).cost(self.best)
 
     def is_feasible(self) -> bool:

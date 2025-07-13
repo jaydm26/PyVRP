@@ -122,9 +122,6 @@ public:
     [[nodiscard]] inline Cost distPenalty(Distance distance,
                                           Distance maxDistance) const;
 
-    template <typename T>
-    [[nodiscard]] inline double applyFuelAndEmissionCost(T const &route) const;
-
     /**
      * Computes a smoothed objective (penalised cost) for a given solution.
      */

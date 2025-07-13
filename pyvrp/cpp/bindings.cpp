@@ -841,7 +841,13 @@ PYBIND11_MODULE(_pyvrp, m)
                  std::stringstream stream;
                  stream << route;
                  return stream.str();
-             });
+             })
+        .def("fuel_and_emission_cost", 
+             &Route::fuelAndEmissionCost,
+             py::arg("data"))
+        .def("wage_cost", 
+             &Route::wageCost,
+             py::arg("data"));
 
     py::class_<Solution, std::shared_ptr<Solution>>(
         m, "Solution", DOC(pyvrp, Solution))
@@ -985,7 +991,13 @@ PYBIND11_MODULE(_pyvrp, m)
                  std::stringstream stream;
                  stream << sol;
                  return stream.str();
-             });
+             })
+        .def("fuel_and_emission_cost", &Solution::fuelAndEmissionCost,
+             py::arg("data")
+             )
+        .def("wage_cost", &Solution::wageCost,
+             py::arg("data")
+             );
 
     py::class_<pyvrp::velocity::WLTCProfile>(m, "WLTCProfile")
         .def(py::init<const std::string,

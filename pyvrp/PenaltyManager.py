@@ -8,7 +8,6 @@ import numpy as np
 
 from pyvrp._pyvrp import (
     CostEvaluator,
-    InternalCostBehaviour,
     ProblemData,
     Solution,
 )
@@ -99,16 +98,6 @@ class PenaltyParams:
     feas_tolerance: float = 0.05
     min_penalty: float = 0.1
     max_penalty: float = 100_000.0
-    unit_fuel_cost: float = 0.0
-    unit_emission_cost: float = 0.0
-    velocity: float = 0.0
-    congestion_factor: float = 1.0
-    fuel_costs: list[list[int]] = field(default_factory=list)
-    wage_per_hour: float = 0.0
-    min_hours_paid: float = 8.0
-    cost_behaviour: InternalCostBehaviour = (
-        InternalCostBehaviour.ConstantVelocityWithConstantCongestion
-    )
 
     def __post_init__(self):
         if not self.repair_booster >= 1:
@@ -312,14 +301,6 @@ class PenaltyManager:
             tw,
             dist,
             self._data,
-            self._params.unit_fuel_cost,
-            self._params.unit_emission_cost,
-            self._params.velocity,
-            self._params.congestion_factor,
-            self._params.fuel_costs,
-            self._params.wage_per_hour,
-            self._params.min_hours_paid,
-            self._params.cost_behaviour,
         )
 
     def booster_cost_evaluator(self) -> CostEvaluator:
@@ -332,12 +313,4 @@ class PenaltyManager:
             tw,
             dist,
             self._data,
-            self._params.unit_fuel_cost,
-            self._params.unit_emission_cost,
-            self._params.velocity,
-            self._params.congestion_factor,
-            self._params.fuel_costs,
-            self._params.wage_per_hour,
-            self._params.min_hours_paid,
-            self._params.cost_behaviour,
         )
