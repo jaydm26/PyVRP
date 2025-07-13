@@ -970,7 +970,6 @@ double pyvrp::Route::
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
-    auto const &durationMatrix = data.durationMatrix(vehicleType.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
 
@@ -1063,7 +1062,6 @@ pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
-    auto const &durationMatrix = data.durationMatrix(vehicleType.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
 

@@ -486,7 +486,8 @@ double pyvrp::search::Route::
                   vehicleType.powerToMassRatio,
                   vehicleType.congestion,
                   durationOfSegment.get(),
-                  distanceOfSegment.get(),
+                  velocityProfile.getDistanceForTravelTime(
+                      durationOfSegment.get()),
                   velocityProfile.getSquaredVelocityIntegral(
                       durationOfSegment.get()),
                   velocityProfile.getCubedVelocityIntegral(
@@ -511,7 +512,6 @@ double pyvrp::search::Route::
     auto const vehicleType = data.vehicleType(this->vehicleType());
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
-    auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
     auto const &durationMatrix = data.durationMatrix(vehicleType.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
@@ -521,7 +521,6 @@ double pyvrp::search::Route::
     for (size_t i = 1; i < this->size(); i++)
     {
         to = this->operator[](i)->client();
-        Distance distanceOfSegment = distanceMatrix(from, to);
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
@@ -625,7 +624,7 @@ double pyvrp::search::Route::
 
     cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
             * emissionFactor;
-    now += congestedDuration;
+    now += congestedDuration + clientData.serviceDuration.get();
 
     return cost;
 }
@@ -663,13 +662,11 @@ double pyvrp::search::Route::
                 distanceOfSegment.get());
         double congestion = congestionProfile.getCongestionValue(now);
         double congestedDuration = durationOfSegment.get() / congestion;
-        double congestedDurationInHours = congestedDuration / 3600;  // convert
-                                                                     // to hours
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                   vehicleType.powerToMassRatio,
                   congestion,
-                  congestedDurationInHours,
+                  congestedDuration,
                   velocityProfile.getDistanceForTravelTime(congestedDuration),
                   velocityProfile.getSquaredVelocityIntegral(congestedDuration),
                   velocityProfile.getCubedVelocityIntegral(congestedDuration))
@@ -689,15 +686,13 @@ double pyvrp::search::Route::
     Duration durationOfSegment = durationMatrix(from, to);
     double congestion = congestionProfile.getCongestionValue(now);
     double congestedDuration = durationOfSegment.get() / congestion;
-    double congestedDurationInHours = congestedDuration / 3600;  // convert
-                                                                 // to hours
     pyvrp::velocity::WLTCProfile velocityProfile
         = pyvrp::velocity::getProfileBasedOnDistance(distanceOfSegment.get());
     double emissionFactor
         = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
               vehicleType.powerToMassRatio,
               congestion,
-              congestedDurationInHours,
+              congestedDuration,
               velocityProfile.getDistanceForTravelTime(congestedDuration),
               velocityProfile.getSquaredVelocityIntegral(congestedDuration),
               velocityProfile.getCubedVelocityIntegral(congestedDuration))
@@ -706,6 +701,7 @@ double pyvrp::search::Route::
         = (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
           * emissionFactor;
     cost += fuelAndEmissionCost;
+    now += congestedDuration + clientData.serviceDuration.get();
 
     return cost;
 }
@@ -730,7 +726,6 @@ double pyvrp::search::Route::
     {
         to = this->operator[](i)->client();
         pyvrp::ProblemData::Client const &clientData = data.location(to);
-        Distance distanceOfSegment = distanceMatrix(from, to);
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
@@ -740,13 +735,11 @@ double pyvrp::search::Route::
         };
         double congestion = congestionProfile.getCongestionValue(now);
         double congestedDuration = durationOfSegment.get() / congestion;
-        double congestedDurationInHours = congestedDuration / 3600;  // convert
-                                                                     // to hours
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                   vehicleType.powerToMassRatio,
                   vehicleType.velocity,
-                  congestedDurationInHours,
+                  congestedDuration,
                   congestionProfile.getCongestionIntegral(
                       now, now + congestedDuration),
                   congestionProfile.getSquaredCongestionIntegral(
@@ -765,16 +758,13 @@ double pyvrp::search::Route::
 
     to = this->endDepot();
     pyvrp::ProblemData::Client const &clientData = data.location(to);
-    Distance distanceOfSegment = distanceMatrix(from, to);
     Duration durationOfSegment = durationMatrix(from, to);
     double congestion = congestionProfile.getCongestionValue(now);
     double congestedDuration = durationOfSegment.get() / congestion;
-    double congestedDurationInHours = congestedDuration / 3600;  // convert
-                                                                 // to hours
     double emissionFactor = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                                 vehicleType.powerToMassRatio,
                                 vehicleType.velocity,
-                                congestedDurationInHours,
+                                congestedDuration,
                                 congestionProfile.getCongestionIntegral(
                                     now, now + congestedDuration),
                                 congestionProfile.getSquaredCongestionIntegral(
@@ -786,6 +776,7 @@ double pyvrp::search::Route::
         = (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
           * emissionFactor;
     cost += fuelAndEmissionCost;
+    now += congestedDuration + clientData.serviceDuration.get();
 
     return cost;
 }
@@ -828,14 +819,12 @@ double pyvrp::search::Route::
         };
 
         double congestedDuration = edgeDuration;
-        double congestedDurationInHours = congestedDuration / 3600;  // convert
-                                                                     // to hours
         double velocityInSegment = distanceOfSegment.get() / edgeDuration;
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                   vehicleType.powerToMassRatio,
                   velocityInSegment,
-                  congestedDurationInHours,
+                  congestedDuration,
                   congestionProfile.getCongestionIntegral(
                       now, now + congestedDuration),
                   congestionProfile.getSquaredCongestionIntegral(
@@ -864,13 +853,11 @@ double pyvrp::search::Route::
         = congestedVelocityProfile.getCongestedTravelTimeForDistance(
             distanceOfSegment.get(), now);
     double congestedDuration = edgeDuration;
-    double congestedDurationInHours = congestedDuration / 3600;  // convert
-                                                                 // to hours
     double velocityInSegment = distanceOfSegment.get() / edgeDuration;
     double emissionFactor = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                                 vehicleType.powerToMassRatio,
                                 velocityInSegment,
-                                congestedDurationInHours,
+                                congestedDuration,
                                 congestionProfile.getCongestionIntegral(
                                     now, now + congestedDuration),
                                 congestionProfile.getSquaredCongestionIntegral(
@@ -882,6 +869,7 @@ double pyvrp::search::Route::
         = (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
           * emissionFactor;
     cost += fuelAndEmissionCost;
+    now += congestedDuration + clientData.serviceDuration.get();
 
     return cost;
 }
@@ -923,13 +911,10 @@ double pyvrp::search::Route::
                        // itself is always 0.
         };
         double congestedDuration = edgeDuration;
-        double congestedDurationInHours = congestedDuration / 3600;  // convert
-                                                                     // to hours
-        double velocityInSegment = distanceOfSegment.get() / edgeDuration;
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocityAndCongestion(
                   vehicleType.powerToMassRatio,
-                  congestedDurationInHours,
+                  congestedDuration,
                   congestedVelocityProfile.getDistanceForCongestedTravelTime(
                       now, now + congestedDuration),
                   congestedVelocityProfile
@@ -960,12 +945,10 @@ double pyvrp::search::Route::
         = congestedVelocityProfile.getCongestedTravelTimeForDistance(
             distanceOfSegment.get(), now);
     double congestedDuration = edgeDuration;
-    double congestedDurationInHours = congestedDuration / 3600;  // convert
-                                                                 // to hours
     double emissionFactor
         = pyvrp::utils::emissionFactorPerTonNonLinearVelocityAndCongestion(
               vehicleType.powerToMassRatio,
-              congestedDurationInHours,
+              congestedDuration,
               congestedVelocityProfile.getDistanceForCongestedTravelTime(
                   now, now + congestedDuration),
               congestedVelocityProfile
@@ -979,6 +962,7 @@ double pyvrp::search::Route::
         = (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
           * emissionFactor;
     cost += fuelAndEmissionCost;
+    now += congestedDuration + clientData.serviceDuration.get();
 
     return cost;
 }
@@ -1502,8 +1486,6 @@ double pyvrp::search::Route::SegmentBase<Derived>::
         }
         double velocityInSegment = distanceInSegment.get() / edgeDuration;
         double congestedDuration = edgeDuration;
-        double congestedDurationInHours
-            = congestedDuration / 3600.0;  // convert to hours
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                   vehicleType.powerToMassRatio,
@@ -1574,10 +1556,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
             continue;  // continue as cost of going from the node to itself is
                        // always 0.
         }
-        double velocityInSegment = distanceInSegment.get() / edgeDuration;
         double congestedDuration = edgeDuration;
-        double congestedDurationInHours
-            = congestedDuration / 3600.0;  // convert to hours
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocityAndCongestion(
                   vehicleType.powerToMassRatio,
