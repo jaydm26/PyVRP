@@ -16,6 +16,7 @@ Solution LocalSearch::operator()(Solution const &solution,
                                  CostEvaluator const &costEvaluator)
 {
     loadSolution(solution);
+    std::cout << "Loaded Solution" << std::endl;
 
     while (true)
     {
@@ -54,6 +55,7 @@ void LocalSearch::search(CostEvaluator const &costEvaluator)
         return;
 
     searchCompleted_ = false;
+    std::cout << "Starting local search" << std::endl;
     for (int step = 0; !searchCompleted_; ++step)
     {
         searchCompleted_ = true;
@@ -68,16 +70,20 @@ void LocalSearch::search(CostEvaluator const &costEvaluator)
 
             // First test removing or inserting U. Particularly relevant if not
             // all clients are required (e.g., when prize collecting).
+            std::cout << "Applying Optional Client Moves" << std::endl;
             applyOptionalClientMoves(U, costEvaluator);
 
             // Evaluate moves involving the client's group, if it is in any.
+            std::cout << "Applying Group Moves" << std::endl;
             applyGroupMoves(U, costEvaluator);
 
             if (!U->route())  // we already evaluated inserting U, so there is
                 continue;     // nothing left to be done for this client.
 
             // If U borders a reload depot, try removing it.
+            std::cout << "Applying Depot Removal Moves" << std::endl;
             applyDepotRemovalMove(p(U), costEvaluator);
+            std::cout << "Applying Depot Removal Moves 2" << std::endl;
             applyDepotRemovalMove(n(U), costEvaluator);
 
             // We next apply the regular node operators. These work on pairs
@@ -148,13 +154,19 @@ void LocalSearch::intensify(CostEvaluator const &costEvaluator)
 
 void LocalSearch::shuffle(RandomNumberGenerator &rng)
 {
+    std::cout << "Shuffling node and route operators" << std::endl;
     std::shuffle(orderNodes.begin(), orderNodes.end(), rng);
+    std::cout << "Shuffled order nodes operators" << std::endl;
     std::shuffle(nodeOps.begin(), nodeOps.end(), rng);
+    std::cout << "Shuffled nodes operators" << std::endl;
 
     std::shuffle(orderRoutes.begin(), orderRoutes.end(), rng);
+    std::cout << "Shuffled order routes operators" << std::endl;
     std::shuffle(routeOps.begin(), routeOps.end(), rng);
+    std::cout << "Shuffled routes operators" << std::endl;
 
     std::shuffle(orderVehTypes.begin(), orderVehTypes.end(), rng);
+    std::cout << "Shuffled order vehicle types" << std::endl;
 }
 
 bool LocalSearch::applyNodeOps(Route::Node *U,

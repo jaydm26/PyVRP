@@ -790,25 +790,27 @@ public:
      * ProblemData
      *    A new ProblemData instance with possibly replaced data.
      */
-    ProblemData
-    replace(std::optional<std::vector<Client>> &clients,
-            std::optional<std::vector<Depot>> &depots,
-            std::optional<std::vector<VehicleType>> &vehicleTypes,
-            std::optional<std::vector<Matrix<Distance>>> &distMats,
-            std::optional<std::vector<Matrix<Duration>>> &durMats,
-            std::optional<pyvrp::congestion::CongestionBehaviour>
-                congestionBehaviour,
-            std::optional<pyvrp::velocity::VelocityBehaviour> velocityBehaviour,
-            std::optional<std::vector<ClientGroup>> &groups) const;
+    ProblemData replace(std::optional<std::vector<Client>> &clients,
+                        std::optional<std::vector<Depot>> &depots,
+                        std::optional<std::vector<VehicleType>> &vehicleTypes,
+                        std::optional<std::vector<Matrix<Distance>>> &distMats,
+                        std::optional<std::vector<Matrix<Duration>>> &durMats,
+                        std::optional<std::vector<ClientGroup>> &groups,
+                        std::optional<pyvrp::congestion::CongestionBehaviour>
+                            congestionBehaviour,
+                        std::optional<pyvrp::velocity::VelocityBehaviour>
+                            velocityBehaviour) const;
 
     ProblemData(std::vector<Client> clients,
                 std::vector<Depot> depots,
                 std::vector<VehicleType> vehicleTypes,
                 std::vector<Matrix<Distance>> distMats,
                 std::vector<Matrix<Duration>> durMats,
-                pyvrp::congestion::CongestionBehaviour congestionBehaviour,
-                pyvrp::velocity::VelocityBehaviour velocityBheaviour,
-                std::vector<ClientGroup> groups = {});
+                std::vector<ClientGroup> groups = {},
+                pyvrp::congestion::CongestionBehaviour congestionBehaviour
+                = pyvrp::congestion::CongestionBehaviour::ConstantCongestion,
+                pyvrp::velocity::VelocityBehaviour velocityBheaviour
+                = pyvrp::velocity::VelocityBehaviour::ConstantVelocity);
 
     ProblemData() = delete;
 };

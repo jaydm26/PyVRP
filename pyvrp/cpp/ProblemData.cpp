@@ -720,18 +720,18 @@ ProblemData ProblemData::replace(
     std::optional<std::vector<VehicleType>> &vehicleTypes,
     std::optional<std::vector<Matrix<Distance>>> &distMats,
     std::optional<std::vector<Matrix<Duration>>> &durMats,
+    std::optional<std::vector<ClientGroup>> &groups,
     std::optional<pyvrp::congestion::CongestionBehaviour> congestionBehaviour,
-    std::optional<pyvrp::velocity::VelocityBehaviour> velocityBehaviour,
-    std::optional<std::vector<ClientGroup>> &groups) const
+    std::optional<pyvrp::velocity::VelocityBehaviour> velocityBehaviour) const
 {
     return {clients.value_or(clients_),
             depots.value_or(depots_),
             vehicleTypes.value_or(vehicleTypes_),
             distMats.value_or(dists_),
             durMats.value_or(durs_),
+            groups.value_or(groups_),
             congestionBehaviour.value_or(congestionBehaviour_),
-            velocityBehaviour.value_or(velocityBehaviour_),
-            groups.value_or(groups_)};
+            velocityBehaviour.value_or(velocityBehaviour_)};
 }
 
 ProblemData::ProblemData(
@@ -740,9 +740,9 @@ ProblemData::ProblemData(
     std::vector<VehicleType> vehicleTypes,
     std::vector<Matrix<Distance>> distMats,
     std::vector<Matrix<Duration>> durMats,
+    std::vector<ClientGroup> groups,
     pyvrp::congestion::CongestionBehaviour congestionBehaviour,
-    pyvrp::velocity::VelocityBehaviour velocityBehaviour,
-    std::vector<ClientGroup> groups)
+    pyvrp::velocity::VelocityBehaviour velocityBehaviour)
     : centroid_({0, 0}),
       dists_(std::move(distMats)),
       durs_(std::move(durMats)),

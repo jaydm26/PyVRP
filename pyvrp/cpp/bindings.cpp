@@ -41,6 +41,25 @@ using pyvrp::Trip;
 
 PYBIND11_MODULE(_pyvrp, m)
 {
+    py::enum_<pyvrp::velocity::VelocityBehaviour>(m, "VelocityBehaviour")
+        .value("ConstantVelocity",
+               pyvrp::velocity::VelocityBehaviour::ConstantVelocity)
+        .value("ConstantVelocityInSegment",
+               pyvrp::velocity::VelocityBehaviour::ConstantVelocityInSegment)
+        .value("VariableVelocity",
+               pyvrp::velocity::VelocityBehaviour::VariableVelocity)
+        .export_values();
+
+    py::enum_<pyvrp::congestion::CongestionBehaviour>(m, "CongestionBehaviour")
+        .value("ConstantCongestion",
+               pyvrp::congestion::CongestionBehaviour::ConstantCongestion)
+        .value(
+            "ConstantCongestionInSegment",
+            pyvrp::congestion::CongestionBehaviour::ConstantCongestionInSegment)
+        .value("VariableCongestion",
+               pyvrp::congestion::CongestionBehaviour::VariableCongestion)
+        .export_values();
+
     py::class_<DynamicBitset>(m, "DynamicBitset", DOC(pyvrp, DynamicBitset))
         .def(py::init<size_t>(), py::arg("num_bits"))
         .def(py::self == py::self, py::arg("other"))  // this is __eq__
@@ -401,17 +420,17 @@ PYBIND11_MODULE(_pyvrp, m)
                       std::vector<ProblemData::VehicleType>,
                       std::vector<Matrix<pyvrp::Distance>>,
                       std::vector<Matrix<pyvrp::Duration>>,
+                      std::vector<ProblemData::ClientGroup>,
                       pyvrp::congestion::CongestionBehaviour,
-                      pyvrp::velocity::VelocityBehaviour,
-                      std::vector<ProblemData::ClientGroup>>(),
+                      pyvrp::velocity::VelocityBehaviour>(),
              py::arg("clients"),
              py::arg("depots"),
              py::arg("vehicle_types"),
              py::arg("distance_matrices"),
              py::arg("duration_matrices"),
-             py::arg("congestion_behaviour"),
-             py::arg("velocity_behaviour"),
-             py::arg("groups") = py::list())
+             py::arg("groups") = py::list(),
+             py::arg("congestion_behaviour") = pyvrp::congestion::CongestionBehaviour::ConstantCongestion,
+             py::arg("velocity_behaviour") = pyvrp::velocity::VelocityBehaviour::ConstantVelocity)
         .def("replace",
              &ProblemData::replace,
              py::arg("clients") = py::none(),
@@ -419,9 +438,9 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("vehicle_types") = py::none(),
              py::arg("distance_matrices") = py::none(),
              py::arg("duration_matrices") = py::none(),
+             py::arg("groups") = py::none(),
              py::arg("congestion_behaviour") = py::none(),
              py::arg("velocity_behaviour") = py::none(),
-             py::arg("groups") = py::none(),
              DOC(pyvrp, ProblemData, replace))
         .def_property_readonly("num_clients",
                                &ProblemData::numClients,
@@ -524,9 +543,9 @@ PYBIND11_MODULE(_pyvrp, m)
                                       data.vehicleTypes(),
                                       data.distanceMatrices(),
                                       data.durationMatrices(),
-                                          data.congestionBehaviour(),
-                                          data.velocityBehaviour(),
-                                      data.groups());
+                                      data.groups(),
+                                      data.congestionBehaviour(),
+                                      data.velocityBehaviour());
             },
             [](py::tuple t) {  // __setstate__
                 using Clients = std::vector<ProblemData::Client>;
@@ -541,12 +560,15 @@ PYBIND11_MODULE(_pyvrp, m)
                                  t[2].cast<VehicleTypes>(),
                                  t[3].cast<DistMats>(),
                                  t[4].cast<DurMats>(),
-                                 t[5].cast<pyvrp::congestion::CongestionBehaviour>(),
-                                 t[6].cast<pyvrp::velocity::VelocityBehaviour>(),
-                                 t[7].cast<Groups>());
+                                 t[5].cast<Groups>(),
+                                 t[6].cast<pyvrp::congestion::CongestionBehaviour>(),
+                                 t[7].cast<pyvrp::velocity::VelocityBehaviour>());
 
                 return data;
-            }));
+            }))
+         .def("congestion_behaviour",
+                 &ProblemData::congestionBehaviour)
+         .def("velocity_behaviour", &ProblemData::velocityBehaviour);
 
     py::class_<Trip>(m, "Trip", DOC(pyvrp, Trip))
         .def(py::init<ProblemData const &,
@@ -993,10 +1015,10 @@ PYBIND11_MODULE(_pyvrp, m)
                  return stream.str();
              })
         .def("fuel_and_emission_cost", &Solution::fuelAndEmissionCost,
-             py::arg("data")
+             py::arg("data"), py::keep_alive<1,2>()
              )
         .def("wage_cost", &Solution::wageCost,
-             py::arg("data")
+             py::arg("data"), py::keep_alive<1,2>()
              );
 
     py::class_<pyvrp::velocity::WLTCProfile>(m, "WLTCProfile")

@@ -1,6 +1,7 @@
 #include "CongestedVelocity.h"
 #include <boost/math/quadrature/trapezoidal.hpp>
 #include <boost/math/tools/roots.hpp>
+#include <cassert>
 
 double pyvrp::congestedVelocity::CongestedWLTCProfile::
     getDistanceForCongestedTravelTime(double const &from,
@@ -68,6 +69,7 @@ double pyvrp::congestedVelocity::CongestedWLTCProfile::
             return wltcProfile_.spline()(remainingTime)
                    * congestionProfile_.getCongestionValue(x);
         };
+        assert(splineTime_.size() > 0);
         double fullSplineDistance
             = boost::math::quadrature::trapezoidal(congestedVelocity,
                                                    splineTime_.front(),
@@ -82,6 +84,7 @@ double pyvrp::congestedVelocity::CongestedWLTCProfile::
                        - remainingDistance;
             };
 
+            assert(wltcProfile_.time().size() > 0);
             auto result = boost::math::tools::bisect(
                 func,
                 wltcProfile_.time().front(),

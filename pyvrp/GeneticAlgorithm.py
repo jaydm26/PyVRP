@@ -218,6 +218,7 @@ class GeneticAlgorithm:
             best_cost = self._cost_evaluator.cost(self._best)
             return cost < best_cost
 
+        # ERROR HERE
         sol = self._search(sol, self._cost_evaluator)
         self._pop.add(sol, self._cost_evaluator)
         self._pm.register(sol)

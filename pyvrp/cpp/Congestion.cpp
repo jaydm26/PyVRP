@@ -19,28 +19,29 @@ CongestionProfile::CongestionProfile(const std::filesystem::path &path)
         congestion_.push_back(c);
     }
 
+    assert(time_.size() > 0);
     double stepSize = (time_.back() - time_.front()) / (time_.size() - 1);
     spline_ = boost::math::interpolators::cardinal_cubic_b_spline<double>(
         congestion_.begin(), congestion_.end(), time_.front(), stepSize);
 
-    std::transform(squaredCongestion_.begin(),
-                   squaredCongestion_.end(),
+    std::transform(congestion_.begin(),
+                   congestion_.end(),
                    std::back_inserter(squaredCongestion_),
                    [](double x) { return x * x; });
     squaredSpline_ = boost::math::interpolators::cardinal_cubic_b_spline(
         squaredCongestion_.begin(),
         squaredCongestion_.end(),
-        squaredCongestion_.front(),
+        time_.front(),
         stepSize);
 
-    std::transform(cubedCongestion_.begin(),
-                   cubedCongestion_.end(),
+    std::transform(congestion_.begin(),
+                   congestion_.end(),
                    std::back_inserter(cubedCongestion_),
                    [](double x) { return x * x * x; });
     cubedSpline_ = boost::math::interpolators::cardinal_cubic_b_spline(
         cubedCongestion_.begin(),
         cubedCongestion_.end(),
-        cubedCongestion_.front(),
+        time_.front(),
         stepSize);
 }
 
@@ -90,8 +91,19 @@ CongestionProfile const getCongestionProfile(
     // We run this in the pyvrp folder (you can see
     // the .so file)
     std::filesystem::path rootDir = currentFile.parent_path().parent_path();
-    std::filesystem::path congestionCsv
-        = rootDir / "research" / "data" / "congestion" / "congestion.csv";
+    std::filesystem::path congestionCsv;
+    if (congestionBehaviour == CongestionBehaviour::ConstantCongestion)
+    {
+        // For constant congestion, we use the default congestion profile.
+        congestionCsv = rootDir / "research" / "data" / "congestion"
+                        / "constant_congestion.csv";
+    }
+    else
+    {
+
+        congestionCsv
+            = rootDir / "research" / "data" / "congestion" / "congestion.csv";
+    }
     return CongestionProfile(congestionCsv);
 }
 }  // namespace pyvrp::congestion

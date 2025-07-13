@@ -40,19 +40,6 @@ class WLTCProfile:
 
 def get_profile_based_on_distance(distance: float) -> WLTCProfile: ...
 
-class InternalCostBehaviour(Enum):
-    ConstantVelocityWithConstantCongestion: InternalCostBehaviour
-    ConstantVelocityWithConstantInSegmentCongestion: InternalCostBehaviour
-    ConstantVelocityWithVariableCongestion: InternalCostBehaviour
-    ConstantVelocityInSegmentWithConstantCongestion: InternalCostBehaviour
-    ConstantVelocityInSegmentWithConstantInSegmentCongestion: (
-        InternalCostBehaviour
-    )
-    ConstantVelocityInSegmentWithVariableCongestion: InternalCostBehaviour
-    VariableVelocityWithConstantCongestion: InternalCostBehaviour
-    VariableVelocityWithConstantInSegmentCongestion: InternalCostBehaviour
-    VariableVelocityWithVariableCongestion: InternalCostBehaviour
-
 class CostEvaluator:
     def __init__(
         self,
@@ -67,6 +54,7 @@ class CostEvaluator:
     def tw_penalty(self, time_warp: int) -> int: ...
     def dist_penalty(self, distance: int, max_distance: int) -> int: ...
     def penalised_cost(self, solution: Solution) -> int: ...
+    def cost(self, solution: Solution) -> int: ...
 
 class DynamicBitset:
     def __init__(self, num_bits: int) -> None: ...
@@ -194,6 +182,12 @@ class VehicleType:
         max_reloads: int = ...,
         vehicle_weight: float = 0.0,
         power_to_mass_ratio: float = 0.0,
+        min_hours_paid: float = 0.0,
+        wage_per_hour: float = 0.0,
+        velocity: float = 0.0,
+        congestion: float = 0.0,
+        unit_fuel_cost: float = 0.0,
+        unit_emission_cost: float = 0.0,
         *,
         name: str = "",
     ) -> None: ...
@@ -226,6 +220,16 @@ class VehicleType:
     def __getstate__(self) -> tuple: ...
     def __setstate__(self, state: tuple, /) -> None: ...
 
+class VelocityBehaviour(Enum):
+    ConstantVelocity = ...
+    ConstantVelocityInSegment = ...
+    VariableVelocity = ...
+
+class CongestionBehaviour(Enum):
+    ConstantCongestion = ...
+    ConstantCongestionInSegment = ...
+    VariableCongestion = ...
+
 class ProblemData:
     def __init__(
         self,
@@ -235,6 +239,8 @@ class ProblemData:
         distance_matrices: list[np.ndarray[int]],
         duration_matrices: list[np.ndarray[int]],
         groups: list[ClientGroup] = [],
+        congestion_behaviour: CongestionBehaviour = CongestionBehaviour.ConstantCongestion,  # noqa: E501, PYI011
+        velocity_behaviour: VelocityBehaviour = VelocityBehaviour.ConstantVelocity,  # noqa: E501, PYI011
     ) -> None: ...
     def location(self, idx: int) -> Client | Depot: ...
     def clients(self) -> list[Client]: ...
@@ -277,6 +283,10 @@ class ProblemData:
     def __eq__(self, other: object) -> bool: ...
     def __getstate__(self) -> tuple: ...
     def __setstate__(self, state: tuple, /) -> None: ...
+    @property
+    def congestion_behaviour(self) -> CongestionBehaviour: ...
+    @property
+    def velocity_behaviour(self) -> VelocityBehaviour: ...
 
 class ScheduledVisit:
     location: int
