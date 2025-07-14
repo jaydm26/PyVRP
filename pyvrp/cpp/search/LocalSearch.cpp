@@ -197,9 +197,12 @@ bool LocalSearch::applyNodeOps(Route::Node *U,
             // the move, plus the delta cost.
             if (costAfter != costBefore + deltaCost)
             {
-                std::cout << "Cost before: " << costBefore << "\n"
-                          << "Cost after: " << costAfter << "\n"
-                          << "Delta cost: " << deltaCost << "\n"
+                std::cout << "Cost before: " << static_cast<double>(costBefore)
+                          << "\n"
+                          << "Cost after: " << static_cast<double>(costAfter)
+                          << "\n"
+                          << "Delta cost: " << static_cast<double>(deltaCost)
+                          << "\n"
                           << "\n";
             }
             assert(costAfter == costBefore + deltaCost);
@@ -236,9 +239,12 @@ bool LocalSearch::applyRouteOps(Route *U,
             // the move, plus the delta cost.
             if (costAfter != costBefore + deltaCost)
             {
-                std::cout << "Cost before: " << costBefore << "\n"
-                          << "Cost after: " << costAfter << "\n"
-                          << "Delta cost: " << deltaCost << "\n"
+                std::cout << "Cost before: " << static_cast<double>(costBefore)
+                          << "\n"
+                          << "Cost after: " << static_cast<double>(costAfter)
+                          << "\n"
+                          << "Delta cost: " << static_cast<double>(deltaCost)
+                          << "\n"
                           << "\n";
             }
             assert(costAfter == costBefore + deltaCost);

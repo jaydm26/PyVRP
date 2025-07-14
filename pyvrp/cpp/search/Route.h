@@ -75,6 +75,16 @@ public:
     {
         std::tuple<Segments...> segments_;
 
+        /**
+         * Returns the number of depots and clients in the proposed route.
+         */
+        size_t size() const;
+
+        /**
+         * Returns whether the proposed route is empty.
+         */
+        bool empty() const;
+
     public:
         Proposal(Segments &&...segments);
 
@@ -352,6 +362,15 @@ private:
             return static_cast<const Derived *>(this)->load(dimension);
         };
 
+        inline bool startsAtReloadDepot() const
+        {
+            return static_cast<const Derived *>(this)->startsAtReloadDepot();
+        };
+        inline bool endsAtReloadDepot() const
+        {
+            return static_cast<const Derived *>(this)->endsAtReloadDepot();
+        };
+
         [[nodiscard]] double fuelAndEmissionCost(ProblemData const &data) const;
     };
 
@@ -368,6 +387,10 @@ private:
         inline size_t first() const;
         inline size_t last() const;
         inline size_t size() const;
+
+        inline bool startsAtReloadDepot() const;
+        inline bool endsAtReloadDepot() const;
+
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment const load(size_t dimension) const;
@@ -390,6 +413,10 @@ private:
         inline size_t first() const;
         inline size_t last() const;
         inline size_t size() const;
+
+        inline bool startsAtReloadDepot() const;
+        inline bool endsAtReloadDepot() const;
+
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment const load(size_t dimension) const;
@@ -414,6 +441,10 @@ private:
         inline size_t first() const;
         inline size_t last() const;
         inline size_t size() const;
+
+        inline bool startsAtReloadDepot() const;
+        inline bool endsAtReloadDepot() const;
+
         inline Distance distance(size_t profile) const;
         inline DurationSegment duration(size_t profile) const;
         inline LoadSegment const load(size_t dimension) const;
@@ -923,6 +954,11 @@ inline size_t Route::SegmentBefore::first() const
 }
 inline size_t Route::SegmentBefore::last() const { return route_.visits[end]; }
 inline size_t Route::SegmentBefore::size() const { return end + 1; }
+inline bool Route::SegmentBefore::startsAtReloadDepot() const { return false; }
+inline bool Route::SegmentBefore::endsAtReloadDepot() const
+{
+    return route_.nodes[end]->isReloadDepot();
+}
 
 inline size_t Route::SegmentAfter::first() const
 {
@@ -933,6 +969,11 @@ inline size_t Route::SegmentAfter::size() const
 {
     return route_.size() - start;
 }
+inline bool Route::SegmentAfter::startsAtReloadDepot() const
+{
+    return route_.nodes[start]->isReloadDepot();
+}
+inline bool Route::SegmentAfter::endsAtReloadDepot() const { return false; }
 
 inline size_t Route::SegmentBetween::first() const
 {
@@ -940,6 +981,15 @@ inline size_t Route::SegmentBetween::first() const
 }
 inline size_t Route::SegmentBetween::last() const { return route_.visits[end]; }
 inline size_t Route::SegmentBetween::size() const { return end - start + 1; }
+
+inline bool Route::SegmentBetween::startsAtReloadDepot() const
+{
+    return route_.nodes[start]->isReloadDepot();
+}
+inline bool Route::SegmentBetween::endsAtReloadDepot() const
+{
+    return route_.nodes[end]->isReloadDepot();
+}
 
 inline Distance Route::SegmentBetween::distance(size_t profile) const
 {
@@ -1170,6 +1220,17 @@ Route::Proposal<Segments...>::Proposal(Segments &&...segments)
     assert(last.last() == route->endDepot());      // must end at route end
 }
 
+template <Segment... Segments> size_t Route::Proposal<Segments...>::size() const
+{
+    return std::apply([](auto &&...args) { return (args.size() + ...); },
+                      segments_);
+}
+
+template <Segment... Segments> bool Route::Proposal<Segments...>::empty() const
+{
+    return size() == 2;  // empty if proposal only contains start and end depot
+}
+
 template <Segment... Segments>
 Route const *Route::Proposal<Segments...>::route() const
 {
@@ -1281,45 +1342,64 @@ inline std::tuple<Segments...> Route::Proposal<Segments...>::segments() const
 template <Segment... Segments>
 Load Route::Proposal<Segments...>::excessLoad(size_t dimension) const
 {
-    auto const &data = route()->data;
+    if (empty())
+        return 0;
+
     auto const &capacities = route()->capacity();
     auto const capacity = capacities[dimension];
 
     auto const fn = [&](auto &&segment, auto &&...args)
     {
         auto ls = segment.load(dimension);
-        if (segment.last() < data.numDepots() && segment.size() != 1)
-        // Ends at a depot that is *not* the start depot. We should not
-        // finalise at the start depot, since that would immediately remove
-        // any initial load we might have.
+        std::cout << "Segment: " << segment.first() << " -> " << segment.last()
+                  << std::endl;
+        std::cout << "LoadSegment: " << ls << std::endl;
+        if (segment.endsAtReloadDepot())
         {
             ls = ls.finalise(capacity);
+            std::cout << "LoadSegment after finalise: " << ls << std::endl;
+        }
 
-            auto const merge
-                = [&](auto const &self, auto &&other, auto &&...args)
+        auto const merge = [&](auto const &self, auto &&other, auto &&...args)
+        {
+            std::cout << "Other Segment: " << other.first() << " -> "
+                      << other.last() << std::endl;
+            std::cout << "LoadSegment [merge] before merge: " << ls
+                      << std::endl;
+            std::cout << "LoadSegment [merge] other: " << other.load(dimension)
+                      << std::endl;
+            if (other.startsAtReloadDepot())
             {
-                if (other.first()
-                    < data.numDepots())  // other starts at a depot
+                ls = ls.finalise(capacity);
+                std::cout << "LoadSegment [merge] after finalise: " << ls
+                          << std::endl;
+            }
+
+            ls = LoadSegment::merge(ls, other.load(dimension));
+            std::cout << "LoadSegment [merge] after merge: " << ls << std::endl;
+
+            if constexpr (sizeof...(args) != 0)
+            {
+                if (other.endsAtReloadDepot() && other.size() > 1)
+                {  // Only when the segment contains more than just the depot.
+                    // Checking for size speeds up the common case of a reload
+                    // depot insertion.
                     ls = ls.finalise(capacity);
-
-                ls = LoadSegment::merge(ls, other.load(dimension));
-
-                if constexpr (sizeof...(args) != 0)
-                {
-                    if (other.last()
-                        < data.numDepots())  // other ends at a depot
-                        ls = ls.finalise(capacity);
-
-                    self(self, std::forward<decltype(args)>(args)...);
+                    std::cout << "LoadSegment [merge] finalise: " << ls
+                              << std::endl;
                 }
-            };
 
-            merge(merge, std::forward<decltype(args)>(args)...);
-            return ls.excessLoad(capacity);
+                self(self, std::forward<decltype(args)>(args)...);
+            }
         };
 
-        return std::apply(fn, segments_);
-    }
+        merge(merge, std::forward<decltype(args)>(args)...);
+        return ls.excessLoad(capacity);
+    };
+
+    return std::apply(fn, segments_);
+}
+
 }  // namespace pyvrp::search
 
 // Outputs a route into a given ostream in human-readable format
@@ -1929,6 +2009,6 @@ double pyvrp::search::Route::SegmentBase<Derived>::fuelAndEmissionCost(
         throw std::runtime_error(
             "Unknown velocity and congestion behaviour combination.");
     }
-}
+}  // namespace pyvrp::search
 
 #endif  // PYVRP_SEARCH_ROUTE_H
