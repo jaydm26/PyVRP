@@ -1014,11 +1014,9 @@ PYBIND11_MODULE(_pyvrp, m)
                  stream << sol;
                  return stream.str();
              })
-        .def("fuel_and_emission_cost", &Solution::fuelAndEmissionCost,
-             py::arg("data"), py::keep_alive<1,2>()
+        .def("fuel_and_emission_cost", &Solution::fuelAndEmissionCost, py::keep_alive<1,2>()
              )
-        .def("wage_cost", &Solution::wageCost,
-             py::arg("data"), py::keep_alive<1,2>()
+        .def("wage_cost", &Solution::wageCost,py::keep_alive<1,2>()
              );
 
     py::class_<pyvrp::velocity::WLTCProfile>(m, "WLTCProfile")
