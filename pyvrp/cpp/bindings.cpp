@@ -376,6 +376,12 @@ PYBIND11_MODULE(_pyvrp, m)
                                       vehicleType.maxReloads,
                                       vehicleType.vehicleWeight,
                                       vehicleType.powerToMassRatio,
+                                      vehicleType.minHoursPaid,
+                                      vehicleType.wagePerHour,
+                                      vehicleType.velocity,
+                                      vehicleType.congestion,
+                                      vehicleType.unitFuelCost,
+                                      vehicleType.unitEmissionCost,
                                       vehicleType.name);
             },
             [](py::tuple t) {  // __setstate__
@@ -644,7 +650,8 @@ PYBIND11_MODULE(_pyvrp, m)
                                       trip.pickup(),
                                       trip.load(),
                                       trip.excessLoad(),
-                                   //    trip.travelDuration(), // Disabling to prevent the pickling as this needs additional parameters
+                                      0,
+                                   //    trip.travelDuration(now, data), // Disabling to prevent the pickling as this needs additional parameters
                                       trip.serviceDuration(),
                                       trip.releaseTime(),
                                       trip.prizes(),
