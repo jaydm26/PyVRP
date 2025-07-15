@@ -238,37 +238,18 @@ template <CostEvaluatable T>
 Cost CostEvaluator::penalisedCost(T const &arg) const
 {
     // Standard objective plus infeasibility-related penalty terms.
-    std::cout << "[penalisedCost] Evaluating penalised cost for proposal."
-              << std::endl;
     Cost cost = 0;
-    cost += arg.distanceCost();
-    std::cout << "Added distance cost: " << arg.distanceCost() << std::endl;
-    cost += arg.durationCost();
-    std::cout << "Added duration cost: " << arg.durationCost() << std::endl;
-    cost += !arg.empty() ? arg.fixedVehicleCost() : 0;
-    std::cout << "Added fixed vehicle cost: "
-              << (!arg.empty() ? arg.fixedVehicleCost() : 0) << std::endl;
-    cost += excessLoadPenalties(arg.excessLoad());
-    std::cout << "Added excess load penalties: "
-              << excessLoadPenalties(arg.excessLoad()) << std::endl;
-    cost += twPenalty(arg.timeWarp());
-    std::cout << "Added time warp penalty: " << twPenalty(arg.timeWarp())
-              << std::endl;
-    cost += distPenalty(arg.excessDistance(), 0);
-    std::cout << "Added distance penalty: "
-              << distPenalty(arg.excessDistance(), 0) << std::endl;
-    // auto cost = arg.distanceCost() + arg.durationCost()
-    //             + (!arg.empty() ? arg.fixedVehicleCost() : 0)
-    //             + excessLoadPenalties(arg.excessLoad())
-    //             + twPenalty(arg.timeWarp())
-    //             + distPenalty(arg.excessDistance(), 0);
+    auto cost = arg.distanceCost() + arg.durationCost()
+                + (!arg.empty() ? arg.fixedVehicleCost() : 0)
+                + excessLoadPenalties(arg.excessLoad())
+                + twPenalty(arg.timeWarp())
+                + distPenalty(arg.excessDistance(), 0);
 
     if constexpr (PrizeCostEvaluatable<T>)
         cost += arg.uncollectedPrizes();
 
-    // cost += arg.wageCost(data_);
-
-    // cost += arg.fuelAndEmissionCost(data_);
+    cost += arg.wageCost(data_);
+    cost += arg.fuelAndEmissionCost(data_);
 
     return cost;
 };
@@ -291,36 +272,20 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
     auto const *route = proposal.route();
     if (!route->empty())
     {
-        std::cout << "Calculating delta cost" << std::endl;
-        std::cout << "Subtracting Distance cost: " << route->distanceCost()
-                  << std::endl;
         out -= route->distanceCost();
-        std::cout << "Subtracting Distance penalty: "
-                  << distPenalty(route->distance(), route->maxDistance())
-                  << std::endl;
         out -= distPenalty(route->distance(), route->maxDistance());
 
         if constexpr (!skipLoad)
-        {
-            std::cout << "Subtracting excess load penalties: "
-                      << excessLoadPenalties(route->excessLoad()) << std::endl;
             out -= excessLoadPenalties(route->excessLoad());
-        }
 
-        std::cout << "Subtracting Duration cost: " << route->durationCost()
-                  << std::endl;
         out -= route->durationCost();
-        std::cout << "Subtracting Time warp penalty: "
-                  << twPenalty(route->timeWarp()) << std::endl;
         out -= twPenalty(route->timeWarp());
-        // out -= route->wageCost(data_);
-        // out -= route->fuelAndEmissionCost(data_);
+        out -= route->wageCost(data_);
+        out -= route->fuelAndEmissionCost(data_);
     }
 
     auto const distance = proposal.distance();
     out += route->unitDistanceCost() * static_cast<Cost>(distance);
-    std::cout << "Adding Distance penalty: "
-              << distPenalty(distance, route->maxDistance()) << std::endl;
     out += distPenalty(distance, route->maxDistance());
 
     if constexpr (!skipLoad)
@@ -331,20 +296,15 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
             if constexpr (!exact)
                 if (out >= 0)
                     return false;
-            std::cout << "Adding load penalty for dimension " << dim << ": "
-                      << loadPenalty(proposal.excessLoad(dim), 0, dim)
-                      << std::endl;
             out += loadPenalty(proposal.excessLoad(dim), 0, dim);
         }
     }
 
     auto const [duration, timeWarp] = proposal.duration();
     out += route->unitDurationCost() * static_cast<Cost>(duration);
-    std::cout << "Adding Time warp penalty: " << twPenalty(timeWarp)
-              << std::endl;
     out += twPenalty(timeWarp);
-    // out += proposal.wageCost(data_);
-    // out += proposal.fuelAndEmissionCost(data_);
+    out += proposal.wageCost(data_);
+    out += proposal.fuelAndEmissionCost(data_);
 
     return true;
 }
@@ -360,77 +320,42 @@ bool CostEvaluator::deltaCost(Cost &out,
                               T<uArgs...> const &uProposal,
                               T<vArgs...> const &vProposal) const
 {
-    // TODO: Add the missing wage cost and fuel cost
     auto const *uRoute = uProposal.route();
     if (!uRoute->empty())
     {
-        std::cout << "Calculating delta cost for uProposal" << std::endl;
-        std::cout << "Subtracting Distance cost: " << uRoute->distanceCost()
-                  << std::endl;
         out -= uRoute->distanceCost();
-        std::cout << "Subtracting Distance penalty: "
-                  << distPenalty(uRoute->distance(), uRoute->maxDistance())
-                  << std::endl;
         out -= distPenalty(uRoute->distance(), uRoute->maxDistance());
 
         if constexpr (!skipLoad)
-        {
-            std::cout << "Subtracting excess load penalties: "
-                      << excessLoadPenalties(uRoute->excessLoad()) << std::endl;
             out -= excessLoadPenalties(uRoute->excessLoad());
-        }
 
-        std::cout << "Subtracting Duration cost: " << uRoute->durationCost()
-                  << std::endl;
         out -= uRoute->durationCost();
-        std::cout << "Subtracting Time warp penalty: "
-                  << twPenalty(uRoute->timeWarp()) << std::endl;
         out -= twPenalty(uRoute->timeWarp());
+        out -= uRoute->wageCost(data_);
+        out -= uRoute->fuelAndEmissionCost(data_);
     }
 
     auto const *vRoute = vProposal.route();
     if (!vRoute->empty())
     {
-        std::cout << "Calculating delta cost for vProposal" << std::endl;
-        std::cout << "Subtracting Distance cost: " << vRoute->distanceCost()
-                  << std::endl;
         out -= vRoute->distanceCost();
-        std::cout << "Subtracting Distance penalty: "
-                  << distPenalty(vRoute->distance(), vRoute->maxDistance())
-                  << std::endl;
         out -= distPenalty(vRoute->distance(), vRoute->maxDistance());
 
         if constexpr (!skipLoad)
-        {
-            std::cout << "Subtracting excess load penalties: "
-                      << excessLoadPenalties(vRoute->excessLoad()) << std::endl;
             out -= excessLoadPenalties(vRoute->excessLoad());
-        }
 
-        std::cout << "Subtracting Duration cost: " << vRoute->durationCost()
-                  << std::endl;
         out -= vRoute->durationCost();
-        std::cout << "Subtracting Time warp penalty: "
-                  << twPenalty(vRoute->timeWarp()) << std::endl;
         out -= twPenalty(vRoute->timeWarp());
+        out -= vRoute->wageCost(data_);
+        out -= vRoute->fuelAndEmissionCost(data_);
     }
 
     auto const uDist = uProposal.distance();
-    std::cout << "Adding Distance cost: "
-              << uRoute->unitDistanceCost() * static_cast<Cost>(uDist)
-              << std::endl;
     out += uRoute->unitDistanceCost() * static_cast<Cost>(uDist);
-    std::cout << "Adding Distance penalty: "
-              << distPenalty(uDist, uRoute->maxDistance()) << std::endl;
     out += distPenalty(uDist, uRoute->maxDistance());
 
     auto const vDist = vProposal.distance();
-    std::cout << "Adding Distance cost: "
-              << vRoute->unitDistanceCost() * static_cast<Cost>(vDist)
-              << std::endl;
     out += vRoute->unitDistanceCost() * static_cast<Cost>(vDist);
-    std::cout << "Adding Distance penalty: "
-              << distPenalty(vDist, vRoute->maxDistance()) << std::endl;
     out += distPenalty(vDist, vRoute->maxDistance());
 
     if constexpr (!skipLoad)
@@ -441,9 +366,6 @@ bool CostEvaluator::deltaCost(Cost &out,
             if constexpr (!exact)
                 if (out >= 0)
                     return false;
-            std::cout << "Adding load penalty for dimension for U " << dim
-                      << ": " << loadPenalty(uProposal.excessLoad(dim), 0, dim)
-                      << std::endl;
             out += loadPenalty(uProposal.excessLoad(dim), 0, dim);
         }
 
@@ -453,9 +375,6 @@ bool CostEvaluator::deltaCost(Cost &out,
             if constexpr (!exact)
                 if (out >= 0)
                     return false;
-            std::cout << "Adding load penalty for dimension for V " << dim
-                      << ": " << loadPenalty(vProposal.excessLoad(dim), 0, dim)
-                      << std::endl;
             out += loadPenalty(vProposal.excessLoad(dim), 0, dim);
         }
     }
@@ -465,22 +384,16 @@ bool CostEvaluator::deltaCost(Cost &out,
             return false;
 
     auto const [uDuration, uTimeWarp] = uProposal.duration();
-    std::cout << "Adding Duration cost: "
-              << uRoute->unitDurationCost() * static_cast<Cost>(uDuration)
-              << std::endl;
     out += uRoute->unitDurationCost() * static_cast<Cost>(uDuration);
-    std::cout << "Adding Time warp penalty: " << twPenalty(uTimeWarp)
-              << std::endl;
     out += twPenalty(uTimeWarp);
+    out += uProposal.wageCost(data_);
+    out += uProposal.fuelAndEmissionCost(data_);
 
     auto const [vDuration, vTimeWarp] = vProposal.duration();
-    std::cout << "Adding Duration cost: "
-              << vRoute->unitDurationCost() * static_cast<Cost>(vDuration)
-              << std::endl;
     out += vRoute->unitDurationCost() * static_cast<Cost>(vDuration);
-    std::cout << "Adding Time warp penalty: " << twPenalty(vTimeWarp)
-              << std::endl;
     out += twPenalty(vTimeWarp);
+    out += vProposal.wageCost(data_);
+    out += vProposal.fuelAndEmissionCost(data_);
 
     return true;
 }
