@@ -172,19 +172,21 @@ Duration Trip::travelDuration(double now, ProblemData const &data) const
     auto const &vehData = data.vehicleType(vehicleType_);
     auto durations = data.durationMatrix(vehData.profile);
 
-    for (size_t prevClient = startDepot_; auto const client : visits_)
+    size_t prevClient = startDepot_;
+    for (auto const client : visits_)
     {
         double congestion = congestionProfile.getCongestionValue(now);
         double edgeDur = durations(prevClient, client).get() / congestion;
         ProblemData::Client const &clientData = data.location(client);
         tripDuration += edgeDur;
         now += edgeDur;
-        tripDuration += clientData.serviceDuration.get();
+        // Intentionally disabled as it is not used in the current context.
+        // tripDuration += clientData.serviceDuration.get();
         now += clientData.serviceDuration.get();
+        prevClient = client;
     }
     double congestion = congestionProfile.getCongestionValue(now);
-    auto const last = empty() ? startDepot_ : visits_.back();
-    double edgeDur = durations(last, endDepot_).get() / congestion;
+    double edgeDur = durations(prevClient, endDepot_).get() / congestion;
     tripDuration += edgeDur;
     now += edgeDur;
 
