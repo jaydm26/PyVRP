@@ -180,7 +180,6 @@ Duration Trip::travelDuration(double now, ProblemData const &data) const
         ProblemData::Client const &clientData = data.location(client);
         tripDuration += edgeDur;
         now += edgeDur;
-        // Intentionally disabled as it is not used in the current context.
         // tripDuration += clientData.serviceDuration.get();
         now += clientData.serviceDuration.get();
         prevClient = client;

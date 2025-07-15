@@ -295,11 +295,17 @@ Route::Route(ProblemData const &data, Trips trips, size_t vehType)
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
     DurationSegment ds = {vehData, vehData.startLate};
+    std::cout << "Calculating travel duration for route with " << trips_.size()
+              << " trips." << std::endl;
+    std::cout << "Trip Duration: \n" << ds << std::endl;
     double now = ds.startEarly().get();
     for (auto trip = trips_.begin(); trip != trips_.end(); ++trip)
     {
+        ds = ds.finaliseBack();
         ProblemData::Depot const &start = data.location(trip->startDepot());
         ds = DurationSegment::merge(0, ds, {start});
+        std::cout << "Current Duration after start depot merge: \n"
+                  << ds << std::endl;
 
         size_t prevClient = trip->startDepot();
         for (auto it = trip->begin(); it != trip->end(); ++it)
@@ -313,16 +319,28 @@ Route::Route(ProblemData const &data, Trips trips, size_t vehType)
             ds = DurationSegment::merge(congestedDuration, ds, {clientData});
             prevClient = client;
             now += congestedDuration + clientData.serviceDuration.get();
+            std::cout << "Visited client " << client
+                      << " with edge duration: " << congestedDuration
+                      << ", now time: " << now << ". Trip Duration: \n"
+                      << ds << std::endl;
         }
 
         double congestion = congestionProfile.getCongestionValue(now);
         auto const edgeDuration = durations(prevClient, trip->endDepot());
         auto const congestedDuration = edgeDuration.get() / congestion;
         ProblemData::Depot const &end = data.location(trip->endDepot());
-        ds = DurationSegment::merge(edgeDuration, ds, {end});
+        ds = DurationSegment::merge(congestedDuration, ds, {end});
+        std::cout << "Current Duration after end depot merge: \n"
+                  << ds << std::endl;
         now += congestedDuration;
-        ds = ds.finaliseBack();
+
+        std::cout << "Visited client " << trip->endDepot()
+                  << " with edge duration: " << congestedDuration
+                  << ", now time: " << now << ". Trip Duration: \n"
+                  << ds << std::endl;
     }
+    ds = DurationSegment::merge(0, ds, {vehData, vehData.twLate});
+    std::cout << "Final Duration: \n" << ds << std::endl;
 
     duration_ = ds.duration();
     durationCost_ = vehData.unitDurationCost * static_cast<Cost>(duration_);
