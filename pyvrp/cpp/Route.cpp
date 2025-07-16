@@ -1022,7 +1022,7 @@ double pyvrp::Route::fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
     auto const vehicleType = data.vehicleType(this->vehicleType());
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
-    auto const &durationMatrix = data.durationMatrix(vehicleType.profile);
+    auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
 
@@ -1032,9 +1032,10 @@ double pyvrp::Route::fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
         for (auto &to : trip.visits())
         {
             pyvrp::ProblemData::Client const &clientData = data.location(to);
-            double congestion = congestionProfile.getCongestionValue(now);
-            auto edgeDuration = durationMatrix(from, to);
-            double congestedDuration = edgeDuration.get() / congestion;
+            auto edgeDistance = distanceMatrix(from, to);
+            double congestedDuration
+                = congestionProfile.getDurationBasedOnDistanceAndVelocity(
+                    edgeDistance.get(), vehicleType.velocity, now);
             double emissionFactor
                 = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                       vehicleType.powerToMassRatio,
@@ -1054,9 +1055,10 @@ double pyvrp::Route::fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
             from = to;
         }
         size_t to = trip.endDepot();
-        double congestion = congestionProfile.getCongestionValue(now);
-        auto edgeDuration = durationMatrix(from, to);
-        double congestedDuration = edgeDuration.get() / congestion;
+        auto edgeDistance = distanceMatrix(from, to);
+        double congestedDuration
+            = congestionProfile.getDurationBasedOnDistanceAndVelocity(
+                edgeDistance.get(), vehicleType.velocity, now);
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                   vehicleType.powerToMassRatio,

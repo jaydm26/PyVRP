@@ -1736,7 +1736,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     auto const &vehicleType = data.vehicleType(route_.vehicleType());
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
-    auto const &durationMatrix = data.durationMatrix(route_.profile());
+    auto const &distanceMatrix = data.distanceMatrix(route_.profile());
     auto congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
     double cost = 0;
@@ -1756,21 +1756,27 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     {
         size_t to = (*it)->client();
         ProblemData::Client const &client = data.location(to);
-        Duration durationInSegment = durationMatrix(from, to);
-        if (durationInSegment == 0)
+        auto edgeDistance = distanceMatrix(from, to);
+        if (edgeDistance == 0)
         {
             from = to;
             continue;
         }
-        double congestion = congestionProfile.getCongestionValue(now);
-        double congestedVelocity = vehicleType.velocity * congestion;
-        double congestedDuration = durationInSegment.get() / congestion;
-        double congestedDurationInHours
-            = congestedDuration / 3600.0;  // convert to hours
+        double congestedDuration
+            = congestionProfile.getDurationBasedOnDistanceAndVelocity(
+                edgeDistance.get(), vehicleType.velocity, now);
         double emissionFactor
-            = pyvrp::utils::emissionCostPerTonPerHourConstantVelocity(
-                  vehicleType.powerToMassRatio, congestedVelocity)
-              * vehicleWeightInTons * congestedDurationInHours;
+            = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
+                  vehicleType.powerToMassRatio,
+                  vehicleType.velocity,
+                  congestedDuration,
+                  congestionProfile.getCongestionIntegral(
+                      now, now + congestedDuration),
+                  congestionProfile.getSquaredCongestionIntegral(
+                      now, now + congestedDuration),
+                  congestionProfile.getCubedCongestionIntegral(
+                      now, now + congestedDuration))
+              * vehicleWeightInTons;
         cost += (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
                 * emissionFactor;
         now += congestedDuration + client.serviceDuration.get();

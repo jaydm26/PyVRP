@@ -29,7 +29,7 @@ double pyvrp::congestedVelocity::CongestedWLTCProfile::
     {
         double remainingTime = std::fmod(x - from, splineTime_.back());
         return wltcProfile_.squaredSpline()(remainingTime)
-               * std::pow(congestionProfile_.getCongestionValue(x), 2);
+               * congestionProfile_.getSquaredCongestionValue(x);
     };
 
     return boost::math::quadrature::trapezoidal(
@@ -45,8 +45,10 @@ double pyvrp::congestedVelocity::CongestedWLTCProfile::
     auto congestedCubedVelocity = [&](double x)
     {
         double remainingTime = std::fmod(x - from, splineTime_.back());
+        // TODO: Check if this is correct. Cubing of congestion is incorrect as
+        // it relies on the equation.
         return wltcProfile_.cubedSpline()(remainingTime)
-               * std::pow(congestionProfile_.getCongestionValue(x), 3);
+               * congestionProfile_.getCubedCongestionValue(x);
     };
 
     return boost::math::quadrature::trapezoidal(
