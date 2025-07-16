@@ -1,13 +1,14 @@
 from pathlib import Path
 from typing import Iterator
-from numpy.testing import assert_allclose
+
 import pandas as pd
 import pytest
-from pyvrp import get_profile_based_on_distance
-from pyvrp import WLTCProfile
+from numpy.testing import assert_allclose
 
-SLOW_PROFILE_DISTANCE = 10_000
-MEDIUM_PROFILE_DISTANCE = 40_000
+from pyvrp import WLTCProfile, get_profile_based_on_distance
+
+SLOW_PROFILE_DISTANCE = 1_000
+MEDIUM_PROFILE_DISTANCE = 10_000
 HIGH_PROFILE_DISTANCE = 100_000
 
 
@@ -35,8 +36,8 @@ class TestSlowProfile:
         "time, expected_distance",
         [
             (10, 0),
-            (50, 0.30055),
-            (100, 0.61404),
+            (50, 300.55577),
+            (100, 614.04798),
         ],
     )
     def test_get_distance_for_travel_time(
@@ -52,8 +53,8 @@ class TestSlowProfile:
         "time, expected_value",
         [
             (10, 0),
-            (50, 10.00266),
-            (100, 19.00103),
+            (50, 2778.51805),
+            (100, 5278.06570),
         ],
     )
     def test_get_squared_velocity_integral(
@@ -69,8 +70,8 @@ class TestSlowProfile:
         "time, expected_value",
         [
             (10, 0),
-            (50, 359.25890),
-            (100, 648.92989),
+            (50, 27720.59425),
+            (100, 50071.75082),
         ],
     )
     def test_get_cubed_velocity_integral(
@@ -91,9 +92,9 @@ class TestMediumProfile:
     @pytest.mark.parametrize(
         "time, expected_distance",
         [
-            (10, 0.03972),
-            (50, 0.58220),
-            (100, 1.01059),
+            (10, 39.72550),
+            (50, 582.20125),
+            (100, 1010.59966),
         ],
     )
     def test_get_distance_for_travel_time(
@@ -111,9 +112,9 @@ class TestMediumProfile:
     @pytest.mark.parametrize(
         "time, expected_value",
         [
-            (10, 0.88296),
-            (50, 27.66781),
-            (100, 42.53484),
+            (10, 245.26706),
+            (50, 7685.504593),
+            (100, 11815.23467),
         ],
     )
     def test_get_squared_velocity_integral(
@@ -128,9 +129,9 @@ class TestMediumProfile:
     @pytest.mark.parametrize(
         "time, expected_value",
         [
-            (10, 22.18762),
-            (50, 1358.49365),
-            (100, 1926.67670),
+            (10, 1712.008071),
+            (50, 104822.04152),
+            (100, 148663.32623),
         ],
     )
     def test_get_cubed_velocity_integral(
@@ -151,9 +152,9 @@ class TestHighProfile:
     @pytest.mark.parametrize(
         "time, expected_distance",
         [
-            (10, 0.17089),
-            (50, 0.69479),
-            (100, 1.42680),
+            (10, 170.89023),
+            (50, 694.79117),
+            (100, 1426.80286),
         ],
     )
     def test_get_distance_for_travel_time(
@@ -168,9 +169,9 @@ class TestHighProfile:
     @pytest.mark.parametrize(
         "time, expected_value",
         [
-            (10, 10.52433),
-            (50, 39.59764),
-            (100, 86.23077),
+            (10, 2923.42556),
+            (50, 10999.34522),
+            (100, 23952.99346),
         ],
     )
     def test_get_squared_velocity_integral(
@@ -185,9 +186,9 @@ class TestHighProfile:
     @pytest.mark.parametrize(
         "time, expected_value",
         [
-            (10, 648.81800),
-            (50, 2374.52024),
-            (100, 5597.92694),
+            (10, 50063.11752),
+            (50, 183219.15437),
+            (100, 431938.80765),
         ],
     )
     def test_get_cubed_velocity_integral(

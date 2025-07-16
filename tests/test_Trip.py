@@ -82,7 +82,7 @@ def test_single_route_and_trip_same_statistics(ok_small, visits: list[int]):
 
     # Duration-related statistics.
     assert_equal(trip.service_duration(), route.service_duration())
-    assert_equal(trip.travel_duration(), route.travel_duration())
+    assert_equal(trip.travel_duration(0, ok_small), route.travel_duration())
     assert_equal(trip.release_time(), route.release_time())
 
     # Load-related statistics.

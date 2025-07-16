@@ -66,7 +66,9 @@ def test_insert_cost(ok_small: ProblemData):
     assert_equal(insert_cost(Node(loc=3), route[2], ok_small, cost_eval), 4355)
 
 
-def test_insert_cost_between_different_depots(ok_small_multi_depot: ProblemData):
+def test_insert_cost_between_different_depots(
+    ok_small_multi_depot: ProblemData,
+):
     """
     Tests that insert_cost() correctly determines the delta distance cost of
     inserting a new node in an empty route with two different depots.
@@ -80,7 +82,7 @@ def test_insert_cost_between_different_depots(ok_small_multi_depot: ProblemData)
     cost_eval = CostEvaluator([0], 0, 0, data=ok_small_multi_depot)
     dist_mat = data.distance_matrix(0)
 
-    delta = dist_mat[0, 2] + dist_mat[2, 1] - dist_mat[0, 1]
+    delta = dist_mat[0, 2] + dist_mat[2, 1]
     assert_equal(insert_cost(Node(loc=2), route[0], data, cost_eval), delta)
 
 
@@ -169,7 +171,9 @@ def test_remove_fixed_vehicle_cost():
     assert_equal(remove_cost(route[1], data, cost_eval), -13)
 
 
-def test_inplace_cost_zero_when_shortcutting_on_guard_clauses(ok_small: ProblemData):
+def test_inplace_cost_zero_when_shortcutting_on_guard_clauses(
+    ok_small: ProblemData,
+):
     """
     Tests that inplace_cost() returns zero cost when it hits one of the guard
     clauses: either when the first node is in a route, or the second node is
@@ -243,7 +247,9 @@ def test_remove_reload_depot(ok_small_multiple_trips: ProblemData):
     assert_equal(remove_cost(route[3], data, cost_eval), 8_000 - 3_275)
 
 
-def test_remove_consecutive_reload_depots(ok_small_multiple_trips: ProblemData):
+def test_remove_consecutive_reload_depots(
+    ok_small_multiple_trips: ProblemData,
+):
     """
     Tests that removing one of multiple, consecutive reload depots is evaluated
     correctly.
@@ -260,7 +266,9 @@ def test_remove_consecutive_reload_depots(ok_small_multiple_trips: ProblemData):
     # the one we're trying to remove. So delta cost must be 0.
     assert_equal(
         remove_cost(
-            route[3], data, CostEvaluator([1000], 0, 0, data=ok_small_multiple_trips)
+            route[3],
+            data,
+            CostEvaluator([1000], 0, 0, data=ok_small_multiple_trips),
         ),
         0,
     )
@@ -268,7 +276,9 @@ def test_remove_consecutive_reload_depots(ok_small_multiple_trips: ProblemData):
     # And similarly removing the second depot should also be a no-op.
     assert_equal(
         remove_cost(
-            route[4], data, CostEvaluator([1000], 0, 0, data=ok_small_multiple_trips)
+            route[4],
+            data,
+            CostEvaluator([1000], 0, 0, data=ok_small_multiple_trips),
         ),
         0,
     )

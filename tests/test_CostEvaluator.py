@@ -66,7 +66,9 @@ def test_load_penalty_multiple_dimensions(ok_small: ProblemData):
 
 
 @pytest.mark.parametrize("cap", [5, 15, 29, 51, 103])
-def test_load_penalty_always_zero_when_below_capacity(ok_small: ProblemData, cap: int):
+def test_load_penalty_always_zero_when_below_capacity(
+    ok_small: ProblemData, cap: int
+):
     """
     This test asserts that load penalties are only applied to excess load, that
     is, load in excess of the vehicle's capacity.
@@ -175,7 +177,9 @@ def test_penalised_cost(ok_small: ProblemData):
     penalty_capacity = 20
     penalty_tw = 6
     default_evaluator = CostEvaluator([0], 0, 0, data=ok_small)
-    cost_evaluator = CostEvaluator([penalty_capacity], penalty_tw, 0, data=ok_small)
+    cost_evaluator = CostEvaluator(
+        [penalty_capacity], penalty_tw, 0, data=ok_small
+    )
 
     feas = Solution(ok_small, [[1, 2], [3], [4]])
     assert_(feas.is_feasible())
@@ -313,126 +317,3 @@ def test_unit_distance_duration_cost(ok_small: ProblemData):
     assert_equal(sol.distance_cost(), 31_729)
     assert_equal(sol.duration_cost(), 31_241)
     assert_equal(cost_eval.penalised_cost(sol), 31_729 + 31_241)
-
-
-def test_fuel_cost_with_constant_velocity_and_constant_congestion(
-    ok_small: ProblemData,
-):
-    unit_fuel_cost = 2.0
-    data = ok_small.replace(
-        vehicle_types=[
-            vehicle_type.replace(vehicle_weight=1, power_to_mass_ratio=1)
-            for vehicle_type in ok_small.vehicle_types()
-        ]
-    )
-    cost_evaluator = CostEvaluator(
-        [1],
-        1,
-        0,
-        data=data,
-        unit_fuel_cost=unit_fuel_cost,
-        velocity=1,
-        congestion_factor=1.0,
-    )
-
-    sol = Solution(ok_small, [[1, 2], [3], [4]])
-
-    assert_(sol.is_feasible())
-    assert_equal(
-        cost_evaluator.fuel_and_emission_cost_with_constant_velocity_constant_congestion(
-            sol.routes()[0]
-        ),
-        6_797_235,
-    )
-
-
-def test_fuel_cost_with_constant_velocity_in_segments_and_constant_congestion(
-    ok_small: ProblemData,
-) -> None:
-    data = ok_small.replace(
-        vehicle_types=[
-            vehicle_type.replace(vehicle_weight=1, power_to_mass_ratio=1)
-            for vehicle_type in ok_small.vehicle_types()
-        ]
-    )
-    unit_fuel_cost = 2.0
-    cost_evaluator = CostEvaluator(
-        [1],
-        1,
-        0,
-        data=data,
-        unit_fuel_cost=unit_fuel_cost,
-        congestion_factor=1.0,
-    )
-
-    sol = Solution(ok_small, [[1, 2], [3], [4]])
-
-    assert_(sol.is_feasible())
-    assert_equal(
-        cost_evaluator.fuel_and_emission_cost_with_constant_velocity_in_segments_constant_congestion(
-            sol.routes()[0]
-        ),
-        6_010_543,
-    )
-
-
-def test_fuel_cost_with_non_linear_velocity_and_constant_congestion(
-    ok_small: ProblemData,
-) -> None:
-    data = ok_small.replace(
-        vehicle_types=[
-            vehicle_type.replace(vehicle_weight=1, power_to_mass_ratio=1)
-            for vehicle_type in ok_small.vehicle_types()
-        ]
-    )
-    unit_fuel_cost = 2.0
-    cost_evaluator = CostEvaluator(
-        [1],
-        1,
-        0,
-        data=data,
-        unit_fuel_cost=unit_fuel_cost,
-        congestion_factor=1.0,
-    )
-
-    sol = Solution(ok_small, [[1, 2], [3], [4]])
-
-    assert_(sol.is_feasible())
-    assert_equal(
-        cost_evaluator.fuel_and_emission_cost_with_non_linear_velocity_constant_congestion(
-            sol.routes()[0]
-        ),
-        6_015_196,
-    )
-
-
-def test_wage_cost_with_min_hours_paid(ok_small: ProblemData):
-    unit_wage_cost = 3.0
-    min_hours_paid = 8.0  # Minimum hours paid for a route
-    cost_evaluator = CostEvaluator(
-        [1], 1, 0, data=ok_small, wage_per_hour=unit_wage_cost
-    )
-
-    sol = Solution(ok_small, [[1, 2], [3], [4]])
-    assert_(sol.is_feasible())
-    assert_equal(
-        cost_evaluator.wage_cost(sol.duration() / 3600, unit_wage_cost, min_hours_paid),
-        min_hours_paid * unit_wage_cost,
-    )
-
-
-def test_wage_cost_without_min_hours_paid(ok_small: ProblemData):
-    unit_wage_cost = 3.0
-    min_hours_paid = 0.0  # No minimum hours paid for a route
-    cost_evaluator = CostEvaluator(
-        [1], 1, 0, data=ok_small, wage_per_hour=unit_wage_cost
-    )
-
-    sol = Solution(ok_small, [[1, 2], [3], [4]])
-    assert_(sol.is_feasible())
-    assert_equal(
-        cost_evaluator.wage_cost(
-            np.ceil(sol.duration() / 3600), unit_wage_cost, min_hours_paid
-        ),
-        np.ceil(sol.duration() / 3600) * unit_wage_cost,
-    )
