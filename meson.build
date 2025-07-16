@@ -24,7 +24,8 @@ if compiler.has_argument('-Wno-dangling-reference')
     # now and issues false positives for some of our code. See #656 and #657
     # for details.
     add_project_arguments('-Wno-dangling-reference', language: 'cpp')
-    add_project_link_arguments('-Wl,-no_strip_all', language: 'cpp')
+    # add_project_link_arguments('-Wl,-no_strip_all', language: 'cpp')
+    add_project_arguments('-g', language: 'cpp')
     # add_project_arguments('-b_ndebug', language: 'cpp')
 endif
 
@@ -50,6 +51,7 @@ libpyvrp = static_library(
         SRC_DIR / 'DurationSegment.cpp',
         SRC_DIR / 'Velocity.cpp',
         SRC_DIR / 'Congestion.cpp',
+        SRC_DIR / 'CongestedVelocity.cpp',
         SRC_DIR / 'search' / 'Route.cpp',
         SRC_DIR / 'search' / 'primitives.cpp',
         SRC_DIR / 'search' / 'RelocateWithDepot.cpp',
