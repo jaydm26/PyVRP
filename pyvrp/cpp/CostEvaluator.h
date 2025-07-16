@@ -238,7 +238,6 @@ template <CostEvaluatable T>
 Cost CostEvaluator::penalisedCost(T const &arg) const
 {
     // Standard objective plus infeasibility-related penalty terms.
-    Cost cost = 0;
     auto cost = arg.distanceCost() + arg.durationCost()
                 + (!arg.empty() ? arg.fixedVehicleCost() : 0)
                 + excessLoadPenalties(arg.excessLoad())

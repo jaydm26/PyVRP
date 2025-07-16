@@ -286,7 +286,7 @@ Route::Route(ProblemData const &data, Trips trips, size_t vehType)
 
     // UPDATED: We iterate in the normal direction as we will need the time just
     // before leaving each node to obtain congestion.
-    auto const &durations = data.durationMatrix(vehData.profile);
+    // auto const &durations = data.durationMatrix(vehData.profile);
     // DurationSegment ds = {vehData, vehData.twLate};
     // for (auto trip = trips_.rbegin(); trip != trips_.rend(); ++trip)
     // {
@@ -320,8 +320,8 @@ Route::Route(ProblemData const &data, Trips trips, size_t vehType)
          == pyvrp::congestion::CongestionBehaviour::VariableCongestion)
         && (data.velocityBehaviour()
                 == pyvrp::velocity::VelocityBehaviour::ConstantVelocityInSegment
-            | data.velocityBehaviour()
-                  == pyvrp::velocity::VelocityBehaviour::VariableVelocity))
+            || data.velocityBehaviour()
+                   == pyvrp::velocity::VelocityBehaviour::VariableVelocity))
     {
         // We need to calculate the duration segment with congestion.
         calculateDurationSegmentWithCongestion(data, vehData);
@@ -391,7 +391,6 @@ void Route::calculateDurationSegmentWithCongestion(
     ProblemData const &data, ProblemData::VehicleType const &vehData)
 {
     auto const &distance = data.distanceMatrix(vehData.profile);
-    auto const &durations = data.durationMatrix(vehData.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
     DurationSegment ds = {vehData, vehData.startLate};
