@@ -255,6 +255,24 @@ private:
     fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
         ProblemData const &data) const;
 
+    /**
+     * Calculates the duration segment for the route, without congestion.
+     * This is used to calculate the duration segment when the route has
+     * constant or constant in segments congestion. For the case of non-linear
+     * congestion, velocity must be constant to use this method.
+     */
+    void calculateDurationSegmentWithoutCongestion(
+        ProblemData const &data, ProblemData::VehicleType const &vehData);
+
+    /**
+     * Calculates the duration segment for the route, with congestion.
+     * This is used to calculate the duration segment when the route has
+     * non-linear congestion. For the case of constant velocity, this method
+should not be used.
+     */
+    void calculateDurationSegmentWithCongestion(
+        ProblemData const &data, ProblemData::VehicleType const &vehData);
+
 public:
     [[nodiscard]] bool empty() const;
 

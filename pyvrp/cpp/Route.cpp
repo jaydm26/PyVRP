@@ -292,6 +292,31 @@ Route::Route(ProblemData const &data, Trips trips, size_t vehType)
 
     // ds = DurationSegment::merge(0, {vehData, vehData.startLate}, ds);
 
+    // Duration Segment must be adjusted here for when using non-linear
+    // congestion.
+    if ((data.congestionBehaviour()
+         == pyvrp::congestion::CongestionBehaviour::VariableCongestion)
+        && (data.velocityBehaviour()
+                == pyvrp::velocity::VelocityBehaviour::ConstantVelocityInSegment
+            | data.velocityBehaviour()
+                  == pyvrp::velocity::VelocityBehaviour::VariableVelocity))
+    {
+        // We need to calculate the duration segment with congestion.
+        calculateDurationSegmentWithCongestion(data, vehData);
+    }
+    else
+    {
+        // We can use the old method of calculating the duration segment.
+        calculateDurationSegmentWithoutCongestion(data, vehData);
+    }
+
+    makeSchedule(data);
+}
+
+void Route::calculateDurationSegmentWithoutCongestion(
+    ProblemData const &data, ProblemData::VehicleType const &vehData)
+{
+    auto const &durations = data.durationMatrix(vehData.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
     DurationSegment ds = {vehData, vehData.startLate};
@@ -338,8 +363,71 @@ Route::Route(ProblemData const &data, Trips trips, size_t vehType)
     durationCost_ = vehData.unitDurationCost * static_cast<Cost>(duration_);
     slack_ = ds.slack();
     timeWarp_ = ds.timeWarp(vehData.maxDuration);
+}
 
-    makeSchedule(data);
+void Route::calculateDurationSegmentWithCongestion(
+    ProblemData const &data, ProblemData::VehicleType const &vehData)
+{
+    auto const &distance = data.distanceMatrix(vehData.profile);
+    auto const &durations = data.durationMatrix(vehData.profile);
+    auto const congestionProfile
+        = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
+    DurationSegment ds = {vehData, vehData.startLate};
+    double now = ds.startEarly().get();
+    bool firstTrip = true;
+    for (auto trip = trips_.begin(); trip != trips_.end(); ++trip)
+    {
+        ProblemData::Depot const &start = data.location(trip->startDepot());
+        ds = DurationSegment::merge(0, ds, {start});
+
+        size_t prevClient = trip->startDepot();
+        for (auto it = trip->begin(); it != trip->end(); ++it)
+        {
+            auto const client = *it;
+            auto const edgeDistance = distance(prevClient, client);
+            auto velocityProfile
+                = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance);
+            auto congestedVelocityProfile
+                = pyvrp::congestedVelocity::CongestedWLTCProfile(
+                    velocityProfile, congestionProfile);
+            auto const congestedDuration
+                = congestedVelocityProfile.getCongestedTravelTimeForDistance(
+                    edgeDistance.get(), now);
+            ProblemData::Client const &clientData = data.location(client);
+
+            ds = DurationSegment::merge(congestedDuration, ds, {clientData});
+            prevClient = client;
+            now += congestedDuration + clientData.serviceDuration.get();
+        }
+
+        auto const edgeDistance = distance(prevClient, trip->endDepot());
+        auto velocityProfile
+            = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance);
+        auto congestedVelocityProfile
+            = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
+                                                             congestionProfile);
+        auto const congestedDuration
+            = congestedVelocityProfile.getCongestedTravelTimeForDistance(
+                edgeDistance.get(), now);
+        ProblemData::Depot const &end = data.location(trip->endDepot());
+        ds = DurationSegment::merge(congestedDuration, ds, {end});
+        now += congestedDuration;
+        if (firstTrip)
+        {
+            // Since this is the first trip, we set the start time and slack
+            // based on the start depot's earliest start time.
+            // All subsequent trips don't need to set this.
+            startTime_ = ds.startEarly();
+            firstTrip = false;
+        }
+        ds = ds.finaliseBack();
+    }
+    ds = DurationSegment::merge(0, ds, {vehData, vehData.twLate});
+
+    duration_ = ds.duration();
+    durationCost_ = vehData.unitDurationCost * static_cast<Cost>(duration_);
+    slack_ = ds.slack();
+    timeWarp_ = ds.timeWarp(vehData.maxDuration);
 }
 
 Route::Route(Trips trips,
