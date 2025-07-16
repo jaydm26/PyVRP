@@ -7,21 +7,25 @@ import matplotlib.pyplot as plt
 
 from instances.c101_C10 import instance_c101_C10 as instance_data
 from pyvrp import Edge, Model
-from pyvrp.PenaltyManager import PenaltyParams
-from pyvrp._pyvrp import InternalCostBehaviour
+from pyvrp._pyvrp import CongestionBehaviour, VelocityBehaviour
 from pyvrp.plotting import plot_instance, plot_result, plot_route_schedule
-from pyvrp.solve import SolveParams
 from pyvrp.stop import MaxIterations, MaxRuntime
 from pyvrp.stop.MultipleCriteria import MultipleCriteria
 from research.utils.distance import get_distance_between_coordinates
 from research.utils.duration import get_time_from_distance
 
+EIGHT_HOURS = 0 * 60 * 60  # 8 hours in seconds
+
 model = Model()
 
+model.velocity_behaviour = VelocityBehaviour.VariableVelocity
+model.congestion_behaviour = CongestionBehaviour.VariableCongestion
 depots = [
     model.add_depot(
         x=depot.x,
         y=depot.y,
+        tw_early=EIGHT_HOURS,
+        tw_late=instance_data.latest_due_date + EIGHT_HOURS,
         name=depot.string_id,
     )
     for depot in instance_data.depots_data
@@ -33,8 +37,9 @@ clients = [
         y=client.y,
         delivery=client.delivery_demand,
         service_duration=client.service_time,
-        tw_early=client.ready_time,
-        tw_late=client.due_date,
+        tw_early=client.ready_time + EIGHT_HOURS,
+        tw_late=client.due_date + EIGHT_HOURS,
+        release_time=EIGHT_HOURS,
         name=client.string_id,
     )
     for client in instance_data.client_data
@@ -43,11 +48,11 @@ clients = [
 vehicles = [
     model.add_vehicle_type(
         instance_data.num_vehicles,
-        instance_data.vehicle_capacity,
+        int(instance_data.vehicle_capacity),
         start_depot=depot,
         end_depot=depot,
-        tw_early=0,
-        tw_late=instance_data.latest_due_date,
+        tw_early=EIGHT_HOURS,
+        tw_late=instance_data.latest_due_date + EIGHT_HOURS,
         vehicle_weight=instance_data.vehicle_weight,
         power_to_mass_ratio=instance_data.power_to_mass_ratio,
     )
@@ -57,30 +62,19 @@ vehicles = [
 edges: list[Edge] = []
 for from_node, to_node in product(model.locations, model.locations):
     distance = get_distance_between_coordinates(from_node, to_node)
-    duration = get_time_from_distance(distance)
+    duration = get_time_from_distance(int(distance))
     # duration = round(distance / velocity)
     edges.append(
         model.add_edge(
             frm=from_node,
             to=to_node,
-            distance=distance,
+            distance=int(distance),
             duration=duration,
         )
     )
 
-solve_params = SolveParams(
-    penalty=PenaltyParams(
-        velocity=instance_data.velocity,
-        cost_behaviour=InternalCostBehaviour.VariableVelocityWithConstantCongestion,
-        unit_emission_cost=1.0,
-        unit_fuel_cost=1.0,
-        min_hours_paid=8.0,
-        wage_per_hour=1.0,
-    )
-)
 result = model.solve(
-    stop=MultipleCriteria([MaxIterations(100), MaxRuntime(1800)]),
-    params=solve_params,
+    stop=MultipleCriteria([MaxIterations(3), MaxRuntime(1800)]),
 )
 
 print(result)
@@ -98,7 +92,7 @@ fig_instance.tight_layout()
 fig_instance.savefig(folder / "instance.png")
 
 fig_result = plt.figure(figsize=(15, 9))
-plot_result(result, model.data(), solve_params.penalty, fig_result)
+plot_result(result, model.data(), fig_result)
 fig_result.tight_layout()
 fig_result.savefig(folder / "resut.png")
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 from warnings import warn
 
 import numpy as np
@@ -8,9 +8,11 @@ import numpy as np
 from pyvrp._pyvrp import (
     Client,
     ClientGroup,
+    CongestionBehaviour,
     Depot,
     ProblemData,
     VehicleType,
+    VelocityBehaviour,
 )
 from pyvrp.constants import MAX_VALUE
 from pyvrp.exceptions import ScalingWarning
@@ -108,6 +110,44 @@ class Model:
         self._groups: list[ClientGroup] = []
         self._profiles: list[Profile] = []
         self._vehicle_types: list[VehicleType] = []
+        self._velocity_behaviour: VelocityBehaviour = (
+            VelocityBehaviour.ConstantVelocity
+        )
+        self._congestion_behaviour: CongestionBehaviour = (
+            CongestionBehaviour.ConstantCongestion
+        )
+
+    @property
+    def velocity_behaviour(self) -> VelocityBehaviour:
+        """
+        Returns the velocity behaviour of this model. This is used to compute
+        the duration of edges based on their distance.
+        """
+        return self._velocity_behaviour
+
+    @velocity_behaviour.setter
+    def velocity_behaviour(self, behaviour: VelocityBehaviour) -> None:
+        """
+        Sets the velocity behaviour of this model. This is used to compute the
+        duration of edges based on their distance.
+        """
+        self._velocity_behaviour = behaviour
+
+    @property
+    def congestion_behaviour(self) -> CongestionBehaviour:
+        """
+        Returns the congestion behaviour of this model. This is used to compute
+        the duration of edges based on their distance.
+        """
+        return self._congestion_behaviour
+
+    @congestion_behaviour.setter
+    def congestion_behaviour(self, behaviour: CongestionBehaviour) -> None:
+        """
+        Sets the congestion behaviour of this model. This is used to compute
+        the duration of edges based on their distance.
+        """
+        self._congestion_behaviour = behaviour
 
     @property
     def locations(self) -> list[Client | Depot]:
@@ -343,6 +383,12 @@ class Model:
         max_reloads: int = np.iinfo(np.uint64).max,
         vehicle_weight: float = 0.0,
         power_to_mass_ratio: float = 0.0,
+        min_hours_paid: float = 0.0,
+        wage_per_hour: float = 0.0,
+        velocity: float = 1.0,
+        congestion: float = 1.0,
+        unit_fuel_cost: float = 0.0,
+        unit_emission_cost: float = 0.0,
         *,
         name: str = "",
     ) -> VehicleType:
@@ -416,6 +462,12 @@ class Model:
             max_reloads=max_reloads,
             vehicle_weight=vehicle_weight,
             power_to_mass_ratio=power_to_mass_ratio,
+            min_hours_paid=min_hours_paid,
+            wage_per_hour=wage_per_hour,
+            velocity=velocity,
+            congestion=congestion,
+            unit_fuel_cost=unit_fuel_cost,
+            unit_emission_cost=unit_emission_cost,
             name=name,
         )
 
@@ -446,8 +498,8 @@ class Model:
 
         # Now we create the profile-specific distance and duration matrices.
         # These are based on the base matrices.
-        distances = []
-        durations = []
+        distances: list[Any] = []
+        durations: list[Any] = []
         for profile in self._profiles:
             prof_distance = base_distance.copy()
             prof_duration = base_duration.copy()

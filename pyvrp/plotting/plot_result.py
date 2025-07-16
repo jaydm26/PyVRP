@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 
 from pyvrp import ProblemData
-from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp.Result import Result
 from pyvrp.plotting.plot_diversity import plot_diversity
 from pyvrp.plotting.plot_objectives import plot_objectives
@@ -12,7 +11,6 @@ from pyvrp.plotting.plot_solution import plot_solution
 def plot_result(
     result: Result,
     data: ProblemData,
-    penalty_params: PenaltyParams = PenaltyParams(),
     fig: plt.Figure | None = None,
 ):
     """
@@ -44,7 +42,6 @@ def plot_result(
     plot_objectives(
         result,
         data=data,
-        penalty_params=penalty_params,
         ax=fig.add_subplot(gs[1, 0], sharex=ax_div),
     )
     plot_runtimes(result, ax=fig.add_subplot(gs[2, 0], sharex=ax_div))

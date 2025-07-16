@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pyvrp.PenaltyManager import PenaltyParams
 from pyvrp.Result import Result
 from pyvrp._pyvrp import ProblemData
 
@@ -9,7 +8,6 @@ from pyvrp._pyvrp import ProblemData
 def plot_objectives(
     result: Result,
     data: ProblemData,
-    penalty_params: PenaltyParams = PenaltyParams(),
     num_to_skip: int | None = None,
     ax: plt.Axes | None = None,
     ylim_adjust: tuple[float, float] = (0.95, 1.15),
