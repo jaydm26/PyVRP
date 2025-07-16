@@ -138,23 +138,25 @@ void Route::makeSchedule(ProblemData const &data)
     schedule_.reserve(size() + numTrips() + 1);  // clients and depots
 
     auto const &vehData = data.vehicleType(vehicleType_);
+    auto const &distance = data.distanceMatrix(vehData.profile);
     auto const &durations = data.durationMatrix(vehData.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
 
-    auto now = startTime_;
+    double now = startTime_.get();
     auto const handle
         = [&](auto const &where, size_t location, size_t trip, Duration service)
     {
-        auto const wait = std::max<Duration>(where.twEarly - now, 0);
-        auto const tw = std::max<Duration>(now - where.twLate, 0);
+        auto const wait = std::max<Duration>(where.twEarly.get() - now, 0);
+        auto const tw = std::max<Duration>(now - where.twLate.get(), 0);
 
-        now += wait;
-        now -= tw;
+        now += wait.get();
+        now -= tw.get();
 
-        schedule_.emplace_back(location, trip, now, now + service, wait, tw);
+        schedule_.emplace_back(
+            location, trip, now, now + service.get(), wait, tw);
 
-        now += service;
+        now += service.get();
     };
 
     for (size_t tripIdx = 0; tripIdx != trips_.size(); ++tripIdx)
@@ -164,25 +166,45 @@ void Route::makeSchedule(ProblemData const &data)
 
         auto const earliestStart = std::max(
             start.twEarly, std::min(trip.releaseTime(), start.twLate));
-        auto const wait = std::max<Duration>(earliestStart - now, 0);
-        auto const tw = std::max<Duration>(now - start.twLate, 0);
+        auto const wait = std::max<Duration>(earliestStart.get() - now, 0);
+        auto const tw = std::max<Duration>(now - start.twLate.get(), 0);
 
-        now += wait;
-        now -= tw;
+        now += wait.get();
+        now -= tw.get();
 
         schedule_.emplace_back(trip.startDepot(), tripIdx, now, now, wait, tw);
 
         size_t prevClient = trip.startDepot();
         for (auto const client : trip)
         {
-            auto const congestion
-                = data.congestionBehaviour()
-                          == pyvrp::congestion::CongestionBehaviour::
-                              ConstantCongestion
-                      ? vehData.congestion
-                      : congestionProfile.getCongestionValue(now);
-            auto const edgeDur = durations(prevClient, client).get()
-                                 / congestion;  // Insert congestion here
+            double edgeDur;
+            if (data.congestionBehaviour()
+                    == pyvrp::congestion::CongestionBehaviour::
+                        ConstantCongestion
+                || data.congestionBehaviour()
+                       == pyvrp::congestion::CongestionBehaviour::
+                           ConstantCongestionInSegment)
+            {
+                auto const congestion
+                    = data.congestionBehaviour()
+                              == pyvrp::congestion::CongestionBehaviour::
+                                  ConstantCongestion
+                          ? vehData.congestion
+                          : congestionProfile.getCongestionValue(now);
+                edgeDur = durations(prevClient, client).get() / congestion;
+            }
+            else
+            {
+                auto const edgeDistance = distance(prevClient, client);
+                auto const velocityProfile
+                    = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance);
+                auto const congestedProfile
+                    = pyvrp::congestedVelocity::CongestedWLTCProfile(
+                        velocityProfile, congestionProfile);
+                edgeDur = congestedProfile.getCongestedTravelTimeForDistance(
+                    edgeDistance.get(), now);
+            }
+
             now += edgeDur;
 
             ProblemData::Client const &clientData = data.location(client);
