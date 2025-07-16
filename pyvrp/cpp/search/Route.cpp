@@ -424,13 +424,6 @@ double pyvrp::search::Route::
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            // std::cout
-            //     << "Duration is 0. Velocity cannot be infinite. Did you "
-            //        "provide a duration matrix? And if you did, check if the "
-            //        "duration between client: "
-            //            + std::to_string(from)
-            //            + " and client: " + std::to_string(to) + " is not 0."
-            //     << std::endl;
             from = to;
             continue;  // continue as the cost for going from the node to itself
                        // is always 0.

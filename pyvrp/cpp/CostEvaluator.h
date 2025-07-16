@@ -298,7 +298,6 @@ bool CostEvaluator::deltaCost(Cost &out, T<Args...> const &proposal) const
             out += loadPenalty(proposal.excessLoad(dim), 0, dim);
         }
     }
-
     auto const [duration, timeWarp] = proposal.duration();
     out += route->unitDurationCost() * static_cast<Cost>(duration);
     out += twPenalty(timeWarp);

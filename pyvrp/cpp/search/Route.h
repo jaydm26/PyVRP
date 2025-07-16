@@ -1310,7 +1310,6 @@ std::pair<Duration, Duration> Route::Proposal<Segments...>::duration() const
                 // travel duration is now zero.
                 edgeDur = 0;
             }
-
             ds = DurationSegment::merge(edgeDur, other.duration(profile), ds);
             first = other.first();
 
@@ -1351,32 +1350,19 @@ Load Route::Proposal<Segments...>::excessLoad(size_t dimension) const
     auto const fn = [&](auto &&segment, auto &&...args)
     {
         auto ls = segment.load(dimension);
-        std::cout << "Segment: " << segment.first() << " -> " << segment.last()
-                  << std::endl;
-        std::cout << "LoadSegment: " << ls << std::endl;
         if (segment.endsAtReloadDepot())
         {
             ls = ls.finalise(capacity);
-            std::cout << "LoadSegment after finalise: " << ls << std::endl;
         }
 
         auto const merge = [&](auto const &self, auto &&other, auto &&...args)
         {
-            std::cout << "Other Segment: " << other.first() << " -> "
-                      << other.last() << std::endl;
-            std::cout << "LoadSegment [merge] before merge: " << ls
-                      << std::endl;
-            std::cout << "LoadSegment [merge] other: " << other.load(dimension)
-                      << std::endl;
             if (other.startsAtReloadDepot())
             {
                 ls = ls.finalise(capacity);
-                std::cout << "LoadSegment [merge] after finalise: " << ls
-                          << std::endl;
             }
 
             ls = LoadSegment::merge(ls, other.load(dimension));
-            std::cout << "LoadSegment [merge] after merge: " << ls << std::endl;
 
             if constexpr (sizeof...(args) != 0)
             {
@@ -1385,8 +1371,6 @@ Load Route::Proposal<Segments...>::excessLoad(size_t dimension) const
                     // Checking for size speeds up the common case of a reload
                     // depot insertion.
                     ls = ls.finalise(capacity);
-                    std::cout << "LoadSegment [merge] finalise: " << ls
-                              << std::endl;
                 }
 
                 self(self, std::forward<decltype(args)>(args)...);
@@ -1396,8 +1380,8 @@ Load Route::Proposal<Segments...>::excessLoad(size_t dimension) const
         merge(merge, std::forward<decltype(args)>(args)...);
         return ls.excessLoad(capacity);
     };
-
-    return std::apply(fn, segments_);
+    auto load = std::apply(fn, segments_);
+    return load;
 }
 
 }  // namespace pyvrp::search
@@ -1413,6 +1397,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithConstantVelocityConstantCongestion(
         pyvrp::ProblemData const &data) const
 {
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     size_t from = this->first();
     auto const &vehicleType = data.vehicleType(route_.vehicleType());
@@ -1457,6 +1444,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestion(
         pyvrp::ProblemData const &data) const
 {
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     size_t from = this->first();
     auto const &vehicleType = data.vehicleType(route_.vehicleType());
@@ -1507,6 +1497,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     // Get the route. SegmentBetween is a segment between two nodes in the
     // route. All information about the segment can thus be fetched from the
     // data. Just need the iterator from the first node to the last node.
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     // No-op till the start node.
     for (; (*it)->client() != this->first(); ++it)
@@ -1559,6 +1552,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithConstantVelocityConstantCongestionInSegments(
         [[maybe_unused]] ProblemData const &data) const
 {
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     ProblemData::Client firstClient = data.location(this->first());
     size_t from = this->first();
@@ -1614,6 +1610,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithConstantVelocityInSegmentsConstantCongestionInSegments(
         [[maybe_unused]] ProblemData const &data) const
 {
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     size_t from = this->first();
     ProblemData::Client firstClient = data.location(this->first());
@@ -1675,6 +1674,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     // Get the route. SegmentBetween is a segment between two nodes in the
     // route. All information about the segment can thus be fetched from the
     // data. Just need the iterator from the first node to the last node.
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     // No-op till the start node.
     for (; (*it)->client() != this->first(); ++it)
@@ -1730,6 +1732,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithConstantVelocityNonLinearCongestion(
         [[maybe_unused]] ProblemData const &data) const
 {
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     ProblemData::Client firstClient = data.location(this->first());
     size_t from = this->first();
@@ -1791,6 +1796,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithConstantVelocityInSegmentsNonLinearCongestion(
         [[maybe_unused]] ProblemData const &data) const
 {
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     ProblemData::Client firstClient = data.location(this->first());
     size_t from = this->first();
@@ -1862,6 +1870,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
         [[maybe_unused]] ProblemData const &data) const
 {
+    if (route_.empty())
+        return 0;  // No cost for empty route.
+
     auto it = route_.begin();
     ProblemData::Client firstClient = data.location(this->first());
     size_t from = this->first();
