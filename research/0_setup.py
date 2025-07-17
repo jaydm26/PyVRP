@@ -18,8 +18,8 @@ EIGHT_HOURS = 0 * 60 * 60  # 8 hours in seconds
 
 model = Model()
 
-model.velocity_behaviour = VelocityBehaviour.VariableVelocity
-model.congestion_behaviour = CongestionBehaviour.VariableCongestion
+model.velocity_behaviour = VelocityBehaviour.ConstantVelocity
+model.congestion_behaviour = CongestionBehaviour.ConstantCongestion
 depots = [
     model.add_depot(
         x=depot.x,
@@ -55,6 +55,11 @@ vehicles = [
         tw_late=instance_data.latest_due_date + EIGHT_HOURS,
         vehicle_weight=instance_data.vehicle_weight,
         power_to_mass_ratio=instance_data.power_to_mass_ratio,
+        min_hours_paid=2.0,
+        wage_per_hour=1.0,
+        unit_fuel_cost=0,
+        unit_emission_cost=0,
+        velocity=instance_data.velocity,
     )
     for depot in depots
 ]
@@ -74,7 +79,7 @@ for from_node, to_node in product(model.locations, model.locations):
     )
 
 result = model.solve(
-    stop=MultipleCriteria([MaxIterations(3), MaxRuntime(1800)]),
+    stop=MultipleCriteria([MaxIterations(10), MaxRuntime(1800)]),
 )
 
 print(result)
