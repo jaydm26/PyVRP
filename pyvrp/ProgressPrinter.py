@@ -56,7 +56,9 @@ class ProgressPrinter:
         whether a new best solution has been found, and the search duration.
         """
         should_print = (
-            self._print and stats.is_collecting() and stats.num_iterations % 500 == 0
+            self._print
+            and stats.is_collecting()
+            and stats.num_iterations % 1 == 0
         )
 
         if not should_print:

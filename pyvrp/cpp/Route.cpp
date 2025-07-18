@@ -693,13 +693,6 @@ double pyvrp::Route::
         Duration durationOfSegment = durationMatrix(from, to);
         if (durationOfSegment == 0)
         {
-            // std::cout
-            //     << "Duration is 0. Velocity cannot be infinite. Did you "
-            //        "provide a duration matrix? And if you did, check if the "
-            //        "duration between client: "
-            //            + std::to_string(from)
-            //            + " and client: " + std::to_string(to) + " is not 0."
-            //     << std::endl;
             continue;  // continue as the cost for going from the node to itself
                        // is always 0.
         };
@@ -1354,8 +1347,8 @@ double pyvrp::Route::wageCost(ProblemData const &data) const
         = data.vehicleType(this->vehicleType());
     double durationInHours
         = this->duration().get() / 3600.0;  // convert to hours
-    auto const hoursPaid
-        = std::max<double>(durationInHours, vehicleType.minHoursPaid.get());
+    auto const hoursPaid = std::max<double>(std::ceil(durationInHours),
+                                            vehicleType.minHoursPaid.get());
     return hoursPaid * vehicleType.wagePerHour.get();
 }
 

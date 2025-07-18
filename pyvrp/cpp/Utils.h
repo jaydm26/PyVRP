@@ -23,14 +23,14 @@ inline double
 emissionCostPerTonPerHourConstantVelocity(double const powerToMassRatio,
                                           double const velocity)
 {
-    double internaVelocity = velocity * 3.6;  // convert to km/hr
+    double internalVelocity = velocity * 3.6;  // convert to km/hr
     double a, b, c, d;
     a = 465.390 + 48.143 * powerToMassRatio;
-    b = (32.389 + 0.8931 * powerToMassRatio) * internaVelocity;
-    c = (-0.4771 - 0.02559 * powerToMassRatio) * internaVelocity
-        * internaVelocity;
-    d = (0.0008889 + 0.0004055 * powerToMassRatio) * internaVelocity
-        * internaVelocity * internaVelocity;
+    b = (32.389 + 0.8931 * powerToMassRatio) * internalVelocity;
+    c = (-0.4771 - 0.02559 * powerToMassRatio) * internalVelocity
+        * internalVelocity;
+    d = (0.0008889 + 0.0004055 * powerToMassRatio) * internalVelocity
+        * internalVelocity * internalVelocity;
 
     return (a + b + c + d) / 1000.0;  // Convert to kg
 }

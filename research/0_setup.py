@@ -18,8 +18,8 @@ EIGHT_HOURS = 0 * 60 * 60  # 8 hours in seconds
 
 model = Model()
 
-model.velocity_behaviour = VelocityBehaviour.ConstantVelocity
-model.congestion_behaviour = CongestionBehaviour.ConstantCongestion
+model.velocity_behaviour = VelocityBehaviour.VariableVelocity
+model.congestion_behaviour = CongestionBehaviour.VariableCongestion
 depots = [
     model.add_depot(
         x=depot.x,
@@ -57,7 +57,7 @@ vehicles = [
         power_to_mass_ratio=instance_data.power_to_mass_ratio,
         min_hours_paid=2.0,
         wage_per_hour=1.0,
-        unit_fuel_cost=0,
+        unit_fuel_cost=1000,
         unit_emission_cost=0,
         velocity=instance_data.velocity,
     )

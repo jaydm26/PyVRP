@@ -384,7 +384,15 @@ double
 pyvrp::search::Route::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
     ProblemData const &data) const
 {
-    Duration duration = this->duration();
+    Duration duration = 0;
+    auto &durationMatrix = data.durationMatrix(this->profile());
+    size_t from = this->startDepot();
+    for (size_t i = 1; i < this->size(); i++)
+    {
+        size_t to = this->operator[](i)->client();
+        duration += durationMatrix(from, to);
+        from = to;
+    }
     pyvrp::ProblemData::VehicleType vehicleType
         = data.vehicleType(this->vehicleType());
     double vehicleWeightInTons
@@ -1053,8 +1061,8 @@ double pyvrp::search::Route::wageCost(pyvrp::ProblemData const &data) const
         = data.vehicleType(this->vehicleType());
     Duration duration = this->duration();
     double durationInHours = duration.get() / 3600.0;
-    Duration const paidHours
-        = std::max<Duration>(vehicleType.minHoursPaid, durationInHours);
+    Duration const paidHours = std::max<Duration>(vehicleType.minHoursPaid,
+                                                  std::ceil(durationInHours));
     return paidHours.get() * vehicleType.wagePerHour.get();
 }
 
