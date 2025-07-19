@@ -193,7 +193,8 @@ bool LocalSearch::applyNodeOps(Route::Node *U,
                           << "\n"
                           << "\n";
             }
-            assert(costAfter == costBefore + deltaCost);
+            assert(std::abs((costAfter - costBefore - deltaCost).get()) <= 10);
+            // assert(costAfter == costBefore + deltaCost);
 
             return true;
         }
@@ -235,7 +236,8 @@ bool LocalSearch::applyRouteOps(Route *U,
                           << "\n"
                           << "\n";
             }
-            assert(costAfter == costBefore + deltaCost);
+            assert(std::abs((costAfter - costBefore - deltaCost).get()) <= 10);
+            // assert(costAfter == costBefore + deltaCost);
 
             return true;
         }

@@ -18,17 +18,17 @@ EIGHT_HOURS = 0 * 60 * 60  # 8 hours in seconds
 
 model = Model()
 
-model.velocity_behaviour = VelocityBehaviour.VariableVelocity
-model.congestion_behaviour = CongestionBehaviour.VariableCongestion
+model.velocity_behaviour = VelocityBehaviour.ConstantVelocity
+model.congestion_behaviour = CongestionBehaviour.ConstantCongestion
 depots = [
     model.add_depot(
         x=depot.x,
         y=depot.y,
-        tw_early=EIGHT_HOURS,
-        tw_late=instance_data.latest_due_date + EIGHT_HOURS,
+        # tw_early=EIGHT_HOURS,
+        # tw_late=instance_data.latest_due_date + EIGHT_HOURS,
         name=depot.string_id,
     )
-    for depot in instance_data.depots_data
+    for depot in [instance_data.depots_data[0]]
 ]
 
 clients = [
@@ -37,9 +37,9 @@ clients = [
         y=client.y,
         delivery=client.delivery_demand,
         service_duration=client.service_time,
-        tw_early=client.ready_time + EIGHT_HOURS,
-        tw_late=client.due_date + EIGHT_HOURS,
-        release_time=EIGHT_HOURS,
+        # tw_early=client.ready_time + EIGHT_HOURS,
+        # tw_late=client.due_date + EIGHT_HOURS,
+        # release_time=EIGHT_HOURS,
         name=client.string_id,
     )
     for client in instance_data.client_data
@@ -51,13 +51,13 @@ vehicles = [
         int(instance_data.vehicle_capacity),
         start_depot=depot,
         end_depot=depot,
-        tw_early=EIGHT_HOURS,
-        tw_late=instance_data.latest_due_date + EIGHT_HOURS,
+        # tw_early=EIGHT_HOURS,
+        # tw_late=instance_data.latest_due_date + EIGHT_HOURS,
         vehicle_weight=instance_data.vehicle_weight,
         power_to_mass_ratio=instance_data.power_to_mass_ratio,
         min_hours_paid=2.0,
         wage_per_hour=1.0,
-        unit_fuel_cost=1000,
+        unit_fuel_cost=2,
         unit_emission_cost=0,
         velocity=instance_data.velocity,
     )
@@ -73,7 +73,7 @@ max_distance = max(
 
 edges: list[Edge] = []
 for from_node, to_node in product(model.locations, model.locations):
-    distance = get_distance_between_coordinates(from_node, to_node) * 1000
+    distance = get_distance_between_coordinates(from_node, to_node) * 1_000
     if model.data().velocity_behaviour == VelocityBehaviour.ConstantVelocity:
         duration = round(distance / instance_data.velocity)
     else:
