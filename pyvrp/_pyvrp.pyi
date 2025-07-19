@@ -38,7 +38,9 @@ class WLTCProfile:
     @property
     def spline_velocity(self) -> list[float]: ...
 
-def get_profile_based_on_distance(distance: float) -> WLTCProfile: ...
+def get_profile_based_on_distance(
+    distance: float, max_distance: int
+) -> WLTCProfile: ...
 
 class CostEvaluator:
     def __init__(

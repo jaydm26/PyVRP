@@ -64,11 +64,21 @@ vehicles = [
     for depot in depots
 ]
 
+max_distance = max(
+    [
+        get_distance_between_coordinates(from_node, to_node)
+        for from_node, to_node in product(model.locations, model.locations)
+    ]
+)
+
 edges: list[Edge] = []
 for from_node, to_node in product(model.locations, model.locations):
-    distance = get_distance_between_coordinates(from_node, to_node)
-    duration = get_time_from_distance(int(distance))
-    # duration = round(distance / velocity)
+    distance = get_distance_between_coordinates(from_node, to_node) * 1000
+    if model.data().velocity_behaviour == VelocityBehaviour.ConstantVelocity:
+        duration = round(distance / instance_data.velocity)
+    else:
+        duration = get_time_from_distance(int(distance), int(max_distance))
+
     edges.append(
         model.add_edge(
             frm=from_node,
