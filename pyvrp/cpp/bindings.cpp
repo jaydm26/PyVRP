@@ -1082,9 +1082,11 @@ PYBIND11_MODULE(_pyvrp, m)
                                &pyvrp::velocity::WLTCProfile::splineVelocity);
 
     m.def("get_profile_based_on_distance",
-          static_cast<pyvrp::velocity::WLTCProfile (*)(double const &)>(
+          static_cast<pyvrp::velocity::WLTCProfile (*)(
+              double const &, pyvrp::Distance const &)>(
               &pyvrp::velocity::getProfileBasedOnDistance),
-          py::arg("distance"));
+          py::arg("distance"),
+          py::arg("max_distance"));
 
     py::class_<CostEvaluator>(m, "CostEvaluator", DOC(pyvrp, CostEvaluator))
         .def(

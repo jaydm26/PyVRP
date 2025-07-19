@@ -214,13 +214,14 @@ WLTCProfile mediumVelocityProfile
 WLTCProfile highVelocityProfile
     = WLTCProfile("high", highVelocityProfilePath, 70, 113);
 
-WLTCProfile getProfileBasedOnDistance(double const &distance)
+WLTCProfile getProfileBasedOnDistance(double const &distance,
+                                      Distance const &maxDistance)
 {
-    if (distance > 3 * mediumVelocityProfile.fullProfileDistance())
+    if (distance > (2 / 3) * maxDistance.get())
     {
         return highVelocityProfile;
     }
-    else if (distance > 3 * slowVelocityProfile.fullProfileDistance())
+    else if (distance > (1 / 3) * maxDistance.get())
     {
         return mediumVelocityProfile;
     }
@@ -230,9 +231,10 @@ WLTCProfile getProfileBasedOnDistance(double const &distance)
     }
 }
 
-WLTCProfile getProfileBasedOnDistance(Distance const &distance)
+WLTCProfile getProfileBasedOnDistance(Distance const &distance,
+                                      Distance const &maxDistance)
 {
-    return getProfileBasedOnDistance(distance.get());
+    return getProfileBasedOnDistance(distance.get(), maxDistance);
 }
 
 }  // namespace pyvrp::velocity

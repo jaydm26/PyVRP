@@ -252,11 +252,15 @@ public:
 
             auto const profile = route()->profile();
             auto const &distanceMatrix = data.distanceMatrix(profile);
+            auto const &maxDistance = distanceMatrix.max();
             auto const &durationMatrix = data.durationMatrix(profile);
             auto const &vehData = data.vehicleType(route()->vehicleType());
 
-            auto const fn = [&data, &vehData, &distanceMatrix, &durationMatrix](
-                                auto &&segment, auto &&...args)
+            auto const fn = [&data,
+                             &vehData,
+                             &distanceMatrix,
+                             &maxDistance,
+                             &durationMatrix](auto &&segment, auto &&...args)
             {
                 auto fuelAndEmissionCost = segment.fuelAndEmissionCost(data);
                 auto last = segment.last();
@@ -275,7 +279,7 @@ public:
                               / 1000.0;  // convert to tons
                         auto velocityProfile
                             = pyvrp::velocity::getProfileBasedOnDistance(
-                                distanceInSegment);
+                                distanceInSegment, maxDistance);
                         auto congestedDuration
                             = durationInSegment.get() / vehData.congestion;
                         double emissionFactor
@@ -494,6 +498,7 @@ public:
 
             auto const profile = route()->profile();
             auto const &distanceMatrix = data.distanceMatrix(profile);
+            auto const &maxDistance = distanceMatrix.max();
             auto const &durationMatrix = data.durationMatrix(profile);
             auto const &vehData = data.vehicleType(route()->vehicleType());
             auto const congestionProfile
@@ -514,6 +519,7 @@ public:
                              &now,
                              &congestionProfile,
                              &distanceMatrix,
+                             &maxDistance,
                              &durationMatrix](auto &&segment, auto &&...args)
             {
                 auto fuelAndEmissionCost = segment.fuelAndEmissionCost(data);
@@ -538,7 +544,7 @@ public:
                                 durationInSegment.get());
                         auto velocityProfile
                             = pyvrp::velocity::getProfileBasedOnDistance(
-                                distanceInSegment);
+                                distanceInSegment, maxDistance);
                         auto congestedDuration
                             = durationInSegment.get() / congestion;
                         double emissionFactor
@@ -675,6 +681,7 @@ public:
 
             auto const profile = route()->profile();
             auto const &distanceMatrix = data.distanceMatrix(profile);
+            auto const &maxDistance = distanceMatrix.max();
             auto const &vehData = data.vehicleType(route()->vehicleType());
             auto const congestionProfile
                 = pyvrp::congestion::getCongestionProfile(
@@ -689,9 +696,12 @@ public:
                        .duration()
                        .get();
 
-            auto const fn
-                = [&data, &vehData, &now, &congestionProfile, &distanceMatrix](
-                      auto &&segment, auto &&...args)
+            auto const fn = [&data,
+                             &vehData,
+                             &now,
+                             &congestionProfile,
+                             &distanceMatrix,
+                             &maxDistance](auto &&segment, auto &&...args)
             {
                 auto fuelAndEmissionCost = segment.fuelAndEmissionCost(data);
                 auto last = segment.last();
@@ -707,7 +717,7 @@ public:
                         = distanceMatrix(last, other.first());
                     auto velocityProfile
                         = pyvrp::velocity::getProfileBasedOnDistance(
-                            distanceInSegment.get());
+                            distanceInSegment.get(), maxDistance);
                     auto congestedVelocityProfile
                         = pyvrp::congestedVelocity::CongestedWLTCProfile(
                             velocityProfile, congestionProfile);
@@ -772,6 +782,7 @@ public:
 
             auto const profile = route()->profile();
             auto const &distanceMatrix = data.distanceMatrix(profile);
+            auto const &maxDistance = distanceMatrix.max();
             auto const &vehData = data.vehicleType(route()->vehicleType());
             auto const congestionProfile
                 = pyvrp::congestion::getCongestionProfile(
@@ -786,9 +797,12 @@ public:
                        .duration()
                        .get();
 
-            auto const fn
-                = [&data, &vehData, &now, &congestionProfile, &distanceMatrix](
-                      auto &&segment, auto &&...args)
+            auto const fn = [&data,
+                             &vehData,
+                             &now,
+                             &congestionProfile,
+                             &distanceMatrix,
+                             &maxDistance](auto &&segment, auto &&...args)
             {
                 auto fuelAndEmissionCost = segment.fuelAndEmissionCost(data);
                 auto last = segment.last();
@@ -804,7 +818,7 @@ public:
                         = distanceMatrix(last, other.first());
                     auto velocityProfile
                         = pyvrp::velocity::getProfileBasedOnDistance(
-                            distanceInSegment.get());
+                            distanceInSegment.get(), maxDistance);
                     auto congestedVelocityProfile
                         = pyvrp::congestedVelocity::CongestedWLTCProfile(
                             velocityProfile, congestionProfile);
@@ -2351,18 +2365,20 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     if ((route_.empty()) || (size() < 2))
         return 0;  // No cost for empty route.
 
-    auto const distanceMatrix = data.distanceMatrix(route_.profile());
-    // The duration matrix is always the duration assuming there was no
-    // congestion (i.e. congestion = 1).
-    auto const durationMatrix = data.durationMatrix(route_.profile());
+    auto const &distanceMatrix = data.distanceMatrix(route_.profile());
+    auto const &maxDistance = distanceMatrix.max();
+    auto const &durationMatrix = data.durationMatrix(route_.profile());
     auto const vehicleType = data.vehicleType(route_.vehicleType());
     auto const vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert
                                                // to tons
 
-    auto getFuelAndEmissionCostBetweenTwoNodes =
-        [&vehicleType, &distanceMatrix, &durationMatrix, &vehicleWeightInTons](
-            size_t from, size_t to) -> double
+    auto getFuelAndEmissionCostBetweenTwoNodes
+        = [&vehicleType,
+           &distanceMatrix,
+           &maxDistance,
+           &durationMatrix,
+           &vehicleWeightInTons](size_t from, size_t to) -> double
     {
         auto distanceInSegment = distanceMatrix(from, to);
         auto durationInSegment = durationMatrix(from, to);
@@ -2370,8 +2386,8 @@ double pyvrp::search::Route::SegmentBase<Derived>::
         {
             return 0;
         }
-        auto velocityProfile
-            = pyvrp::velocity::getProfileBasedOnDistance(distanceInSegment);
+        auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+            distanceInSegment, maxDistance);
         auto congestedDuration
             = durationInSegment.get() / vehicleType.congestion;
         double emissionFactor
@@ -2583,10 +2599,9 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     if ((route_.empty()) || (size() < 2))
         return 0;  // No cost for empty route.
 
-    auto const distanceMatrix = data.distanceMatrix(route_.profile());
-    // The duration matrix is always the duration assuming there was no
-    // congestion (i.e. congestion = 1).
-    auto const durationMatrix = data.durationMatrix(route_.profile());
+    auto const &distanceMatrix = data.distanceMatrix(route_.profile());
+    auto const &maxDistance = distanceMatrix.max();
+    auto const &durationMatrix = data.durationMatrix(route_.profile());
     auto const vehicleType = data.vehicleType(route_.vehicleType());
     auto const vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert
@@ -2604,6 +2619,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     auto getFuelAndEmissionCostBetweenTwoNodes
         = [&vehicleType,
            &distanceMatrix,
+           &maxDistance,
            &durationMatrix,
            &now,
            &vehicleWeightInTons,
@@ -2620,8 +2636,8 @@ double pyvrp::search::Route::SegmentBase<Derived>::
         }
         double congestion
             = congestionProfile.getCongestionValue(durationInSegment.get());
-        auto velocityProfile
-            = pyvrp::velocity::getProfileBasedOnDistance(distanceInSegment);
+        auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+            distanceInSegment, maxDistance);
         auto congestedDuration = durationInSegment.get() / congestion;
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
@@ -2763,6 +2779,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto const &distanceMatrix = data.distanceMatrix(route_.profile());
+    auto const &maxDistance = distanceMatrix.max();
     auto congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
     double now = firstClient.releaseTime.get();
@@ -2774,6 +2791,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     auto getFuelAndEmissionCostBetweenTwoNodes
         = [&vehicleType,
            &distanceMatrix,
+           &maxDistance,
            &vehicleWeightInTons,
            &data,
            &now,
@@ -2782,7 +2800,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
         ProblemData::Client const &client = data.location(to);
         Distance distanceInSegment = distanceMatrix(from, to);
         auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
-            distanceInSegment.get());
+            distanceInSegment.get(), maxDistance);
         auto congestedVelocityProfile
             = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
                                                              congestionProfile);
@@ -2857,6 +2875,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto const &distanceMatrix = data.distanceMatrix(route_.profile());
+    auto const &maxDistance = distanceMatrix.max();
     auto congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
     double now = firstClient.releaseTime.get();
@@ -2868,6 +2887,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
     auto getFuelAndEmissionCostBetweenTwoNodes
         = [&vehicleType,
            &distanceMatrix,
+           &maxDistance,
            &vehicleWeightInTons,
            &data,
            &now,
@@ -2876,7 +2896,7 @@ double pyvrp::search::Route::SegmentBase<Derived>::
         ProblemData::Client const &client = data.location(to);
         Distance distanceInSegment = distanceMatrix(from, to);
         auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
-            distanceInSegment.get());
+            distanceInSegment.get(), maxDistance);
         auto congestedVelocityProfile
             = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
                                                              congestionProfile);

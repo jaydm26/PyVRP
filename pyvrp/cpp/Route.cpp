@@ -139,6 +139,7 @@ void Route::makeSchedule(ProblemData const &data)
 
     auto const &vehData = data.vehicleType(vehicleType_);
     auto const &distance = data.distanceMatrix(vehData.profile);
+    auto const maxDistance = distance.max();
     auto const &durations = data.durationMatrix(vehData.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
@@ -197,7 +198,8 @@ void Route::makeSchedule(ProblemData const &data)
             {
                 auto const edgeDistance = distance(prevClient, client);
                 auto const velocityProfile
-                    = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance);
+                    = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance,
+                                                                 maxDistance);
                 auto const congestedProfile
                     = pyvrp::congestedVelocity::CongestedWLTCProfile(
                         velocityProfile, congestionProfile);
@@ -391,6 +393,7 @@ void Route::calculateDurationSegmentWithCongestion(
     ProblemData const &data, ProblemData::VehicleType const &vehData)
 {
     auto const &distance = data.distanceMatrix(vehData.profile);
+    auto const maxDistance = distance.max();
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
     DurationSegment ds = {vehData, vehData.startLate};
@@ -406,8 +409,8 @@ void Route::calculateDurationSegmentWithCongestion(
         {
             auto const client = *it;
             auto const edgeDistance = distance(prevClient, client);
-            auto velocityProfile
-                = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance);
+            auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+                edgeDistance, maxDistance);
             auto congestedVelocityProfile
                 = pyvrp::congestedVelocity::CongestedWLTCProfile(
                     velocityProfile, congestionProfile);
@@ -422,8 +425,8 @@ void Route::calculateDurationSegmentWithCongestion(
         }
 
         auto const edgeDistance = distance(prevClient, trip->endDepot());
-        auto velocityProfile
-            = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance);
+        auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+            edgeDistance, maxDistance);
         auto congestedVelocityProfile
             = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
                                                              congestionProfile);
@@ -725,8 +728,9 @@ double pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
     auto vehicleType = data.vehicleType(this->vehicleType());
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
-    auto distanceMatrix = data.distanceMatrix(vehicleType.profile);
-    auto durationMatrix = data.durationMatrix(vehicleType.profile);
+    auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto const maxDistance = distanceMatrix.max();
+    auto const &durationMatrix = data.durationMatrix(vehicleType.profile);
 
     for (Trip trip : this->trips())
     {
@@ -748,7 +752,7 @@ double pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
             };
             pyvrp::velocity::WLTCProfile velocityProfile
                 = pyvrp::velocity::getProfileBasedOnDistance(
-                    distanceOfSegment.get());
+                    distanceOfSegment.get(), maxDistance);
             double emissionFactor
                 = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                       vehicleType.powerToMassRatio,
@@ -781,7 +785,7 @@ double pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityConstantCongestion(
         };
         pyvrp::velocity::WLTCProfile velocityProfile
             = pyvrp::velocity::getProfileBasedOnDistance(
-                distanceOfSegment.get());
+                distanceOfSegment.get(), maxDistance);
         double emissionFactor
             = pyvrp::utils::emissionFactorPerTonNonLinearVelocity(
                   vehicleType.powerToMassRatio,
@@ -938,6 +942,7 @@ double pyvrp::Route::
     auto const vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto const maxDistance = distanceMatrix.max();
     auto const &durationMatrix = data.durationMatrix(vehicleType.profile);
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
@@ -957,8 +962,8 @@ double pyvrp::Route::
                            // itself is always 0.
             };
             pyvrp::velocity::WLTCProfile velocityProfile
-                = pyvrp::velocity::getProfileBasedOnDistance(
-                    edgeDistance.get());
+                = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance.get(),
+                                                             maxDistance);
             double congestion = congestionProfile.getCongestionValue(now);
             double congestedDuration = edgeDuration.get() / congestion;
             double emissionFactor
@@ -987,7 +992,8 @@ double pyvrp::Route::
                        // itself is always 0.
         };
         pyvrp::velocity::WLTCProfile velocityProfile
-            = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance.get());
+            = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance.get(),
+                                                         maxDistance);
         double congestion = congestionProfile.getCongestionValue(now);
         double congestedDuration = edgeDuration.get() / congestion;
         double emissionFactor
@@ -1083,6 +1089,7 @@ double pyvrp::Route::
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto const maxDistance = distanceMatrix.max();
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
 
@@ -1094,7 +1101,7 @@ double pyvrp::Route::
             pyvrp::ProblemData::Client const &clientData = data.location(to);
             auto edgeDistance = distanceMatrix(from, to);
             auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
-                edgeDistance.get());
+                edgeDistance.get(), maxDistance);
             auto congestedVelocityProfile
                 = pyvrp::congestedVelocity::CongestedWLTCProfile(
                     velocityProfile, congestionProfile);
@@ -1129,8 +1136,8 @@ double pyvrp::Route::
         }
         size_t to = trip.endDepot();
         auto edgeDistance = distanceMatrix(from, to);
-        auto velocityProfile
-            = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance.get());
+        auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+            edgeDistance.get(), maxDistance);
         auto congestedVelocityProfile
             = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
                                                              congestionProfile);
@@ -1175,6 +1182,7 @@ pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     auto const &distanceMatrix = data.distanceMatrix(vehicleType.profile);
+    auto const maxDistance = distanceMatrix.max();
     auto const congestionProfile
         = pyvrp::congestion::getCongestionProfile(data.congestionBehaviour());
 
@@ -1186,7 +1194,7 @@ pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
             pyvrp::ProblemData::Client const &clientData = data.location(to);
             auto edgeDistance = distanceMatrix(from, to);
             auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
-                edgeDistance.get());
+                edgeDistance.get(), maxDistance);
             auto congestedVelocityProfile
                 = pyvrp::congestedVelocity::CongestedWLTCProfile(
                     velocityProfile, congestionProfile);
@@ -1220,8 +1228,8 @@ pyvrp::Route::fuelAndEmissionCostWithNonLinearVelocityNonLinearCongestion(
         }
         size_t to = trip.endDepot();
         auto edgeDistance = distanceMatrix(from, to);
-        auto velocityProfile
-            = pyvrp::velocity::getProfileBasedOnDistance(edgeDistance.get());
+        auto velocityProfile = pyvrp::velocity::getProfileBasedOnDistance(
+            edgeDistance.get(), maxDistance);
         auto congestedVelocityProfile
             = pyvrp::congestedVelocity::CongestedWLTCProfile(velocityProfile,
                                                              congestionProfile);

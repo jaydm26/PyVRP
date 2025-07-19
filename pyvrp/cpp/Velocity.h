@@ -111,8 +111,10 @@ public:
 
 // WLTCProfile slowVelocityProfile, mediumVelocityProfile, highVelocityProfile;
 
-WLTCProfile getProfileBasedOnDistance(double const &distance);
-WLTCProfile getProfileBasedOnDistance(Distance const &distance);
+WLTCProfile getProfileBasedOnDistance(double const &distance,
+                                      Distance const &maxDistance);
+WLTCProfile getProfileBasedOnDistance(Distance const &distance,
+                                      Distance const &maxDistance);
 }  // namespace pyvrp::velocity
 
 #endif  // PYVRP_VELOCITY_H
