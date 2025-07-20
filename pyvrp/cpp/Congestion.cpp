@@ -188,19 +188,18 @@ CongestionProfile const getCongestionProfile(
     std::filesystem::path currentFile = __FILE__;
     // We run this in the pyvrp folder (you can see
     // the .so file)
-    std::filesystem::path rootDir = currentFile.parent_path().parent_path();
+    std::filesystem::path rootDir = currentFile.parent_path().parent_path().parent_path();
     std::filesystem::path congestionCsv;
     if (congestionBehaviour == CongestionBehaviour::ConstantCongestion)
     {
         // For constant congestion, we use the default congestion profile.
-        congestionCsv = rootDir / "research" / "data" / "congestion"
+        congestionCsv = rootDir / "PyVRP" / "research" / "data" / "congestion"
                         / "constant_congestion.csv";
     }
     else
     {
-
         congestionCsv
-            = rootDir / "research" / "data" / "congestion" / "congestion.csv";
+            = rootDir / "PyVRP" / "research" / "data" / "congestion" / "congestion.csv";
     }
     return CongestionProfile(congestionCsv);
 }

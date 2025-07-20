@@ -1,0 +1,11 @@
+Case	Statistics	r112_21	c208_21
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	No. of Vehicles	3	3
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Distance (in m)	1484275	1672567
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Duration (in s)	85960	103166
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Objective Function	1011	1086
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Run Time (in s)	815.038116280999	843.8723380280007
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Routes	"D-27-52-7-88-31-1-9-71-20-35-65-34-12-58-13-97-14-42-89-17-5-86-83-61-60-59-93-D
+D-28-53-74-72-21-2-73-99-98-100-57-15-43-44-16-37-87-77-26-40-41-22-56-75-23-67-39-25-4-54-55-24-78-66-32-30-70-10-90-63-11-48-8-45-84-94-D
+D-80-3-81-33-68-29-79-50-76-51-69-18-62-64-19-49-36-47-46-82-95-6-92-96-91-38-85-D"	"D-54-59-66-48-69-68-61-67-22-24-29-50-31-32-33-35-37-38-39-36-28-23-13-26-18-17-15-19-25-21-53-58-57-49-44-51-45-42-41-D
+D-72-62-74-6-27-30-20-93-81-52-34-46-56-60-64-43-47-40-55-65-79-70-73-80-77-96-D
+D-87-86-83-82-76-71-78-85-84-88-89-100-97-92-7-3-4-99-91-90-63-5-95-94-98-1-2-75-11-9-12-16-14-10-8-D"

@@ -19,16 +19,17 @@ c101_C10_data: list[VRPData] = [
 ]
 
 num_vehicles = 4
-vehicle_capacity = 200.0
-vehicle_weight = 1000.0
-power_to_mass_ratio = 60  # Example value, adjust as needed
-velocity = 1.0
+vehicle_capacity = 1450 #instance uses capacity 200, taken assumption from previous MT
+vehicle_weight = 3500.0
+power_of_vehicle = 120
+power_to_mass_ratio = power_of_vehicle/vehicle_weight  # Example value, adjust as needed
+velocity = 10.0
 latest_due_date = max([data.due_date for data in c101_C10_data])
 
 depots_data = list(filter(lambda x: x.type == "f", c101_C10_data))
 client_data = list(filter(lambda x: x.type == "c", c101_C10_data))
 
-instance_c101_C10 = InstanceData(
+instance_data = InstanceData(
     name="c101_C10",
     num_vehicles=num_vehicles,
     vehicle_capacity=vehicle_capacity,

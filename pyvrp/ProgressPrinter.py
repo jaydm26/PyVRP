@@ -58,7 +58,7 @@ class ProgressPrinter:
         should_print = (
             self._print
             and stats.is_collecting()
-            and stats.num_iterations % 1 == 0
+            and stats.num_iterations %50 == 0 #change this for 500 iterations
         )
 
         if not should_print:

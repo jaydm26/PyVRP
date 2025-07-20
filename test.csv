@@ -1,0 +1,55 @@
+Case	Statistics	c101_C10	c205_C10	r102_C10	r201_C10	rc102_C10	rc205_C10
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestion')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestion')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestion')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestion')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestion')	Run Time (in s)	12.430316162000054	11.240200403000017	10.65993741300008	10.32891440000003	11.824663835000138	11.717560809000133
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestion')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Run Time (in s)	12.586265730000378	11.310835260999738	10.868376493000142	10.47944566499973	11.743045219000123	11.700933471000099
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.VariableCongestion')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.VariableCongestion')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.VariableCongestion')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.VariableCongestion')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.VariableCongestion')	Run Time (in s)	12.290153193000151	11.230655902999388	10.72857374600062	10.395452270000533	11.829566848000468	11.753037888000108
+('VelocityBehaviour.ConstantVelocity', 'CongestionBehaviour.VariableCongestion')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestion')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestion')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestion')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestion')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestion')	Run Time (in s)	12.366053472000203	11.210625132999667	11.194400336000399	10.43695017600021	11.897538207999787	11.74767522699949
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestion')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestionInSegment')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestionInSegment')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestionInSegment')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestionInSegment')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestionInSegment')	Run Time (in s)	12.45835725500001	11.27621081199959	10.823332697999831	10.399483368000801	11.710577285	11.776100789000338
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.ConstantCongestionInSegment')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.VariableCongestion')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.VariableCongestion')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.VariableCongestion')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.VariableCongestion')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.VariableCongestion')	Run Time (in s)	12.461714544000642	11.233920915999988	10.955214203999276	10.331887353999264	11.745440480999605	12.06318876000023
+('VelocityBehaviour.ConstantVelocityInSegment', 'CongestionBehaviour.VariableCongestion')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestion')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestion')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestion')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestion')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestion')	Run Time (in s)	12.469203752000794	11.467669461000696	10.921728964000067	10.420674706999307	11.789861562000624	11.783739407999747
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestion')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Run Time (in s)	12.58184387000074	11.196270370000093	10.693611960999988	10.346496961999947	12.051747629000602	11.775005052999404
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.ConstantCongestionInSegment')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	No. of Vehicles	1	1	1	1	1	1
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Distance (in m)	393102	337457	386938	347347	408889	410323
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Duration (in s)	21440	18796	20348	19369	21445	21556
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Objective Function	307	307	307	307	307	307
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Run Time (in s)	12.62201378499958	11.207537736000631	10.825279543999386	10.490208395000082	11.773505915999522	11.766782069000328
+('VelocityBehaviour.VariableVelocity', 'CongestionBehaviour.VariableCongestion')	Routes	D-9-3-2-7-8-4-10-1-6-5-D	D-4-9-7-10-5-8-6-2-1-3-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-2-5-7-6-1-4-10-3-8-D	D-9-4-1-10-5-6-8-2-3-7-D	D-4-2-1-9-7-10-8-6-3-5-D

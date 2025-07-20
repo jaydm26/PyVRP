@@ -199,9 +199,9 @@ double WLTCProfile::getTimeForTravelDistance(double const &distance) const
 std::filesystem::path currentFile = __FILE__;
 // We run this in the pyvrp folder (you can see
 // the .so file)
-std::filesystem::path rootDir = currentFile.parent_path().parent_path();
+std::filesystem::path rootDir = currentFile.parent_path().parent_path().parent_path();
 
-std::filesystem::path pathToCsv = rootDir / "research" / "data" / "wltc";
+std::filesystem::path pathToCsv = rootDir / "PyVRP" / "research" / "data" / "wltc";
 std::filesystem::path slowVelocityProfilePath = pathToCsv / "SlowProfile.csv";
 std::filesystem::path mediumVelocityProfilePath
     = pathToCsv / "MediumProfile.csv";

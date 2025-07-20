@@ -117,7 +117,7 @@ extensions = [
 ]
 
 # Extension dependencies: Python itself, and pybind11.
-boost_dep = declare_dependency(include_directories: include_directories('/usr/local/opt/boost/include'))
+boost_dep = declare_dependency(include_directories: include_directories('/usr/include/boost/'))
 py = import('python').find_installation()
 dependencies = [py.dependency(), dependency('pybind11'), boost_dep]
 

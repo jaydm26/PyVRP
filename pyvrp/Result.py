@@ -91,7 +91,7 @@ class Result:
             "",
             "Routes",
             "------",
-            str(self.best),
+            "||".join(["D-" + "-".join([str(visit) for visit in trip.visits()]) + "-D" for route in self.best.routes() for trip in route.trips()]),
         ]
 
         return "\n".join(content)
