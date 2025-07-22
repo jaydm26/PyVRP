@@ -263,8 +263,8 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
                                       Cost wagePerHour,
                                       double velocity,
                                       double congestion,
-                                      Cost unitFuelCost,
-                                      Cost unitEmissionCost,
+                                      double unitFuelCost,
+                                      double unitEmissionCost,
                                       std::string name)
     : numAvailable(numAvailable),
       startDepot(startDepot),
@@ -414,8 +414,8 @@ ProblemData::VehicleType ProblemData::VehicleType::replace(
     std::optional<Cost> wagePerHour,
     std::optional<double> velocity,
     std::optional<double> congestion,
-    std::optional<Cost> unitFuelCost,
-    std::optional<Cost> unitEmissionCost,
+    std::optional<double> unitFuelCost,
+    std::optional<double> unitEmissionCost,
     std::optional<std::string> name) const
 {
     return {numAvailable.value_or(this->numAvailable),

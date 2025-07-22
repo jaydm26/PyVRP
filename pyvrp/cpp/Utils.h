@@ -70,7 +70,7 @@ inline double emissionFactorPerTonNonLinearVelocity(
         * constantTerm * constantTerm * constantTerm / 1000 / 1000 / 1000 * 3600
         * 3600;  // Convert to km/hr
 
-    assert(a + b + c + d >= 0);       // Ensure the result is non-negative
+    assert(a + b + c + d >= 0);       // Ensure the result is non-negative 
     return (a + b + c + d) / 1000.0;  // Convert to kg
 }
 

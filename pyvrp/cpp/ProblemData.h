@@ -509,8 +509,8 @@ public:
                     Cost wagePerHour = 0,
                     double velocity = 1,
                     double congestion = 1,
-                    Cost unitFuelCost = 0,
-                    Cost unitEmissionCost = 0,
+                    double unitFuelCost = 0,
+                    double unitEmissionCost = 0,
                     std::string name = "");
 
         bool operator==(VehicleType const &other) const;
@@ -549,8 +549,8 @@ public:
                             std::optional<Cost> wagePerHour,
                             std::optional<double> velocity,
                             std::optional<double> congestion,
-                            std::optional<Cost> unitFuelCost,
-                            std::optional<Cost> unitEmissionCost,
+                            std::optional<double> unitFuelCost,
+                            std::optional<double> unitEmissionCost,
                             std::optional<std::string> name) const;
 
         /**

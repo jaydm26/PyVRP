@@ -322,6 +322,12 @@ PYBIND11_MODULE(_pyvrp, m)
         .def_readonly("max_reloads", &ProblemData::VehicleType::maxReloads)
         .def_readonly("vehicle_weight", &ProblemData::VehicleType::vehicleWeight)
         .def_readonly("power_to_mass_ratio", &ProblemData::VehicleType::powerToMassRatio)
+        .def_readonly("min_hours_paid", &ProblemData::VehicleType::minHoursPaid)
+        .def_readonly("wage_per_hour", &ProblemData::VehicleType::wagePerHour)
+        .def_readonly("velocity", &ProblemData::VehicleType::velocity)
+        .def_readonly("congestion", &ProblemData::VehicleType::congestion)
+        .def_readonly("unit_fuel_cost", &ProblemData::VehicleType::unitFuelCost)
+        .def_readonly("unit_emission_cost", &ProblemData::VehicleType::unitEmissionCost)
         .def_property_readonly("max_trips", &ProblemData::VehicleType::maxTrips)
         .def_readonly("name",
                       &ProblemData::VehicleType::name,
@@ -408,8 +414,8 @@ PYBIND11_MODULE(_pyvrp, m)
                     t[19].cast<pyvrp::Cost>(), // wage per hour
                     t[20].cast<double>(), // velocity
                     t[21].cast<double>(), // congegstion
-                    t[22].cast<pyvrp::Cost>(), // unit fuel cost
-                    t[23].cast<pyvrp::Cost>(), // unit emission cost
+                    t[22].cast<double>(), // unit fuel cost
+                    t[23].cast<double>(), // unit emission cost
                     t[24].cast<std::string>());              // name
 
                 return vehicleType;

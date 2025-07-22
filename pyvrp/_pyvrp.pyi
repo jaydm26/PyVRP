@@ -163,6 +163,12 @@ class VehicleType:
     max_reloads: int
     vehicle_weight: float
     power_to_mass_ratio: float
+    min_hours_paid: float
+    wage_per_hour: float
+    velocity: float
+    congestion: float
+    unit_fuel_cost: float
+    unit_emission_cost: float
     name: str
     def __init__(
         self,
@@ -215,6 +221,12 @@ class VehicleType:
         max_reloads: int | None = None,
         vehicle_weight: float | None = None,
         power_to_mass_ratio: float | None = None,
+        min_hours_paid: float | None = None,
+        wage_per_hour: float | None = None,
+        velocity: float | None = None,
+        congestion: float | None = None,
+        unit_fuel_cost: float | None = None,
+        unit_emission_cost: float | None = None,
         *,
         name: str | None = None,
     ) -> VehicleType: ...

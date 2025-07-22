@@ -92,6 +92,14 @@ class Result:
             "Routes",
             "------",
             "||".join(["D-" + "-".join([str(visit) for visit in trip.visits()]) + "-D" for route in self.best.routes() for trip in route.trips()]),
+            "Cost Breakdown",
+            "--------------",
+            f"  Fuel and emission cost: {round(self.best.fuel_and_emission_cost(self.data))}",
+            f"  Wage cost:              {self.best.wage_cost(self.data)}",
+            f"  Distance cost:          {self.best.distance_cost()}",
+            f"  Duration cost:          {self.best.duration_cost()}",
+            f"  Fixed vehicle cost:     {self.best.fixed_vehicle_cost()}",
+            f"  Total cost:             {self.cost()}",
         ]
 
         return "\n".join(content)

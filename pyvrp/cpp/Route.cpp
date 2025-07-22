@@ -617,7 +617,7 @@ double pyvrp::Route::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
         }
         duration += durationMatrix(prev, trip.endDepot()).get();
     }
-
+    
     double vehicleWeightInTons
         = vehicleType.vehicleWeight / 1000.0;  // convert to tons
     double durationInHours = duration / 3600;  // convert to hours
@@ -627,9 +627,18 @@ double pyvrp::Route::fuelAndEmissionCostWithConstantVelocityConstantCongestion(
               vehicleType.velocity * vehicleType.congestion)
           * vehicleWeightInTons * durationInHours;
 
+    std::cout << "[Route][Fuel Cost - CVCC] Vehicle Weight in Tons: " << vehicleWeightInTons << std::endl;
+    std::cout << "[Route][Fuel Cost - CVCC] Duration in Hours: " << durationInHours << std::endl;
+    std::cout << "[Route][Fuel Cost - CVCC] Power to Mass Ratio: " << vehicleType.powerToMassRatio << std::endl;
+    std::cout << "[Route][Fuel Cost - CVCC] Velocity : " << vehicleType.velocity  << ", Congestion: " << vehicleType.congestion << std::endl;
+    std::cout << "[Route][Fuel Cost - CVCC] Emission Factor : " << emissionFactor << std::endl;
+    std::cout << "[Route][Fuel Cost - CVCC] Unit Fuel Cost : " << emissionFactor << std::endl;
+    std::cout << "[Route][Fuel Cost - CVCC] Unit Emission Cost : " << emissionFactor << std::endl;
+    
     double fuelAndEmissionCost
         = (vehicleType.unitFuelCost + vehicleType.unitEmissionCost)
           * emissionFactor;
+    std::cout << "[Route][Fuel Cost - CVCC] Fuel and Emission Cost : " << fuelAndEmissionCost << std::endl;
 
     return fuelAndEmissionCost;
 }
